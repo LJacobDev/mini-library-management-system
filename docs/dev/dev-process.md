@@ -158,21 +158,38 @@ Nothing applicable appears to be readily available for this, but it isn't necess
 ### Building out the spec file
 
 
+#### Data schema
+
 It is currently asking me some questions about preferences like exactly what metadata might be good for the books to have
 
-I'd like it to add pages but it's not a huge wow factor to do so.
+I'd like it to add a few extra fields like 'pages' but it's not a huge wow factor to do so.
 
 There are a lot of potential metadata that could apply to books like this but I will just pick a few that matter the most here.
-
-
 
 I'm interested in adding other media types besides books, since libraries can also loan out videos and other things.  It would be an 'extra features' thing, but is helpful to design into the data schema now
 
 
-USER STORIES:
+#### Making some starter files that are tech-agnostic while working out the spec
+
+Things like the data schema don't care which back end I use, and deciding on the data model is helping to form the way the app will work, so I'm taking a moment on that right now.
 
 
-unauthenticated
+
+check what 'metadata GIN' refers to in database indexes
+
+
+ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
+
+ask the agent if there is anything else at this stage as useful as something like how we just addressed that also could be addressed now
+
+
+
+
+
+#### USER STORIES:
+
+
+##### unauthenticated
 
 They see the library main page and can view and search and filter books/media.  They can click on media to see its modal that contains it cover image and public metadata.
 
@@ -180,13 +197,13 @@ The grid of media is also able to be navigated with keyboard navigation of press
 
 If the unauthenticated attempts to click the 'reserve' button on the media item, they will be directed to a sign up / log in view.
 
-authenticated member
+##### authenticated member
 
 they have the same abilites as unauthenticated, except that member can click the reserve button and have it mark the book as reserved by them if it is available.
 
 The member also has an area they can navigate to that shows 'my checked out items' or something with similar name, that shows them a grid or column stack of cards that show the media items currently checked out by them, and currently reserved by them, with 'due date' showing under each or to the right of each, which can also be clicked on to open that media's cover image and metadata modal.  in this example, the modal shows extra information, like 'due date'
 
-authenticated desk-librarian
+##### authenticated desk-librarian
 
 the authenticated desk-librarian works at the customer service desk and helps identify members in person and takes books / media in hand and looks them up in order to bring up their modal and enter (or look up with search assist features) a user id to act as though they are writing the id in from reading a library card in hand
 
@@ -195,7 +212,7 @@ can see the media and their metadata, except they can also see who the book is c
 they also the ability to press a check in button that changes the media's state back and clears out the due date and the checked_out_by fields
 
 
-authenticated admin-librarian
+##### authenticated admin-librarian
 
 this user is the superuser who is able to add a new book or media item to the collection.  This means that on the main view, they see the collection and can filter it, but they also have an Add New Media button that brings up a media modal that lets them fill in the fields for what it is.
 
@@ -210,18 +227,6 @@ the admin librarian can also press the delete key
 Their view of the media modal shows everything about its metadata, including other user IDs that have signed it out and what its due date is.  
 
 
-ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
-
-ask the agent if there is anything else at this stage as useful as this that also could be addressed now
-
-
-Make sure to be completely thorough with preparing the spec so that you don't run in to odd points where something isn't figured out when you're building it
-
-I think it might not be fully asking all the right questions to get everything done, for example, nothing has been said about UI or styles, and I'd like to be giving it input there, like to use shadCN UI components instead of making them itself
-
-use tailwindcss probably
-
-use single file components
 
 
 ## Final Outcome and Insights
