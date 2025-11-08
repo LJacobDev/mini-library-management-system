@@ -156,6 +156,11 @@ Nothing applicable appears to be readily available for this, but it isn't necess
 ### Building out the spec file
 
 
+It is currently asking me some questions about preferences like exactly what metadata might be good for the books to have
+
+I'd like it to add pages but it's not a huge wow factor to do so.
+
+There are a lot of potential metadata that could apply to books like this but I will just pick a few that matter the most here.
 
 
 
