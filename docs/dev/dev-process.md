@@ -158,7 +158,7 @@ Nothing applicable appears to be readily available for this, but it isn't necess
 ### Building out the spec file
 
 
-#### Data schema
+#### Data schema - book / media structure
 
 It is currently asking me some questions about preferences like exactly what metadata might be good for the books to have
 
@@ -169,13 +169,26 @@ There are a lot of potential metadata that could apply to books like this but I 
 I'm interested in adding other media types besides books, since libraries can also loan out videos and other things.  It would be an 'extra features' thing, but is helpful to design into the data schema now
 
 
+
+#### Data schema - check in check out history
+
+Think of whether the media_loans table can include all users, all checkouts, all returns as a total table or whether it should be a table per user.  I'm thinking one table of all checkouts that map to user IDs, I suppose a 'checkout' row would consist of checked out by, checked out at, due date, returned on (if empty then it's not returned yet).  It likely requires each checkout to have its own ID.  I think if the user it's associated with is deleted, the checkout information in this table relating to them should remain, but still point to a user ID number that is known as a user who requested to be deleted from records - but the media usage records stay preserved for other analytics
+
+
+check what 'metadata GIN' refers to in database indexes
+
+
+I would possibly want this to be a vector database especially if large dataset, for now keeping it as postgres while developing it
+
+
+
+
+
 #### Making some starter files that are tech-agnostic while working out the spec
 
 Things like the data schema don't care which back end I use, and deciding on the data model is helping to form the way the app will work, so I'm taking a moment on that right now.
 
 
-
-check what 'metadata GIN' refers to in database indexes
 
 
 ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
@@ -229,6 +242,19 @@ Their view of the media modal shows everything about its metadata, including oth
 
 
 
-## Final Outcome and Insights
+## Final Outcome
 
+
+
+
+### Insights
+
+
+#### Workflow speed boost: Encountering development pain points and thinking of ways to overcome them
+
+While working on this, I found that it was useful to ask GPT-5 mini to reply in as few words as possible for asking quick iterative exploratory questions.  The rapid short answers were more helpful to navigate ideas and unpack information in less time without feeling reading fatigue.
+
+#### Model choices: Codex was good for making updates to Manager context files that needed to be well thought and well stated
+
+When updating the Manager agent's context file of its understanding of the state of the project, I found it was useful to switch the active chat session's model to GPT-5-Codex so that it would more effectively translate chat session context into a well stated, well thought out out context file that GPT-5 mini could then be switched back to for continuing spec building plans.
 
