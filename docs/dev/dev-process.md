@@ -164,6 +164,14 @@ There are a lot of potential metadata that could apply to books like this but I 
 
 
 
+Make sure to be completely thorough with preparing the spec so that you don't run in to odd points where something isn't figured out when you're building it
+
+I think it might not be fully asking all the right questions to get everything done, for example, nothing has been said about UI or styles, and I'd like to be giving it input there, like to use shadCN UI components instead of making them itself
+
+use tailwindcss probably
+
+use single file components
+
 
 ## Final Outcome and Insights
 
