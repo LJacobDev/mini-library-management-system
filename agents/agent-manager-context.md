@@ -122,6 +122,7 @@ Please answer question 3 and question 4 next, then provide guidance on Q6.
 - Data model updated to generic `media` table with detailed indexing strategy.
 - AI scope clarified: describe-your-need assistant, optional personalised recommendations, librarian analytics Q&A, all delivered via streaming responses.
 - Backend handling layer decision still pending (Supabase Edge Functions vs FastAPI vs Nuxt). Documentation and tooling must stay flexible.
+- a file was created at /docs/dev/plans-ci-cd-vercel-option.md as a potential set of plans for how to do CI/CD in this repo but it depends on prioritizing making a prototype quickly first
 
 ## Short checklist / next steps for Manager
 
