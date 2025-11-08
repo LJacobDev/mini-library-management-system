@@ -142,12 +142,19 @@ Github Pages with Github Actions for CI/CD and Supabase for database and edge fu
 
 or Nuxt full stack that is hosted on Vercel, still using a Supabase database
 
-
+I was a little conflicted between the advantages and tradeoffs of using Vue 3 SPA with Github Pages vs Nuxt with Vercel, but for speed and simplicity I'll go with Vue 3 SPA that uses Github Pages unless I encounter a good enough reason to change course.
 
 
 ### Identifying any helpful MCP / Chat Extensions
 
 Are there any Vue.js or Nuxt etc MCP / chat extensions that can improve the quality and accuracy of the agents code?
+
+Nothing applicable appears to be readily available for this, but it isn't necessary
+
+
+
+### Building out the spec file
+
 
 
 
