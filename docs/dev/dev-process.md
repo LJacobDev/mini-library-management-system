@@ -145,9 +145,10 @@ or Nuxt full stack that is hosted on Vercel, still using a Supabase database
 
 
 
-### Identifying any helpful MCP Chat Extensions
+### Identifying any helpful MCP / Chat Extensions
 
-Are there any Vue.js or Nuxt etc MCP extensions that can improve the quality and accuracy of the agents code?
+Are there any Vue.js or Nuxt etc MCP / chat extensions that can improve the quality and accuracy of the agents code?
+
 
 
 
