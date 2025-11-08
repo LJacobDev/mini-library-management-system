@@ -71,7 +71,7 @@ Future applications are better off using reusable prompt library text for this s
 
 ### Initial requirements gathering
 
-Reason through the requrements with to the manager agent and get started with thinking through the spec.
+Reason through the requrements with the manager agent and get started with thinking through the spec.
 
 
 #### Details of Minimum Requirements
