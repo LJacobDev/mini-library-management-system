@@ -1,5 +1,7 @@
 # Mini Library Management System by Lee Jacob (LJacobDev)
 
+The following is a flow of my plans, thoughts, and decisions made from start to end
+
 - [Initial Plan](#initial-plan)
 - [Development Process](#development-process)
 - [Final Outcome and Insights](#final-outcome-and-insights)
@@ -8,7 +10,7 @@
 
 ### Goal
 
-Create an application that demonstrates use of multi agent code generation.
+Create an application that demonstrates a form of multi agent code generation.
 
 
 ### What to use to build it
@@ -34,54 +36,116 @@ I should be able to use a git-ignored file that specifies which agent is which. 
 
 I'm hoping to get a chance to experiment with adding in a code review agent to review PRs at the repo level such as GPT-5-Codex if I can get to that.
 
-The Manager agent will be able to see the state of the implementation agents work in progress because their workspaces will be in git-ignored subfolders at /implementation-agent/1..n
+The Manager agent will be able to see the state of the implementation agents work in progress because their workspaces will be in git-ignored subfolders at /implementation-agent/1..n/
 
 
 
 ## Development Process
 
-This is a chronological flow of steps taken, decisions made, and unexpected findings/changes as I go along
+This is a chronological flow of steps taken as I go along
 
 ### I'm going to be using a spec-driven workflow
 
 I initially favoured using a github project board with issues and pull requests for this, but I decided I might not, as the spec driven workflow is itself a way to show the flow of work and decisions made such that adding the overhead of the github project would slow things down unnecessarily for this specific case.
 
-The plans, process and discrete steps will be contained by the /agents/agent{#}-responsibility.md files along with their context histories in /agents/agent{#}-context.md, and potentially combined into a master story by the Manager agent at the end.
+I was interested in using spec kit for this, but chose to run the process myself to get started sooner and learn spec kit afterwards.
+
+The process and discrete steps that each agent is responsible for will be held by the files named /agents/agent{#}-responsibility.md, and their context histories of what they're doing and their understanding of the state of the application in /agents/agent{#}-context.md.
+
+These contexts might potentially get combined into a master story by the Manager agent at the end.
 
 
 
-#### Building up copilot-instructions.md for the project
+
+### Building up copilot-instructions.md for the project
+
+I wanted to give copilot instructions a checklist of edge case considerations to start with, then build unit tests, then implement code to pass the tests.
+
+I wanted to make sure I covered all edge cases in applicable situations, and retrieved quite a large list of things to track.  I'll see if it might need to be dialed back a bit but I'll start with it like this for now.
+
+The process up to here has largely been setting up workspace plans and context management plans, building prompts.
+
+Future applications are better off using reusable prompt library text for this so that this goes more quickly
 
 
-    
 
-
-#### Initial requirements gathering
+### Initial requirements gathering
 
 Reason through the requrements with to the manager agent and get started with thinking through the spec.
 
-##### Details of Minimum Requirements
 
-##### Recommended extras
+#### Details of Minimum Requirements
 
-##### Additional Creative Extras 
+Book management: Add, edit, delete books
+
+Their properties include title, author, and whatever other metadata I see fit
+
+Check in / Check out feature:  mark a book as checked out (borrowed) or checked in (returned)
+
+    for this, the usage context makes it seem like the application is being used by a librarian
+    while helping a person at a desk check out a book, so they'll want to search the for book and mark it checked out
+    consider other ways to use it like library members checking this out online or reserving it online etc
+
+Search books:  find books by title, author, or any other fields (genre, etc etc)  (also add filtering, pagination)
+
+Data structure: a single table in Supabase will work for this, keep in mind whether extra features will call for more than this one table
+
+Complete a working product
+
+#### Bonuses / recommended extras
+
+deploy app and provide url for live testing
+
+add authentication system with SSO, preferably with different user roles and permissions
+
+    I'll use supabase for auth and would like to do librarian user role that can edit metadata, and library member user role that can't edit metadata, think of other things
+
+implement any AI features you can think of
+
+    have AI suggest a book for the member to sign out based on them providing a description of what they like reading
+
+    what other AI features would be helpful here?
 
 
-#### Planning the solution
+add extra features as you see fit, to demonstrate your creativity
+
+    - come back to this and think of about 5 things to try adding
+
+
+
+#### Evaluation Criteria
+
+Completeness - does the product work, and cover the core features?
+
+Creativity: are extra features and creative ideas incorporated?
+
+Product Quality: Is the product clean and organized?
+
+Usability: Is the app intuitive (not just intuitive to use, but I want a11y and things like keyboard navigation audits done)
+
+
+
+
+### Planning the solution specifications
+
 
 Favour Test Driven Development and Code Quality Guard Rails while still optimizing development speed.
 
 
-#### Chosing the tech stack
+### Chosing the tech stack
 
 I plan to use Vue 3 Composition API for front end
 
-Still have to decide about back end - is Nuxt useful here for anything?  Just use Supabase edge functions?  Likely, as that is serverless.
+for back end, either
 
-Do I want this on Github Pages using Github Actions CI/CD or does that limit me in any way?  Is Vercel worth considering?
+Github Pages with Github Actions for CI/CD and Supabase for database and edge functions,
+
+or Nuxt full stack that is hosted on Vercel, still using a Supabase database
 
 
-#### Identifying any helpful MCP Chat Extensions
+
+
+### Identifying any helpful MCP Chat Extensions
 
 Are there any Vue.js or Nuxt etc MCP extensions that can improve the quality and accuracy of the agents code?
 
@@ -89,4 +153,5 @@ Are there any Vue.js or Nuxt etc MCP extensions that can improve the quality and
 
 
 ## Final Outcome and Insights
+
 
