@@ -213,12 +213,34 @@ What other files can help set up a smart framework / skeleton of the app that ar
 
 
 
+``` Temporary notes
+
+I have a few priorities to juggle at the same time:
+
+- look at files that can be started without the tech stack (no longer needed, I am going to start up a nuxt application now)
+- get github spec kit installed and try its code review
+- can use @workspace code review questions to get by but prefer spec kit
+- I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
+- it says that these should be talked about before the user experience flows are addressed
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 #### Discrete tech stack choice
 
 While there is a lot that I like about FastAPI and I was leaning on using it, I think want to use Nuxt for better stack cohesion even though there is a lot about FastAPI that I like.
 
-I'm considering still using an adapter pattern for the API between front end and back end just because I like the idea of making it able to swap back ends without much trouble, but it is overengineering at the moment and could be done later.
+I was considering still using an adapter pattern for the API between front end and back end just because I like the idea of making it able to swap back ends without having to change anything in the front end, but for the goals at hand it is overengineering and could be done later.
 
 
 
@@ -282,7 +304,10 @@ Their view of the media modal shows everything about its metadata, including oth
 
 #### Checking for any remaining undiscussed areas to get right to avoid having to rebuild later
 
-Ask the agent if there is anything else undiscussed at this stage as useful as sure user flow stories
+Investigate whether there is anything else undiscussed at this stage as useful as sure user flow stories.
+
+For each topic considered, if it's important but I decide not to include it for the purposes of scope or time constraints, I want to document the reasons why so that it's known that it was not forgotten about.
+
 
 
 
@@ -311,6 +336,11 @@ The manager can perhaps check off that file to show the requirement is ready now
 ### Insights
 
 
+These are discoveries as I went along that helped improve things like speed of productivity or quality of the final product.
+
+They are presented in the order in which they occurred while I worked from planning to implementation and finalizing.
+
+
 #### Workflow speed boost: Encountering development pain points and thinking of ways to overcome them
 
 While working on this, I found that it was useful to ask GPT-5 mini to reply in as few words as possible for asking quick iterative exploratory questions.  The rapid short answers were more helpful to navigate ideas and unpack information in less time without feeling reading fatigue.
@@ -335,4 +365,39 @@ But I noticed that using two or three chat sessions within one VSCode instance f
 Example: 
 
 One chat session could discuss the agent's workflow and needs, and another chat session for performing tasks that take time for the agent to perform.  They carry their own chat session context so they can specialize into areas to cover more ground, but they can keep their work cohesive by reading and writing to their common role's context file.
+
+
+#### Workflow speed and product quality boost: Github Projects API and Codex code reviews
+
+I felt like it was probably overengineering for the goal of this application, but I entertained doing the workflow through Github Projects where the agents could use GH CLI to create Issues and do PRs that get automatically reviewed by Codex at the repo level (a newly announced capability).
+
+I think this would massively improve the speed of development and quality of final product but it had just a little too much overhead for this project to justify using it right now.
+
+Update: I found it to be helpful without losing any time to use a basic issue / pr process with GH CLI
+
+I nearly began to use Codex CLI to do code reviews locally but I decided to move forward with getting the prototype done.  Now I know that I can add in Codex if I find it's helpful to do so or use it from the start in future projects.
+
+
+#### Workflow speed boost:  The time spent upfront on planning this project will make future projects complete much faster
+
+A lot of the time spent on this project was upfront work of planning things out so that it could be built quickly but also avoid having to rework it part way through due to not being foresighted enough.
+
+A lot of new ideas and ways to do things better were discovered along the way at a small time cost, but it will pay off in that all future projects will be much faster to build because of this.
+
+
+#### Workflow effectiveness boost: Making use of GH Copilot @workspace Chat Extension
+
+I noticed that if I used the @workspace extension I could get far better agent conversations about the project to take place.
+
+I investigated whether @workspace would help me do repo-wide code reviews, and it led me to find out that GitHub Spec Kit is useful for this.  It caused me to take another quick look at it to see if I could get it included in this project without taking too long to prepare it.
+
+
+
+#### Taking a moment to re-explore using spec kit
+
+My plan has been to do my own spec driven workflow even though I was recently told about GitHub Spec Kit.  I thought it would take too much time spent upfront to get to it for this project, but wanted to learn it for my next project.
+
+Later on, I discovered that it could do repo wide code review, which is what I wanted Codex for.
+
+Due to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
 
