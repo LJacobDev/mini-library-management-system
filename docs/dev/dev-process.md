@@ -201,33 +201,45 @@ I would possibly want this to be a vector database especially if large dataset, 
 
 #### Making some starter files that are tech-agnostic while working out the spec
 
-Made the data schema files in docs
+##### Data schema
 
-I have noticed that the schema changes slightly each time I ask the agent to restate it, so I've reviewed it quickly and think it looks ok, but I'm not certain that the schema is totally sound yet and I'd like to review it closer soon.
+Made the data schema in /docs/data/schema.sql
 
+**I have noticed that the schema plan in the chat changed slightly each time I ask the agent to restate it**, so I've quickly reviewed the final version and think it looks ok, but I'm not certain that the schema is totally sound yet and I'd like to review it closer soon.
 
-make other similar files that help set up a smart framework / skeleton of the app that are agnostic of the spec tech details chosen when possible
+##### Other starter files
 
-
-
-
-
-#### Review the data schema to check for errors or mistakes
+What other files can help set up a smart framework / skeleton of the app that are agnostic of the spec tech details?  
 
 
 
 
+#### Discrete tech stack choice
+
+While there is a lot that I like about FastAPI and I was leaning on using it, I think want to use Nuxt for better stack cohesion even though there is a lot about FastAPI that I like.
+
+I'm considering still using an adapter pattern for the API between front end and back end just because I like the idea of making it able to swap back ends without much trouble, but it is overengineering at the moment and could be done later.
 
 
+
+
+
+
+
+
+
+
+
+
+#### Any other features
+
+Having a contact form that can be used by unauthenticated would be good, and I'd like it to include a measure to detect and reduce bot misuse.
 
 
 
 #### USER STORIES:
 
 ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
-
-ask the agent if there is anything else at this stage as useful as something like how we just addressed that also could be addressed now
-
 
 
 ##### unauthenticated
@@ -268,6 +280,27 @@ the admin librarian can also press the delete key
 Their view of the media modal shows everything about its metadata, including other user IDs that have signed it out and what its due date is.  
 
 
+#### Checking for any remaining undiscussed areas to get right to avoid having to rebuild later
+
+Ask the agent if there is anything else undiscussed at this stage as useful as sure user flow stories
+
+
+
+#### Review the data schema to check for errors or mistakes
+
+Double check everything before making any hard details for the agents to build out
+
+
+### Making the agent responsibilities file
+
+Make a manager responsibilities file as well?  or is that just me working with it and tracking each implementation agent?  Think about if it helps.  Maybe the main spec.md that it generates can also have checkboxes that it completes (or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
+
+Remember that some agent tasks might be best set to only be allowed to start when another agent has achieved a certain point on theirs, so have the manager mark instructions on 'requires agent step # to be complete before starting' on each agent step
+
+The manager can perhaps check off that file to show the requirement is ready now.
+
+
+
 
 
 ## Final Outcome
@@ -290,3 +323,16 @@ When updating the Manager agent's context file of its understanding of the state
 #### Product maintainability: The agent suggested abstracting the API so that it could be swapped out without rewriting the UI
 
 I didn't originally plan to do this, but I like the idea in that it's something I'd like to have as a way to make the app more flexible at seemingly little cost
+
+#### Workflow speed boost:  Several agents working from one context file
+
+Discovered a way to boost a specific agent's capacity without extra friction or overhead.
+
+The initial plan was to enable a multi agent workflow using separate VSCode instances where each one had a separate copy of the repo and a separate instructions file describing their agent role, such as a manager or implementation agent.
+
+But I noticed that using two or three chat sessions within one VSCode instance facilitated scaling a manager or implementation agent's capacity in an elastic but very simple way.
+
+Example: 
+
+One chat session could discuss the agent's workflow and needs, and another chat session for performing tasks that take time for the agent to perform.  They carry their own chat session context so they can specialize into areas to cover more ground, but they can keep their work cohesive by reading and writing to their common role's context file.
+
