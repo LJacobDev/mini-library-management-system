@@ -142,7 +142,7 @@ Github Pages with Github Actions for CI/CD and Supabase for database and edge fu
 
 or Nuxt full stack that is hosted on Vercel, still using a Supabase database
 
-#### Discovered a worfklow speed boost at this point
+#### Discovered a workflow speed boost at this point
 
 I was a little conflicted between the advantages and tradeoffs of using Vue 3 SPA with Github Pages vs Nuxt with Vercel. I found that working out the tradeoffs was taking lots of time and cognitive load.  I realized I could break through this faster by prompting a new agent to answer iterative questions in as few words as possible in order to reduce reading fatigue and allow more cognitive effort to go toward reaching a sound design quickly.
 
