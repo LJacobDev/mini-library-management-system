@@ -98,10 +98,15 @@ _Last updated: 2025-11-10_
 
 ### 4.4 Account Management & Auth
 
-- Sign in/up handled via Supabase Auth UI embedded in `/login` (customised theme consistent with design tokens).
-- Email/password mandatory; OAuth providers (Google, Microsoft) targeted—final confirmation pending question round.
-- Password resets, email verification, and session refresh flows rely on Supabase defaults but skinned to match brand.
-- Profile editing limited to display name and notification preferences (preferences stored in Supabase `user_metadata`).
+- Sign in/up flow embeds Supabase Auth UI in `/login`, themed to match tokens. We accept Supabase’s prebuilt screens and avoid rebuilding flows until necessary.
+- MVP collects display name, email, and notification preferences only. Future enhancement note: optional address fields for physical mailing can be added post-MVP.
+- Auth method: email/password only at launch. UI copy and configuration leave space for adding Google OAuth later without structural changes.
+- Email verification required before access; in development environment we bypass verification to speed testing. Production login keeps the Auth UI displayed with an inline banner prompting users to check email for the verification link.
+- Password reset relies on Supabase’s hosted flow: users request reset, receive email with redirect back to our login view, where a custom state allows entering new password + confirmation.
+- Session management uses Supabase defaults for expiration/refresh. If a session expires mid-action, we first try to present a modal login prompt layered over the current page to resume work quickly but fall back to redirecting to login screen if implementation hits obstacles.
+- Error handling: provide clear messaging for invalid credentials, locked accounts, and rate limiting. Member-facing copy stays generic (“Check your email and password”); librarian/admin views include diagnostic detail. Add backlog reminder to polish messaging tone later.
+- Offline/failed auth requests: show retry guidance and link to a “Contact us” page that currently responds with a mock acknowledgement (real backend coming post-MVP).
+- Profile editing limited to display name and notification preferences (stored in Supabase `user_metadata`).  Add backlog item after MVP that user can add tags of what their interests are to help AI recommend media to them.
 
 ### 4.5 Observability Hooks (MVP level)
 
@@ -209,7 +214,7 @@ Every route implements:
 1. [x] **Personas & minimal RBAC contract** – Confirm the four roles (guest, member, librarian, admin); map to Supabase `profiles.role`; define baseline RLS allow/deny rules.
 2. [x] **Catalog data contract** – Finalise required columns, `jsonb` metadata conventions, and ship the first Supabase migration; lock validation rules for title/creator, availability state, pagination defaults.
 3. [x] **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
-4. [ ] **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
+4. [x] **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
 5. [ ] **Nuxt shell, routing, and middleware** – Choose SSR/SSG/CSR per route, define layout zones, and specify route middleware for role gating/loading states; clarify hydration rules and Supabase client availability on server/client.
 6. [ ] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
 7. [ ] **Nuxt UI/Icon/Image usage plan** – Decide how `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` integrate with Tailwind utilities for layouts, cards, navigation, and media; capture preferred components/patterns so agents default to these modules instead of rebuilding fundamentals.

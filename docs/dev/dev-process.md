@@ -463,6 +463,11 @@ For each topic considered, if it's important but I decide not to include it for 
 
 
 
+#### Note: agent is asking lots of questions at once and I'm concerned it's dilluting context
+
+Agent might ask a question about a ux consideration backlog question but it comes as four sections with 2 bullet points each.  It looks efficient to address it all at once but I worry that it's dilluting context or potential quality of the results, so I might like to have it ask me fewer details at a time to keep it focused.
+
+
 
 
 
