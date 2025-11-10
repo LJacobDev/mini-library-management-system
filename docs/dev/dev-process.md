@@ -380,6 +380,21 @@ The next step is to have a manager agent work through all the remaining spec que
 
 
 
+#### Spec Preparation List
+
+
+I'm arranging all the outstanding things left to do before a spec can be locked into two files
+
+spec-preparation-list.md is the 'everything that we could ever have to think about listed in order of what can be done fastest with the most impact' and then spec-preparation-list-essential.md is the same information but arranged where the most important things that have to be in the prototype are highlighted in a case where time is short.
+
+
+
+
+
+
+
+
+
 
 ``` Temporary notes
 
@@ -387,7 +402,6 @@ I have a few priorities to juggle at the same time:
 
 
 
-- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 
@@ -421,25 +435,10 @@ I think that if I keep my intentional use of ~/ as meaning app folder, and @ as 
 run formatter on all ts files
 
 
+- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
+
+
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -501,6 +500,25 @@ For each topic considered, if it's important but I decide not to include it for 
 #### Review the data schema to check for errors or mistakes
 
 Double check everything before making any hard details for the agents to build out
+
+By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
+
+
+##### Verify this, modify schema to fix anything that needs it:
+
+**Review findings**
+
+- `CREATE TYPE` lacks an `IF NOT EXISTS` safeguard; rerunning the migration will fail once enums already exist.  
+- `gen_random_uuid()` requires the `pgcrypto` extension; document or enable it.  
+- `users.email` and `role` are nullable/unconstrained; consider `NOT NULL`, unique index on email, or an enum for roles.  
+- `media.format` (free-text) and `book_format` enums can drift; enforce one source of truth or validate values.  
+- `media.checked_out` duplicates the active-loan state; introduce triggers or a view to avoid divergence.  
+- `updated_at` columns never auto-refresh; add triggers/defaults if the timestamp is meant to track changes.  
+- Sample inserts accept NULL `creator`/`title` etc. only via schema constraints; ensure future data respects NOT NULLs.
+
+
+
+
 
 
 #### Make the spec file
