@@ -211,17 +211,42 @@ Made the data schema in /docs/data/schema.sql
 
 What other files can help set up a smart framework / skeleton of the app that are agnostic of the spec tech details?  
 
+(no longer needed, I am going to start up a nuxt application now)
+
+
+
+
+#### Discrete tech stack choice
+
+While there is a lot that I like about FastAPI and I was leaning on using it, I want to use Nuxt for better stack cohesion even though there is a lot about FastAPI that I like.
+
+I was considering still using an adapter pattern for the API between front end and back end just because I like the idea of making it able to swap back ends without having to change anything in the front end, but for the goals at hand it is overengineering and could be done later.
+
+
+#### Get github spec kit installed and try its code review
+
+I can use @workspace code review questions to get by but prefer spec kit.
+
+Spec kit appears to be able to be installed for code review without requiring deviation from the other spec driven workflow plans I had.
+
+Spec kit appears to also be able to take over where I currently am in a fairly seamless looking way as far as I can currently tell, and should likely help me arrive at much better task list files, and it seems that it is able to not break my current plan of agent responsibilities and instructions.
+
+
+
+
+
 
 
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
-- look at files that can be started without the tech stack (no longer needed, I am going to start up a nuxt application now)
-- get github spec kit installed and try its code review
-- can use @workspace code review questions to get by but prefer spec kit
+
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 - it says that these should be talked about before the user experience flows are addressed
+- I want to set up issue templates, PR templates before the implementation agents start their building
+-still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
+
 ```
 
 
@@ -234,13 +259,6 @@ I have a few priorities to juggle at the same time:
 
 
 
-
-
-#### Discrete tech stack choice
-
-While there is a lot that I like about FastAPI and I was leaning on using it, I think want to use Nuxt for better stack cohesion even though there is a lot about FastAPI that I like.
-
-I was considering still using an adapter pattern for the API between front end and back end just because I like the idea of making it able to swap back ends without having to change anything in the front end, but for the goals at hand it is overengineering and could be done later.
 
 
 
@@ -399,5 +417,4 @@ My plan has been to do my own spec driven workflow even though I was recently to
 
 Later on, I discovered that it could do repo wide code review, which is what I wanted Codex for.
 
-Due to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
-
+ stiDue to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
