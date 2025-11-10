@@ -406,6 +406,62 @@ The manager agent is seeing this file as an agents onboarding file and wanted to
 
 
 
+
+
+
+
+
+
+#### USER STORIES:
+
+ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
+
+
+##### unauthenticated
+
+They see the library main page and can view and search and filter books/media.  They can click on media to see its modal that contains it cover image and public metadata.
+
+The grid of media is also able to be navigated with keyboard navigation of pressing tab to advance along and shift tab to go move back.  The item will have a border to indicate that it is selected.  Pressing space while it is selected brings up its modal as well.
+
+If the unauthenticated attempts to click the 'reserve' button on the media item, they will be directed to a sign up / log in view.
+
+##### authenticated member
+
+they have the same abilites as unauthenticated, except that member can click the reserve button and have it mark the book as reserved by them if it is available.
+
+The member also has an area they can navigate to that shows 'my checked out items' or something with similar name, that shows them a grid or column stack of cards that show the media items currently checked out by them, and currently reserved by them, with 'due date' showing under each or to the right of each, which can also be clicked on to open that media's cover image and metadata modal.  in this example, the modal shows extra information, like 'due date'
+
+##### authenticated desk-librarian
+
+the authenticated desk-librarian works at the customer service desk and helps identify members in person and takes books / media in hand and looks them up in order to bring up their modal and enter (or look up with search assist features) a user id to act as though they are writing the id in from reading a library card in hand
+
+can see the media and their metadata, except they can also see who the book is checked out by if they open the media modal they are able to press a 'check out' button and provide a member user's id to it so that the book can be marked as checked out by that person and sets a due date for 2 weeks out from the current date,
+
+they also the ability to press a check in button that changes the media's state back and clears out the due date and the checked_out_by fields
+
+
+##### authenticated admin-librarian
+
+this user is the superuser who is able to add a new book or media item to the collection.  This means that on the main view, they see the collection and can filter it, but they also have an Add New Media button that brings up a media modal that lets them fill in the fields for what it is.
+
+on the modal, they can press save or cancel
+
+when loading media in a modal that has already been saved previously, there is a button to edit/update which brings it back to the modal that can modify the fields
+
+there is also a delete media item button, which if clicked, has a confirmation popup (one that can either be approved by pressing the space bar, or be silenced for the next 10 minutes to help do batches of work)
+
+the admin librarian can also press the delete key
+
+Their view of the media modal shows everything about its metadata, including other user IDs that have signed it out and what its due date is.  
+
+
+#### Checking for any remaining undiscussed areas to get right to avoid having to rebuild later
+
+Investigate whether there is anything else undiscussed at this stage as useful as sure user flow stories.
+
+For each topic considered, if it's important but I decide not to include it for the purposes of scope or time constraints, I want to document the reasons why so that it's known that it was not forgotten about.
+
+
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
@@ -463,61 +519,6 @@ run formatter on all ts files
 
 
 ```
-
-
-
-
-
-
-#### USER STORIES:
-
-ask the agent to help you determine user experience stories / flows at this point so that they inform the spec
-
-
-##### unauthenticated
-
-They see the library main page and can view and search and filter books/media.  They can click on media to see its modal that contains it cover image and public metadata.
-
-The grid of media is also able to be navigated with keyboard navigation of pressing tab to advance along and shift tab to go move back.  The item will have a border to indicate that it is selected.  Pressing space while it is selected brings up its modal as well.
-
-If the unauthenticated attempts to click the 'reserve' button on the media item, they will be directed to a sign up / log in view.
-
-##### authenticated member
-
-they have the same abilites as unauthenticated, except that member can click the reserve button and have it mark the book as reserved by them if it is available.
-
-The member also has an area they can navigate to that shows 'my checked out items' or something with similar name, that shows them a grid or column stack of cards that show the media items currently checked out by them, and currently reserved by them, with 'due date' showing under each or to the right of each, which can also be clicked on to open that media's cover image and metadata modal.  in this example, the modal shows extra information, like 'due date'
-
-##### authenticated desk-librarian
-
-the authenticated desk-librarian works at the customer service desk and helps identify members in person and takes books / media in hand and looks them up in order to bring up their modal and enter (or look up with search assist features) a user id to act as though they are writing the id in from reading a library card in hand
-
-can see the media and their metadata, except they can also see who the book is checked out by if they open the media modal they are able to press a 'check out' button and provide a member user's id to it so that the book can be marked as checked out by that person and sets a due date for 2 weeks out from the current date,
-
-they also the ability to press a check in button that changes the media's state back and clears out the due date and the checked_out_by fields
-
-
-##### authenticated admin-librarian
-
-this user is the superuser who is able to add a new book or media item to the collection.  This means that on the main view, they see the collection and can filter it, but they also have an Add New Media button that brings up a media modal that lets them fill in the fields for what it is.
-
-on the modal, they can press save or cancel
-
-when loading media in a modal that has already been saved previously, there is a button to edit/update which brings it back to the modal that can modify the fields
-
-there is also a delete media item button, which if clicked, has a confirmation popup (one that can either be approved by pressing the space bar, or be silenced for the next 10 minutes to help do batches of work)
-
-the admin librarian can also press the delete key
-
-Their view of the media modal shows everything about its metadata, including other user IDs that have signed it out and what its due date is.  
-
-
-#### Checking for any remaining undiscussed areas to get right to avoid having to rebuild later
-
-Investigate whether there is anything else undiscussed at this stage as useful as sure user flow stories.
-
-For each topic considered, if it's important but I decide not to include it for the purposes of scope or time constraints, I want to document the reasons why so that it's known that it was not forgotten about.
-
 
 
 

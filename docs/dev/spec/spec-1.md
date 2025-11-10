@@ -15,19 +15,21 @@ _Last updated: 2025-11-10_
 
 | Persona | Capabilities | Supabase `profiles.role` | Notes |
 | --- | --- | --- | --- |
-| Guest | Browse catalog (read-only), view basic metadata | `guest` | No authentication required. Anonymous sessions mapped to a synthetic guest profile for logging.
-| Member | All guest abilities + reserve items, view personal loans, renew/return self-check items | `member` | Authenticated via Supabase. Cannot mutate catalog metadata.
-| Desk Librarian | All member abilities + perform manual checkout/check-in, override due dates, manage reservations | `librarian_desk` | Primary circulation role. Needs RLS policies to update loan state.
-| Library Admin | Full CRUD on catalog, manage seed data, view audit logs, manage roles | `admin` | Small population with elevated privileges. Responsible for data integrity.
+| Guest | Browse catalog (read-only), view basic metadata | `guest` | Unauthenticated visitor. No row in `profiles`; treated as synthetic client-only role for RLS checks.
+| Member | All guest abilities + reserve items, view personal loans, renew/return self-check items | `member` | Default role for newly created Supabase accounts. Cannot mutate catalog metadata.
+| Librarian | All member abilities + perform manual checkout/check-in, override due dates, manage reservations | `librarian` | Circulation staff operating on behalf of members. Requires elevated RLS permissions.
+| Admin | Full CRUD on catalog, manage seed data, view audit logs, manage roles | `admin` | Supervisors with authority over catalog and configuration.
 
-### Role-based access control (RBAC)
+### Access control & session flow
 
-- Supabase Auth provides user identities; `profiles` table (FK to `auth.users`) stores the role enum above.
-- Supabase Row Level Security (RLS) policies enforce access:
-  - Catalog reads are public; writes require `librarian_desk` or `admin`.
-  - Loan mutations require membership in the transaction (member or librarian desk/admin).
-  - Admin-only endpoints guarded by `hasRole(['admin'])` middleware in Nuxt server.
-- Desk librarians act on behalf of members during circulation; audit trails must record `processed_by`.
+- Roles: `guest` (session-only), `member`, `librarian`, `admin`.
+- `profiles.role` defaults to `member`; promotion to `librarian` or `admin` happens through admin tooling and inherits lower-role abilities.
+- Guests are not persisted; unauthenticated visits run in a client-only guest context with read-only Nuxt server policies and get prompted to sign in for reservations/checkouts.
+- Supabase RLS policies enforce:
+  - Catalog reads are public; writes require `librarian` or `admin`.
+  - Members can mutate only their own reservations and active loans.
+  - Librarians may act on behalf of members for circulation flows, and actions record `processed_by` for audit.
+  - Admin-only endpoints guarded by middleware requiring `admin` role.
 
 ## 3. System Architecture
 
@@ -199,17 +201,17 @@ Every route implements:
 
 ### Essential decisions to secure before coding
 
-1. **Personas & minimal RBAC contract** – Confirm the four roles (guest, member, desk librarian, admin); map to Supabase `profiles.role`; define baseline RLS allow/deny rules.
-2. **Catalog data contract** – Finalise required columns, `jsonb` metadata conventions, and ship the first Supabase migration; lock validation rules for title/creator, availability state, pagination defaults.
-3. **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
-4. **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
-5. **Nuxt shell, routing, and middleware** – Choose SSR/SSG/CSR per route, define layout zones, and specify route middleware for role gating/loading states; clarify hydration rules and Supabase client availability on server/client.
-6. **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
-7. **Nuxt UI/Icon/Image usage plan** – Decide how `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` integrate with Tailwind utilities for layouts, cards, navigation, and media; capture preferred components/patterns so agents default to these modules instead of rebuilding fundamentals.
-8. **Client data layer contract** – List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and Zod validation schemas; document error handling, retry/backoff, and integration test expectations.
-9. **Server API responsibilities** – Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage; capture idempotency expectations and failure modes.
-10. **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
-11. **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
+1. [x] **Personas & minimal RBAC contract** – Confirm the four roles (guest, member, librarian, admin); map to Supabase `profiles.role`; define baseline RLS allow/deny rules.
+2. [ ] **Catalog data contract** – Finalise required columns, `jsonb` metadata conventions, and ship the first Supabase migration; lock validation rules for title/creator, availability state, pagination defaults.
+3. [ ] **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
+4. [ ] **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
+5. [ ] **Nuxt shell, routing, and middleware** – Choose SSR/SSG/CSR per route, define layout zones, and specify route middleware for role gating/loading states; clarify hydration rules and Supabase client availability on server/client.
+6. [ ] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
+7. [ ] **Nuxt UI/Icon/Image usage plan** – Decide how `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` integrate with Tailwind utilities for layouts, cards, navigation, and media; capture preferred components/patterns so agents default to these modules instead of rebuilding fundamentals.
+8. [ ] **Client data layer contract** – List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and Zod validation schemas; document error handling, retry/backoff, and integration test expectations.
+9. [ ] **Server API responsibilities** – Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage; capture idempotency expectations and failure modes.
+10. [ ] **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
+11. [ ] **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
 
 ### Defer until after the prototype is working
 
