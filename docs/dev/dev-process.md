@@ -462,6 +462,51 @@ Investigate whether there is anything else undiscussed at this stage as useful a
 For each topic considered, if it's important but I decide not to include it for the purposes of scope or time constraints, I want to document the reasons why so that it's known that it was not forgotten about.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+#### Make the spec file
+
+Might save iterative versions along the way for reference or as checkpoints.
+
+
+#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
+
+
+
+#### make sure to do test guide files and possibly test-plan files once spec is done
+
+
+#### Review the data schema to check for errors or mistakes
+
+Double check everything before making any hard details for the agents to build out
+
+By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
+
+##### Verify this, modify schema to fix anything that needs it:
+
+**Review findings**
+
+- `CREATE TYPE` lacks an `IF NOT EXISTS` safeguard; rerunning the migration will fail once enums already exist.  
+- `gen_random_uuid()` requires the `pgcrypto` extension; document or enable it.  
+- `users.email` and `role` are nullable/unconstrained; consider `NOT NULL`, unique index on email, or an enum for roles.  
+- `media.format` (free-text) and `book_format` enums can drift; enforce one source of truth or validate values.  
+- `media.checked_out` duplicates the active-loan state; introduce triggers or a view to avoid divergence.  
+- `updated_at` columns never auto-refresh; add triggers/defaults if the timestamp is meant to track changes.  
+- Sample inserts accept NULL `creator`/`title` etc. only via schema constraints; ensure future data respects NOT NULLs.
+
+
+
+
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
@@ -519,43 +564,6 @@ run formatter on all ts files
 
 
 ```
-
-
-
-#### Review the data schema to check for errors or mistakes
-
-Double check everything before making any hard details for the agents to build out
-
-By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
-
-
-##### Verify this, modify schema to fix anything that needs it:
-
-**Review findings**
-
-- `CREATE TYPE` lacks an `IF NOT EXISTS` safeguard; rerunning the migration will fail once enums already exist.  
-- `gen_random_uuid()` requires the `pgcrypto` extension; document or enable it.  
-- `users.email` and `role` are nullable/unconstrained; consider `NOT NULL`, unique index on email, or an enum for roles.  
-- `media.format` (free-text) and `book_format` enums can drift; enforce one source of truth or validate values.  
-- `media.checked_out` duplicates the active-loan state; introduce triggers or a view to avoid divergence.  
-- `updated_at` columns never auto-refresh; add triggers/defaults if the timestamp is meant to track changes.  
-- Sample inserts accept NULL `creator`/`title` etc. only via schema constraints; ensure future data respects NOT NULLs.
-
-
-
-
-
-
-#### Make the spec file
-
-Might save iterative versions along the way for reference or as checkpoints.
-
-
-#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
-
-
-
-#### make sure to do test guide files and possibly test-plan files once spec is done
 
 
 

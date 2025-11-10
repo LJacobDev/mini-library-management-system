@@ -50,7 +50,7 @@ _Last updated: 2025-11-10_
 
 ### 3.3 Data Contracts
 
-- `media` table: canonical catalog entries with metadata, availability flags, and JSONB `metadata` for extensibility.
+- `media` table: canonical catalog entries with metadata, availability flags, and JSONB `metadata` for extensibility. Each physical/digital copy lives in its own row to keep the demonstration build simple, with a note that production systems may prefer separate title vs. copy tables.
 - `media_loans` table: immutable loan history with unique constraint ensuring one active loan per item.
 - `users` table: optional mirror of Supabase auth identities for joins; future-proofed for deletions via `deleted_at`.
 - **Validation checkpoint**: Before locking schema-derived decisions, run the SQL in Supabase (or a local Postgres) to confirm types, enums, and indexes create successfully and adjust the spec with any findings.
@@ -80,16 +80,19 @@ _Last updated: 2025-11-10_
 - Catalog view supports search (title, creator, ISBN) and filters (media type, availability, genre) with pagination (default 20/page).
 - Detail page shows full metadata, availability, loan history snippet (admins), reservation status, related items (basic same-genre list).
 - Empty states guide action (e.g., "No results" with suggestions).
+- Members can cancel pending reservations from detail or dashboard views; edit of existing holds is deferred to a post-MVP enhancement.
 
 ### 4.3 Circulation (Members & Librarians)
 
 - Members:
   - Request reservation/hold when item is unavailable.
   - View current loans with due dates, renew if allowed (once, before due date, no existing holds).
+  - Cancel pending reservations directly from the reservations list with confirmation toast.
   - Return items (self-check-in) for digital/locker workflows; updates loan record and catalog flag.
 - Desk librarians:
   - Checkout flow: scan/search item, select member, set due date (default 14 days, override allowed), update `media` and `media_loans`.
-  - Check-in flow: mark item returned, optionally add note, auto-clear reservations queue.
+  - Check-in flow: mark item returned, optionally add note, ability to mark 'lost or damaged', auto-clear reservations queue.
+  - Active loans table exposes actions to adjust due dates or undo a mistaken checkout (reverses the `media_loans` record and frees the copy); optional note field captures the reason when provided.
   - Overdue handling: mark as returned late, optionally waive fines (fines tracked in future release).
 - Admin oversight: view reservation queues, manually reorder or cancel holds, resolve conflicts.
 
@@ -109,9 +112,9 @@ _Last updated: 2025-11-10_
 
 1. **Guest discovery**: Load landing → browse catalog → view item detail.
 2. **Member reservation**: Sign in → find checked-out book → click "Place hold" → confirm → receive toast + entry in `/account/reservations`.
-3. **Member renewal**: Visit `/account/loans` → select item → click "Renew" → backend validates no conflicts → new due date reflected.
-4. **Desk checkout**: Librarian opens `/desk/checkout` → search member → scan/select item → confirm due date → receipt toast and optional printable slip.
-5. **Admin catalog update**: Admin visits `/admin/media/:id/edit` → adjusts metadata → saves → change reflected in catalog.
+3. **Member renewal/cancel**: Visit `/account/loans` → select item → click "Renew" → backend validates no conflicts → new due date reflected; from `/account/reservations` use "Cancel" to drop a pending hold.
+4. **Desk checkout correction**: Librarian opens `/desk/checkout` → search member → scan/select item → confirm due date → receipt toast and optional printable slip → if error discovered, open active loans, choose "Undo checkout" or "Adjust due date" and optionally add note.
+5. **Admin catalog update**: Admin visits `/admin/media/:id/edit` → adjusts metadata → saves → change reflected in catalog. Cancel button safely exits without persisting changes.
 
 Edge cases for each journey tracked via `docs/dev/edge-case-checklist.md`; tests must cover empty results, session expiry mid-action, conflicting holds, and permission denials.
 
@@ -162,6 +165,8 @@ Every route implements:
 - Page landmarks (`header`, `main`, `nav`, `footer`) enforced.
 - Toasts announced via `aria-live` regions.
 - Forms provide inline validation messages and summary near submit button.
+- Submit buttons stay disabled until required fields validate; errors surface both inline (field-level helper text/icons) and in a summary banner/toast for screen reader awareness. Each form includes explicit `Cancel`/`Back` actions that respect keyboard navigation.
+- Error states covered: search returning no results (with recovery guidance), reservation conflicts (already on hold), permission denied prompts, network/server failures with retry, and offline fallbacks with cached data where feasible.
 - High-contrast checks run via automated tests (axe-core) once pipeline configured (post-MVP but placeholders added).
 
 ## 10. Testing & Quality Strategy
@@ -202,8 +207,8 @@ Every route implements:
 ### Essential decisions to secure before coding
 
 1. [x] **Personas & minimal RBAC contract** – Confirm the four roles (guest, member, librarian, admin); map to Supabase `profiles.role`; define baseline RLS allow/deny rules.
-2. [ ] **Catalog data contract** – Finalise required columns, `jsonb` metadata conventions, and ship the first Supabase migration; lock validation rules for title/creator, availability state, pagination defaults.
-3. [ ] **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
+2. [x] **Catalog data contract** – Finalise required columns, `jsonb` metadata conventions, and ship the first Supabase migration; lock validation rules for title/creator, availability state, pagination defaults.
+3. [x] **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
 4. [ ] **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
 5. [ ] **Nuxt shell, routing, and middleware** – Choose SSR/SSG/CSR per route, define layout zones, and specify route middleware for role gating/loading states; clarify hydration rules and Supabase client availability on server/client.
 6. [ ] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
