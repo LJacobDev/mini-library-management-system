@@ -5,7 +5,6 @@
       <h1 class="text-4xl font-extrabold tracking-tight text-cyan-200">
         Mini Library Management System
       </h1>
-      <p class="text-lg text-cyan-300">tailwind test</p>
       <TailwindStatus />
     </div>
   </div>

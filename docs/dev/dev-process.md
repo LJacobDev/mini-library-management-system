@@ -316,6 +316,18 @@ Tailwind config is elusive and suggestions are conflicting between LLMs and tail
 
 Lots of conflicts in documentation sources from tailwind to nuxt docs, LLMs disagree - finally found in [stackoverflow](https://stackoverflow.com/questions/79733577/how-to-use-install-tailwind-css-in-nuxt-4) someone who explained that it seems to need @nuxt/ui to also be imported in main.css for it to make tailwind v4 work.  Regarding tailwind v4, it seemed difficult to get the intended v3 config set up, and it's currently unclear why it was so different with Nuxt than with other frameworks.
 
+**Strange issue with Tailwind content scanning**.  Documentation and LLMs statements also seem to be conflicted about why tailwind content scanning is picking up my /app/app.vue classes but not the ones in /components/TailwindStatus.vue, even when tailwind.config.ts is trying to target it.  In order to overcome this now and understand it later, I moved /components into /app/components and the content scanning is picking it up, though other than that I would have preferred to keep /components where it was.
+
+
+
+
+#### Do a test deployment on vercel
+
+Deployed current branch directly onto vercel
+
+This is not the same as having vercel take updated versions of main through CICD and that's what I'd like it to end up like, but at least I can say that the Nuxt app runs and renders in prod deployment.
+
+
 
 
 
@@ -324,10 +336,10 @@ Lots of conflicts in documentation sources from tailwind to nuxt docs, LLMs disa
 I have a few priorities to juggle at the same time:
 
 
-- test run this on vercel now that tailwind renders
-
 
 - I'd like to fix the fact that path aliases aren't working yet because I will proably want to customize them to help cover CICD situations
+
+- also, right now I have to use '../app/components' to import things, and I'd rather a path alias for this
 
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
@@ -335,6 +347,8 @@ I have a few priorities to juggle at the same time:
 - it says that these should be talked about before the user experience flows are addressed
 
 - I want to set up issue templates, PR templates before the implementation agents start their building
+
+- I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
 
 
 -still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
