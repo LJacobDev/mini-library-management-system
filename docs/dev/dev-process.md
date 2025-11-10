@@ -263,11 +263,11 @@ I want to install spec kit and try the code review cli feature on here
 
 I want to test its output in the console
 
-then I want to add a github workflow that makes it comment on pull requests
+Then I want to add a github workflow that makes it comment on pull requests
 
-then I want to make a test branch and PR it to main to see what it does
+Then I want to make a test branch and PR it to main to see what it does
 
-then all I have to do is work down to the final spec and get this made
+Then all I have to do is work down to the final spec and get this made
 
 **Unexpected change:**
 
@@ -275,28 +275,59 @@ I was told by gpt-5 mini in both vscode and web search engines that @github/spec
 
 I'll discontinue working with it because it might have been a hallucination or a misunderstanding somehow.  It won't help things get done faster, abandoning it until there's time to see what it really works like.
 
+I can still use @workspace and ask Codex in Copilot for code reviews which seem to help in the meantime.
+
+
+#### Performing a @workspace code review
+
+Codex told me the following, when I did the review on a simply empty / initialized Nuxt application scaffold:
+
+"Generated build artifacts are committed under .nuxt/; add the folder to .gitignore and clean the history to avoid churn and repo bloat."
+
+-- the above statement is false, it was already in .gitignore
+
+"There are no automated tests or scripts in package.json to enforce the edge-case-first/TDD workflow described in dev-process.md; add unit/integration test scaffolding before feature work continues."
+
+"The Nuxt scaffold lacks type-safe runtime config typings and module setup in nuxt.config.ts; align it with the documented Supabase/AI plans so future agents have a stable contract."
+
+"Documentation is thorough, but consolidate duplicated planning content across dev-process.md and agent-manager-context.md to reduce drift and keep a single source of truth."
+
+
+
+#### I want to install tailwind 3 and possibly a nuxt tailwind module also
+
+I've worked out that tailwindcss should coexist well with nuxt ui components but tailwindcss, especiall v3, seems to be friendly to LLMs for fast development.
+
+I've installed tailwindcss and the nuxt tailwind module, but I notice that when I asked copilot to help set config files for it, it was doing strange things like getting the paths a little wrong.  I restored a checkpoint and tried again with Codex as the model, thinking it was because the number of files I had being changed all at once would be tough for GPT-5 mini to get right.
+
+
+
+
+
 
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
-- have the current working agent do a context section 2 update (APPEND DON'T EDIT)
 
-- I want to install tailwind 3 and possibly a nuxt tailwind module also
-
-- figure out if using that image transformation CDN for performance (probably overengineering)
-
-    ... there is a local ipx transformer for this that I'll use
-
-
-- then possibly close that chat session and move on with the next things
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
+
 - it says that these should be talked about before the user experience flows are addressed
+
 - I want to set up issue templates, PR templates before the implementation agents start their building
+
+
 -still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
 
+
 I'm aware that having truly complete docs might not be happening unless I take a moment to make a strategy for them and I'd like to do that as soon as I can as long as I get the prototype made and working as a priority over full docs
+
+
+Don't forget to add prompts you're using often or find that are helpful into the prompt library
+
+Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
+
 
 ```
 
@@ -471,6 +502,8 @@ Later on, I discovered that it could do repo wide code review, which is what I w
 Due to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
 
 **It turned out to not be helpful for the things I expected.**  It's possible the llms hallucinated that it could do code review and be installed as a node package.  I'll figure this out after I get the main objectives of this project done.
+
+Github Copilot with Codex model appears to do decent but imperfect code reivews using @workspace chat extension at least for now as well.
 
 
 #### Taking a moment to explore if any more nuxt modules exist that could help
