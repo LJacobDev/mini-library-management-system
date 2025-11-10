@@ -389,8 +389,9 @@ spec-preparation-list.md is the 'everything that we could ever have to think abo
 
 
 
+It has grouped things into essential buckets like what to do early on to make sure the prototype works, and things to do later on.  It included optimistic UI and empty states as something to deal with later, even though I'd almost want that as a minimum.
 
-
+I'm about to go through spec-preparation-list-essential's questions on at a time and resolve them while converting the decisions into a spec-1.md file, leading to a spec-final.md file.
 
 
 
@@ -405,7 +406,6 @@ I have a few priorities to juggle at the same time:
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 
-- it says that these should be talked about before the user experience flows are addressed
 
 
 -- when that part is done move these temp notes down to keep with the flow of the original plan with these as reminders
@@ -436,6 +436,8 @@ run formatter on all ts files
 
 
 - add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
+
+- I'd like to clean up the tailwindcss doc that is outdated now that v3 isn't being used
 
 
 ```

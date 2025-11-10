@@ -1,0 +1,38 @@
+[
+    {
+        "action" : "update-agent-context-file",
+        "prompt" : "Please take your new understanding of the application and our progress and goals with it and everything we've just talked about, and edit your agent context file to update its section 2 with information about what has been done and why, the current state and goals, and what the next steps are and things to remember while doing them.  Then put a section 3 update where you append a summary of the things done.."
+    },
+    {
+        "action" : "build-spec-preparation-list",
+        "prompt" : "I'd like to take our current understanding of the application and start to drill down to a locked spec that we can hand off to other developers to implement.  Your goal now is to build a /docs/dev/spec-preparation-list.md file that includes a thorough list of every possible thing that could be helpful to planning our work so that we don't end up having to rebuild the app part way through.  Include everything that could relate to UI, UX, security, maintainability, code organization, documentation, or any other factor or consideration that can cause this app to function well, look well, feel intuitive and accessible, etc.  Anything that we have not yet explicitly addressed, I want it to be included in this list so that it is exhaustive"
+    },
+    {
+        "action" : "build-spec-preparation-list-essential",
+        "prompt" : "Take the contents of spec-preparation-list and arrange them into groups, the first being things that must not be skipped or deferred in order to reach a working prototype as fast as possible.  Then a second group of things that are enhancements that are high impact and take little time and present low risk to add.  Then a third group containing all other things, especially ones that would take a long time to implement or where it's uncertain that it would be able to be done without complications."
+    },
+    {
+        "action" : "begin-turning-spec-preparation-list-essential-into-spec",
+        "prompt" : "We are about to enter a process of iterating on the spec until we can lock in a complete and robust version of it.  While building the spec, I want you start by creating a /docs/dev/spec/spec-1.md file that has a full spec that matches our current understanding of the application and plan, and then has a second section below where it lists all of the considerations in /docs/dev/spec-preparation-essential.md in their order of priority.\n\nNext, I want you to ask me questions about any yet unaddressed concern or idea, one at a time, and I'll discuss each one with you and we'll decide on a plan.  At reasonable checkpoints, I'd like new files to be made, like spec-2.md and so on, showing the evolution of the full spec as decisions are made.\n\nI want the list of considerations to be able handled such that all ideas that get included for this project can be edited into the full spec and moved up from the bottom section.  Any items that were deferred until a later point, or considered but were decided not to include at all, can be left at the bottom, so that the final iteration which will be called spec-final.md, can use them as a list of things that were considered as enhancements to this project, to show that they were thought about and not overlooked.  Do you have any questions or clarifications before we begin?"
+    },
+    {
+        "action" : "generate-github-templates",
+        "prompt" : "Please suggest to me what we can use as a github issue template and PR template that has fields and structure that will help us build this application according to our goals that it is well built but that we can also move through it at a high velocity, so these templates must not introduce pedantic friction that makes work slow down."
+    },
+    {
+        "TODO" : "generate-implementation-agent-task-lists",
+        "prompt" : ""
+    },
+    {
+        "TODO" : "check the file configuration again - I think I wanted them to have a file made in dev/spec but then also a copy of that file with checkboxes to fill in as a working sheet of it for the agent"
+    },
+    {
+        "TODO" : "remember that this spec is going to be broken into three orthogonal responsibilities for three implementation agents to perform"
+    },
+    {
+        "TODO" : "remember to make the steps as discrete as possible, and to indicate if one requires that another agent's own progress reaches a certain point before it can continue with this one"
+    },
+    {
+        "TODO" : "arrange a prompt / method that can have the manager look at each implementation agent's context file and communicate whatever things there are that need to be shared between them to inform about project wide changes or about what one needs to know from another for their role to continue working"
+    }
+]
