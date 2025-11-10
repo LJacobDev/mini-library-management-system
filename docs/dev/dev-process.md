@@ -331,27 +331,44 @@ This is not the same as having vercel take updated versions of main through CICD
 
 
 
+#### still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
+
+
+It told me about /docs/api/openapi.yaml that could be made for an HTTP contract, and helps decide what response codes to send and a lot of helpful things.
+
+I like this, and want this done
+
+
+The idea of a wireframe.md that has the pages views and sections represented as headers and bullet points is interesting but I might not need it here.
+
+There are some interesting test guide files and test tracking plans that I might use.
+
+
+
+
+
+
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
 
 
-- I'd like to fix the fact that path aliases aren't working yet because I will proably want to customize them to help cover CICD situations
-
-- also, right now I have to use '../app/components' to import things, and I'd rather a path alias for this
 
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 
 - it says that these should be talked about before the user experience flows are addressed
 
+
+-- when that part is done move these temp notes down to keep with the flow of the original plan with these as reminders
+
+
 - I want to set up issue templates, PR templates before the implementation agents start their building
 
 - I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
 
 
--still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
 
 
 I'm aware that having truly complete docs might not be happening unless I take a moment to make a strategy for them and I'd like to do that as soon as I can as long as I get the prototype made and working as a priority over full docs
@@ -362,6 +379,13 @@ Don't forget to add prompts you're using often or find that are helpful into the
 Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
 
 - remember that tailwindcss forms and tailwindcss typography is available if you want it
+
+- something is strange with path aliases.  Nuxt is supposed to use ~ for src folder and @ for root folder, but in mine it seems like ~ and @ both point to /app/ and so I seem to need to move my components directory into app if I want to use aliases.
+
+I think that if I keep my intentional use of ~/ as meaning app folder, and @ as to mean the root, then if I keep using @/components then I should be able to fix the @ targeting and move components back if I want to.  For now I just want the prototype to work and make sure it doesn't break when CICD happens so I'll keep components in /app/ to get moving on making the functionality, UI, etc.
+
+
+run formatter on all ts files
 
 
 ```

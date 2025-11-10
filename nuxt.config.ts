@@ -1,8 +1,4 @@
 import { defineNuxtConfig } from "nuxt/config";
-import { dirname, resolve } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -11,7 +7,7 @@ export default defineNuxtConfig({
 
   modules: ["@nuxt/eslint", "@nuxt/image", "@nuxt/test-utils", "@nuxt/ui"],
 
-  css: [resolve(__dirname, "assets/css/main.css")],
+  css: ["~/assets/css/main.css"],
 
   ui: {
     prefix: "Nuxt",

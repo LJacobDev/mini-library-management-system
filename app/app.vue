@@ -11,5 +11,5 @@
 </template>
 
 <script setup>
-  import TailwindStatus from '../app/components/TailwindStatus.vue'
+  import TailwindStatus from '@/components/TailwindStatus.vue'
 </script>
