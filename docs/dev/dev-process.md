@@ -232,20 +232,71 @@ Spec kit appears to be able to be installed for code review without requiring de
 Spec kit appears to also be able to take over where I currently am in a fairly seamless looking way as far as I can currently tell, and should likely help me arrive at much better task list files, and it seems that it is able to not break my current plan of agent responsibilities and instructions.
 
 
+#### I investigated the experimental Nuxt MCP in the GitHub Registry again now that I'm using Nuxt
+
+The manager agent checked its github README, and is warning me that it is opinionated and might not entirely help our goals or workflow choices.  It says to try making an experimental project in another folder to test it out before applying it here.
+
+I'll hold off on using it for now but I want to follow it in case it helps me work better in Nuxt.
 
 
 
+#### Initializing Nuxt App (in order to test spec kit but also because it's chosen as tech)
+
+Nuxt modules to use: eslint, icon, image, test-utils, ui (component library)
+
+    ui module will constrain visual choices but will be better and faster for my goals here
+
+    find out how to make good use of icon and image modules in including them
+
+    run dev server
+
+    Running the dev server made me see their default page which drew my attention to their modules link
+
+    I notice that github copilot was not able to enumerate the categories of modules from the vscode chat but a web browser search engine running same model was able to do it.  Continuing to investigate other modules, perhaps there's something else that can help this project...
+
+    Some possibly useful modules identified by having a search engine llm check for me and doing some back and forth between the two chat sessions, like the tailwindcss integration and devtools.
+
+
+#### Installing spec kit
+
+I want to install spec kit and try the code review cli feature on here
+
+I want to test its output in the console
+
+then I want to add a github workflow that makes it comment on pull requests
+
+then I want to make a test branch and PR it to main to see what it does
+
+then all I have to do is work down to the final spec and get this made
+
+**Unexpected change:**
+
+I was told by gpt-5 mini in both vscode and web search engines that @github/spec-kit would be an npm package that I could use to do CLI based code review and automatic github actions code review like Codex can do, but it seems based on the actual github repo for spec-kit along with linking copilot to that page to check it, that there is no npm package like this at all and that spec-kit works very differently.
+
+I'll discontinue working with it because it might have been a hallucination or a misunderstanding somehow.  It won't help things get done faster, abandoning it until there's time to see what it really works like.
 
 
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
+- have the current working agent do a context section 2 update (APPEND DON'T EDIT)
+
+- I want to install tailwind 3 and possibly a nuxt tailwind module also
+
+- figure out if using that image transformation CDN for performance (probably overengineering)
+
+    ... there is a local ipx transformer for this that I'll use
+
+
+- then possibly close that chat session and move on with the next things
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 - it says that these should be talked about before the user experience flows are addressed
 - I want to set up issue templates, PR templates before the implementation agents start their building
 -still take a moment to look into what those other tech agnostic files could be, because some of them look potentially useful like adding docs about the tests or having a ux/wireframes file
+
+I'm aware that having truly complete docs might not be happening unless I take a moment to make a strategy for them and I'd like to do that as soon as I can as long as I get the prototype made and working as a priority over full docs
 
 ```
 
@@ -417,4 +468,17 @@ My plan has been to do my own spec driven workflow even though I was recently to
 
 Later on, I discovered that it could do repo wide code review, which is what I wanted Codex for.
 
- stiDue to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
+Due to that it now it is worthwhile to investigate using spec kit at least for that purpose, which will also get me closer to using its workflows for development, as I see that they are more robust versions of the workflow tools that I've been doing here from scratch.
+
+**It turned out to not be helpful for the things I expected.**  It's possible the llms hallucinated that it could do code review and be installed as a node package.  I'll figure this out after I get the main objectives of this project done.
+
+
+#### Taking a moment to explore if any more nuxt modules exist that could help
+
+I noticed when I saw the Nuxt 'Welcome' page in the dev server, it mentions a modules link.  I saw that there are around 300 modules.  I found that VCCode Github Copilot didn't seem to be able to search the site for module names, but using a web browser search engine was able to get me a list of the modules categories.
+
+Then I gave those categories to copilot, and it was able to narrow down ones that might have modules that facilitate this project's success.
+
+Then I gave that list back to the web browser chat instance, and it retrieved a list of modules that might actually help by name and category.
+
+From this, copilot was able to identify that nuxt has a tailwind v3 integration, and pointed out their devtools module, and addressed some auth modules that might help if I need something beyond what I can get with the supabase module.

@@ -22,6 +22,10 @@ If there is any uncertainty about an important consideration, or about what to d
 If you're doing something that you're not confident about, tell me that you have a low confidence in your ability to complete the task and ask for help so that I can do it.
 
 
+# The application is being build using Nuxt
+
+Please refer to https://nuxt.com/docs as the most valid source of current truth about Nuxt and anything relating to building with it, configuring it, testing, and when we're troubleshooting and debugging.
+
 
 # Edge cases and Test Driven Development (TDD) Approach
 
@@ -29,3 +33,10 @@ This project is to be done in a way that prioritizes Test Driven Development (TD
 
 Please see /docs/dev/edge-case-first-checklist.md for the full edge-case-first checklist that should be used to guide test generation and feature implementation.
 
+
+
+# UI considerations
+
+This project aims to leverage nuxt ui components wherever they're helpful, but any new components made by agents here are to prefer using tailwindcss wherever it facilitates rapid UI development toward having a prototype that also looks excellent.  However when it is more helpful to use Vue 3 Single File Components `<style>` blocks, use them instead (for things like animations or other things they help facilitate where TailwindCSS is not as helpful)
+
+For further information about considerations, the text at docs/dev/tailwindcss-and-style-block-hybrid-approach.md

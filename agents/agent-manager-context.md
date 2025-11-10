@@ -106,6 +106,15 @@ Coordination rules:
 - Agent 3 enforces CI checks (lint, unit, integration, contract tests) on every PR and blocks merges on failures.
 - All agents ensure Supabase SQL, server code, prompts, and edge functions remain version-controlled (no hidden logic in Supabase only).
 
+### 2025-11-09 context updates
+
+- Spec-kit exploration dropped: GitHub's `spec-kit` tool is not packaged for npm consumption and doesn't align with our review flow, so the spec will continue to be built manually inside the repo.
+- Agent workflow agreement: each implementation agent will use the GitHub CLI to open an issue, implement the scoped change on a branch, and open a PR for manual review (with optional Codex reviews). Keep this loop in mind when drafting task hand-offs.
+- Styling stack guidance: lock Tailwind CSS to v3 across docs and tooling for now (LLMs align better with v3 directives). Record any future v4 upgrade as an explicit migration task.
+- Nuxt module priorities: plan to integrate `@nuxt/image` (starting with the built-in `ipx` provider, external CDN optional), `@nuxt/ui`, `@nuxt/icon`, `@nuxtjs/tailwindcss`, `@nuxtjs/supabase`, `@nuxt/content`, and `@nuxt/test-utils`. Fonts can leverage `@nuxt/font` (or Fontaine) once the UI palette is finalised.
+- Media handling takeaway: Supabase storage is the source of truth; responsive delivery can rely on `ipx` for prototypes and add a CDN provider later if we need smarter transforms.
+- Nuxt MCP note: the experimental `nuxt-mcp` package remains optional—observe from a sandbox first before considering adoption in the main repo.
+
 ## Open questions for user (needed before final spec)
 
 - **Q1 (roles)** — ANSWERED: Minimal roles (`librarian`, `member`) via `profiles.role` + RLS.
@@ -141,4 +150,5 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-08: Q1 answered — minimal roles chosen (`librarian`, `member`). Implement minimal RBAC via `profiles.role` + RLS. TypeScript preference recorded earlier.
 - 2025-11-08: Schema pivoted to generic `media` table with creator required, optional `book_format`/`language`, and due-date tracking. Index list documented.
 - 2025-11-08: AI requirements clarified — describe-your-need assistant, optional personalised recommendations, librarian analytics Q&A. All LLM calls run server-side with streaming responses and code/prompts stored in repo.
+- 2025-11-09: Dropped spec-kit, locked Tailwind v3 guidance, mapped priority Nuxt modules (image/ipx, ui/icon, tailwind, supabase, content, test-utils), and confirmed agents will follow the GH CLI issue→branch→PR workflow with optional CDN adoption deferred.
 
