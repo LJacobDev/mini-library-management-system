@@ -12,99 +12,85 @@ This is so that both the user and the LLMs involved can read this file in order 
 
 ## Project summary
 
-Mini Library Management System coordinated via multi-agent workflow. The primary UI will be a Vue 3 Composition API client. The backend integration layer is still under evaluation between three options that must remain interoperable:
+Mini Library Management System coordinated via multi-agent workflow. The application is now a Nuxt 3 full-stack project (Vue 3 Composition API on the client, Nitro server routes in-repo) backed by Supabase for Postgres + Auth. All backend logic (server routes, Supabase SQL, OpenAI prompts) must live in the repository.
 
-1. Vue 3 SPA that talks directly to Supabase (Postgres + Auth + Edge Functions).
-2. Vue 3 SPA that talks to a FastAPI service (hosted on Vercel or similar) which in turn uses Supabase for persistence/auth.
-3. Nuxt 3 full-stack (server/API routes in-repo) backed by Supabase.
+High-level goals:
 
-High-level goals (keep stack-agnostic wherever possible):
-
-- Deliver librarian-facing workflows for creating, browsing, searching, checking out, and checking in media items (books, DVDs/videos, audio, other lendable resources) with pagination, filtering, and sorting.
+- Deliver librarian-facing workflows for creating, browsing, searching, reserving, checking out, and checking in media items (books, DVDs/videos, audio, other lendable resources) with pagination, filtering, and sorting.
 - Support multi-copy inventory: every physical/digital copy is a distinct record tracked by UUID so availability and circulation are copy-scoped.
-- Follow TDD / edge-case-first development, ship comprehensive automated tests (unit, integration, accessibility), and keep the API boundary explicit so backend implementations can be swapped without rewriting the UI.
-- Produce a polished, accessible, well-documented portfolio-grade demo with CI/CD, deployment pipeline, seeded demo data, and clear run instructions.
+- Follow TDD / edge-case-first development, ship comprehensive automated tests (unit, integration, accessibility), and keep the API boundary explicit so backend implementations stay swappable if needed.
+- Produce a polished, accessible, well-documented portfolio-grade demo with CI/CD, deployment pipeline (Vercel target), seeded demo data, and clear run instructions.
+- After CRUD + reservations are solid, deliver the AI feature set (describe-your-need search, personalised recommendations, librarian analytics Q&A, all streaming responses). Build the architecture so these endpoints are easy to integrate even if time forces deferral.
 
 ## Manager responsibilities (high level)
 
-- Produce a complete `docs/dev/spec.md` (with milestones, acceptance criteria, AI behaviour definitions) and split work into three orthogonal responsibility tracks.
-- Create `/agents/agent{1,2,3}-responsibility.md` and `/agents/agent{1,2,3}-context.md` aligned with the latest schema and requirements.
-- Maintain shared context files and coordinate overlap points, API contracts, migrations, and AI prompt libraries.
+- Finalise `docs/dev/spec.md` (milestones, acceptance criteria, CRUD → reservations → AI sequencing) and split work into three orthogonal responsibility tracks.
+- Create `/agents/agent{1,2,3}-responsibility.md` and `/agents/agent{1,2,3}-context.md` aligned with the confirmed Nuxt + Supabase stack and schema.
+- Maintain shared context files and coordinate overlap points, API contracts, migrations, prompt libraries, and AI UX expectations (streaming output, role-gated admin queries).
 - Review and validate implementer agents' work against the spec (tests, lint, TDD checks) and ensure outputs remain portfolio-ready.
-- Coordinate AI-powered features (OpenAI integrations, retrieval flows, streaming UX) so that backend and frontend deliverables remain in sync and all prompts/code live in the repo.
+- Track deferred scaffolding (OpenAPI contract, unit-test HOWTO, `.env.example`, wireframes) so they are produced once the spec stabilises, avoiding churn.
 
 ## Current decisions (fixed)
 
-- Frontend: Vue 3 (Composition API) confirmed. Nuxt 3 stays on the table as an alternative if server-rendered routes in-repo become advantageous.
-- Language: TypeScript for frontend, tests, and shared tooling. Python (FastAPI) is acceptable if we adopt the FastAPI backend path.
-- Backend: Supabase Postgres + Auth is required. The request/response handling layer (Supabase Edge Functions vs FastAPI vs Nuxt server routes) remains under evaluation; whichever we pick, all code must live in the repo (no opaque Supabase-only logic).
-- Hosting/CI: GitHub Actions for build/test/deploy. Deployment target (GitHub Pages vs Vercel) stays flexible until backend architecture is locked.
-- Development approach: TDD-first, small feature branches, PR reviews, deliberate agent coordination.
-- API contract: Frontend must talk through a thin API adapter module exposing stable methods; no leaking raw `supabase` clients across the UI.
+- Framework: Nuxt 3 (Vue 3 Composition API + Nitro server routes) already initialised in repo.
+- Backend data/auth: Supabase Postgres + Supabase Auth (mirror SQL/Edge logic in repo; no opaque hosted-only code).
+- Language/tooling: TypeScript across Nuxt app; SQL for migrations; OpenAI integration via server routes.
+- Hosting/CI: Vercel deployment (Nuxt) with GitHub Actions for lint/test/build before deploy.
+- Development approach: TDD-first, small feature branches, PR reviews, GitHub CLI workflow.
+- API contract: Frontend consumes a thin API adapter module hitting Nuxt server routes (which may call Supabase/OpenAI). Adapter returns typed POJOs and has mockable implementations for tests.
+- Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
 
 ## API boundary guidance (migration-friendly)
 
-Keep a thin data-layer abstraction in the frontend so that all calls to Supabase, Edge Functions, FastAPI, or Nuxt server routes are centralised. This module must:
+Keep all Supabase, OpenAI, and server route calls isolated inside a Nuxt server/client adapter (`/lib/api` namespace). This layer must:
 
-- Export a small set of high-level methods (e.g. `listMedia`, `getMediaItem`, `createMediaItem`, `updateMediaItem`, `deleteMediaItem`, `checkOutMediaItem`, `checkInMediaItem`, `searchMedia`, `recommendMedia`, `askCollectionQuestion`).
+- Export high-level methods (`listMedia`, `getMediaItem`, `createMediaItem`, `updateMediaItem`, `deleteMediaItem`, `reserveMediaItem`, `checkOutMediaItem`, `checkInMediaItem`, `searchMedia`, `recommendMedia`, `askCollectionQuestion`).
 - Return plain objects (POJOs) and throw typed errors for failure modes.
-- Not leak Supabase internals outside the module (no direct `supabase` exports in components/composables).
-- Include mocks and a mock adapter (including streaming simulators) for unit/integration tests and offline development.
-
-These rules make it straightforward to swap the backend implementation without touching the UI surface area.
+- Include mocks (including streaming simulators) used by unit/integration tests and storybook-like previews.
+- Avoid leaking Supabase clients or OpenAI objects beyond the adapter.
 
 ## Data model decisions (latest)
 
-- Replace the book-only schema with a single generic `media` table. Supported `media_type` enum values: `book`, `video`, `audio`, `other` (extendable).
-- Each physical/digital copy is its own row identified by UUID (no barcode column needed; UUID is the copy identifier).
-- Required columns: `media_type`, `title`, `creator` (author/director/artist). Optional columns: `isbn`, `subject`, `description`, `cover_url`, `format` (generic string, e.g. dvd), `book_format` (ENUM `paperback`/`hardcover`, nullable), `language` (nullable, default `null`, commonly `EN`), `pages`, `duration_seconds`, `published_at`, `metadata` (jsonb for extensibility).
-- Circulation columns: `checked_out` boolean, `checked_out_by` UUID, `checked_out_at` timestamptz, `due_date` timestamptz (NULL when not checked out).
-- Timestamps: `created_at`, `updated_at` default to `now()`; ensure triggers or application code keep `updated_at` fresh.
-- Index plan:
-  - `idx_media_metadata_gin` — GIN on `metadata` for flexible key/value queries.
-  - `idx_media_title_creator` — B-tree on `lower(title), lower(creator)` for case-insensitive search and dedupe detection.
-  - `idx_media_subject_lower` — B-tree on `lower(subject)` to support subject filters.
-  - `idx_media_media_type` — B-tree on `media_type` for quick partitioning by type.
-  - `idx_media_format` — B-tree on `format` for format-based filtering.
-  - `idx_media_fulltext` — GIN on `to_tsvector('english', ...)` combining title/description/subject/creator to power natural-language search and AI retrieval grounding.
-  - `idx_media_checked_out` — B-tree on `checked_out` for availability queries.
-  - `idx_media_due_date` — Partial B-tree on `due_date` where `checked_out = true` for overdue checks.
-- Migrations live in `db/migrations` (numbered SQL files). Include `CREATE TYPE` statements for enums and separate scripts for indexes. Seed data in `db/seeds/media_seed.sql` should illustrate multiple copies and mixed media types.
+- Generic `media` table (enum `media_type`: `book`, `video`, `audio`, `other`). Each copy is its own UUID row. Optional fields include `genre`, `book_format`, `language`, `pages`, `duration_seconds`, `metadata` jsonb.
+- Circulation columns on `media`: `checked_out`, `checked_out_by`, `checked_out_at`, `due_date` (NULL when not checked out). Automated trigger will sync with `media_loans`.
+- `media_loans` table captures full history (checkout, due, return timestamps, optional note). `user_snapshot` stays nullable to avoid PII retention. Loans survive user/media deletion (`ON DELETE SET NULL`). Partial unique index enforces single active loan per copy.
+- Reservation support will require additional schema (e.g., `media_reservations`) after CRUD lands. Record as TODO in spec.
+- Retention/purge: add TODO to document policy (e.g., anonymise or purge loan data after X years while preserving aggregates). No policy text yet, but track the requirement.
+- Migrations: store in `db/migrations`. Seeds (sample users/media/loans) live in `docs/data/schema.sql` (already created) and may be mirrored in Supabase seed scripts.
 
 ## AI / LLM feature requirements
 
-- Core capability: OpenAI-powered "describe what you want" assistant. Backend must (a) retrieve candidate media via full-text search (or vector search when available), (b) pass a concise candidate list to the model, and (c) return a JSON payload of suggested media.
-- Optional enhancement: personalised recommendation lists using member checkout history (e.g., related subjects, creators). If built, re-rank via OpenAI for richer explanations.
-- Librarian admin assistant: privileged users can ask questions like "How many EN-language DVDs tagged Drama are overdue?" Backend aggregates the data (SQL queries) and feeds structured context to the model so it can respond with suggestions/insights.
-- Streaming responses: any endpoint returning model-generated text must stream tokens so the UI renders incremental output. Agent 2 must implement streaming chat UX with graceful fallbacks.
-- Operational hygiene: redact PII before sending prompts, enforce role checks on admin endpoints, document rate limiting and cost controls, and store prompts/examples in the repo for reproducibility.
+- Describe-your-need assistant: server route performs Supabase full-text search → sends shortlisted items to OpenAI → returns JSON list (streamed tokens) with reasons.
+- Personalised recommendations: leverage historical loans/reservations to build candidate list; optional if time constrained but architecture should permit a later drop-in.
+- Librarian analytics Q&A: admin-only streaming endpoint that aggregates data (SQL) before calling OpenAI for narrative insights.
+- Streaming responses mandatory for all text output endpoints; frontend must render incremental tokens gracefully with fallback copy.
+- Non-negotiables: redact PII, enforce role checks, document rate limiting/cost controls, check prompts/prompt-library into repo.
 
 ## Proposed agent split (3 implementation agents)
 
 - Agent 1 — Data & API layer + Supabase schema
-  - Design and commit schema, migrations, seeds, and RLS policies.
-  - Implement Edge Functions, FastAPI endpoints, or Nuxt server routes (depending on the final choice) required by the spec.
-  - Maintain the OpenAPI contract (`docs/api/openapi.yaml`) and ensure API adapter + mocks stay current, including streaming behaviour.
-  - Provide retrieval helpers for AI endpoints (full-text search RPC, candidate formatting, history queries).
+  - Own migrations, seeds, RLS policies, triggers syncing media ↔ loans.
+  - Implement Nuxt server routes for CRUD, checkout, check-in, reservations, AI, analytics.
+  - Maintain `docs/api/openapi.yaml` once spec stabilises; keep API adapter + mocks current.
+  - Provide retrieval helpers for AI endpoints (full-text search RPCs, history queries).
 
 - Agent 2 — Frontend components & tests
-  - Implement Vue components, pages, and Composition API composables.
-  - Write unit tests and integration tests using the API adapter mocks.
-  - Implement accessibility checks, keyboard navigation tests, and streaming chat UX.
-  - Integrate recommendation/assistive flows once backend endpoints stabilize.
+  - Implement Nuxt pages/components/composables using Composition API.
+  - Deliver accessibility-first UI (keyboard navigation, focus rings, ARIA) and responsive design.
+  - Write unit/integration tests against adapter mocks; support streaming UI experiences.
+  - Layer in reservations UI and AI interfaces once routes exist.
 
 - Agent 3 — CI/CD, deployment, QA & extras
-  - Build GitHub Actions workflows (install, lint, test, preview build, deploy) with parameters to pivot to GitHub Pages or Vercel once architecture is locked.
-  - Maintain seeded data + test accounts for QA and end-to-end smoke tests.
-  - Handle secrets management (Supabase, OpenAI) in CI and document required environment variables.
-  - Implement AI-centric extras (personalised recommendations UI, admin insights dashboards) after core flows land.
+  - Build GitHub Actions workflows (lint/test/build/deploy) targeting Vercel; manage environment secrets (Supabase, OpenAI).
+  - Curate seeded accounts/data for QA; maintain smoke tests.
+  - Track deferred scaffolding (.env.example, wireframes, unit-test guide) and deliver once spec final.
+  - Implement AI-centric extras (personalised rec dashboards, admin analytics visualisations) after core flows.
 
 Coordination rules:
 
-- Agent 1 delivers the API adapter contract and OpenAPI draft before Agent 2 begins UI implementation.
-- Agent 2 builds against mocks until backend endpoints are available; once ready, run integration tests against the live endpoints.
-- Agent 3 enforces CI checks (lint, unit, integration, contract tests) on every PR and blocks merges on failures.
-- All agents ensure Supabase SQL, server code, prompts, and edge functions remain version-controlled (no hidden logic in Supabase only).
+- Agent 1 ships the API adapter contract and OpenAPI draft immediately after spec lock; Agent 2 begins UI work against mocks meanwhile.
+- Agent 2 validates against real routes once they land; Agent 3 ensures CI blocks merges on failing contract tests.
+- All agents keep Supabase SQL, server code, prompts, and config stored in repo; no hidden Supabase edge functions.
 
 ### 2025-11-09 context updates
 
@@ -119,27 +105,27 @@ Coordination rules:
 
 - **Q1 (roles)** — ANSWERED: Minimal roles (`librarian`, `member`) via `profiles.role` + RLS.
 - **Q2 (media metadata)** — ANSWERED: Adopt the generic `media` schema above (required: `media_type`, `title`, `creator`; optional fields enumerated).
-- **Q3 (checkout behaviour)** — PARTIAL: `checked_out`, `checked_out_by`, `checked_out_at`, `due_date` confirmed. Need decision on reservations/holds and automatic due-date calculation.
+- **Q3 (checkout & reservations)** — PARTIAL: Need detailed behaviour for holds/reservations (queueing, expiry, auto-convert to checkout) and whether due dates auto-calc (e.g., default 14 days, librarian override).
 - **Q4 (auth providers)** — OPEN: Decide whether to enable social OAuth (Google, GitHub) alongside email/password.
-- **Q5 (AI suggest & admin assistant)** — ANSWERED: All AI-powered endpoints run server-side with streaming responses; must support free-form suggestions, optional personalised recommendations, and librarian analytics Q&A.
-- **Q6 (checkout history & analytics)** — NEW: Specify requirements for historical circulation tracking (e.g., `media_loans` table capturing checkout/return events, late-return monitoring).
-
-Please answer question 3 and question 4 next, then provide guidance on Q6.
+- **Q5 (AI features)** — ANSWERED: All AI-powered endpoints run server-side with streaming responses; must support free-form suggestions, optional personalised recommendations, and librarian analytics Q&A. Architecture should make deferred delivery easy if time-constrained.
+- **Q6 (checkout history & retention)** — PARTIAL: Confirm retention policy for loan history (e.g., anonymise after X years). Currently tracked as TODO; need explicit rule for compliance narrative.
+- **Q7 (deferred scaffolding)** — OPEN: When spec is final, schedule creation of `.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, and optional `docs/ux/wireframes.md` so they reflect the locked spec.
 
 ## Recent changes & state
 
-- Data model updated to generic `media` table with detailed indexing strategy.
-- AI scope clarified: describe-your-need assistant, optional personalised recommendations, librarian analytics Q&A, all delivered via streaming responses.
-- Backend handling layer decision still pending (Supabase Edge Functions vs FastAPI vs Nuxt). Documentation and tooling must stay flexible.
-- a file was created at /docs/dev/plans-ci-cd-vercel-option.md as a potential set of plans for how to do CI/CD in this repo but it depends on prioritizing making a prototype quickly first
+- Nuxt 3 selected as the framework; Supabase remains primary DB/auth; FastAPI exploration dropped.
+- Data model updated to generic `media` + `media_loans` tables with sample seeds in `docs/data/schema.sql`.
+- AI scope clarified with emphasis on streaming responses and admin analytics; architecture must make deferred implementation easy.
+- CRUD first, reservations second, AI third — spec will reflect this sequence.
+- `.env.example`, OpenAPI contract, test plan, unit-test README, and wireframes are intentionally deferred until spec lock to avoid churn (track in TODOs).
 
 ## Short checklist / next steps for Manager
 
-- [ ] Get answers to the open questions above.
-- [ ] Finalise `docs/dev/spec.md` with milestones, acceptance criteria, schema diagrams, and AI behaviour definitions (retrieval steps, streaming requirements).
+- [ ] Answer open questions above (reservations detail, auth providers, retention policy, scaffolding schedule).
+- [ ] Finalise `docs/dev/spec.md` with milestones, acceptance criteria, schema diagrams, reservation flow, and AI behaviour definitions (retrieval steps, streaming requirements).
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
 - [ ] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements.
-- [ ] Draft the API adapter interface and provide mock implementations (including streaming simulators) for Agent 2.
+- [ ] Draft the API adapter interface and provide mock implementations (including streaming simulators) for Agent 2 once spec is locked.
 
 ---
 
@@ -151,4 +137,5 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-08: Schema pivoted to generic `media` table with creator required, optional `book_format`/`language`, and due-date tracking. Index list documented.
 - 2025-11-08: AI requirements clarified — describe-your-need assistant, optional personalised recommendations, librarian analytics Q&A. All LLM calls run server-side with streaming responses and code/prompts stored in repo.
 - 2025-11-09: Dropped spec-kit, locked Tailwind v3 guidance, mapped priority Nuxt modules (image/ipx, ui/icon, tailwind, supabase, content, test-utils), and confirmed agents will follow the GH CLI issue→branch→PR workflow with optional CDN adoption deferred.
+- 2025-11-10: Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
 

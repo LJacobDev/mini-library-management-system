@@ -348,13 +348,16 @@ There are some interesting test guide files and test tracking plans that I might
 
 
 
+
+
+
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
 
 
-
+- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 
@@ -473,6 +476,21 @@ For each topic considered, if it's important but I decide not to include it for 
 #### Review the data schema to check for errors or mistakes
 
 Double check everything before making any hard details for the agents to build out
+
+
+#### Make the spec file
+
+Might save iterative versions along the way for reference or as checkpoints.
+
+
+#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
+
+
+
+#### make sure to do test guide files and possibly test-plan files once spec is done
+
+
+
 
 
 ### Making the agent responsibilities file
