@@ -348,6 +348,36 @@ There are some interesting test guide files and test tracking plans that I might
 
 
 
+#### Any other features
+
+Having a contact form that can be used by unauthenticated would be good, and I'd like it to include a measure to detect and reduce bot misuse.
+
+
+
+
+
+
+#### Creating a 'spec-preparation-list'
+
+I'm asking the agent to go over every possible easy to miss but good to include feature or bit of polish or security or UX that it can think of.
+
+I'm going to use this list as a way to drill down to a final and locked spec
+
+I'm taking the total list of ideas left to cover and dividing them into groups, with ones that have high impact to quality but low amount of time or risk to add come first, and then another group for enhancements, and then another group for nice things to add if the first two groups are done.
+
+
+
+
+#### Collapsing Agent Chat Sessions
+
+
+When I had one agent do a context update, I began to see it make context updates to outdated prior information since it was an agent that had been used earlier and was being revisited.  I've filtered out a proper context state file and spec-preparation-list file and closed all chat histories to pick up again with cleared out sessions.
+
+The next step is to have a manager agent work through all the remaining spec questions and then implementations can start.
+
+
+
+
 
 
 
@@ -413,11 +443,6 @@ run formatter on all ts files
 
 
 
-
-
-#### Any other features
-
-Having a contact form that can be used by unauthenticated would be good, and I'd like it to include a measure to detect and reduce bot misuse.
 
 
 

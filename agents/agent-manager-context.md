@@ -39,6 +39,8 @@ High-level goals:
 - Development approach: TDD-first, small feature branches, PR reviews, GitHub CLI workflow.
 - API contract: Frontend consumes a thin API adapter module hitting Nuxt server routes (which may call Supabase/OpenAI). Adapter returns typed POJOs and has mockable implementations for tests.
 - Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
+- TDD discipline: Edge-case checklist → tests → implementation. Tests at minimum per feature: unit (composables/utils), integration (adapter), component tests (Vitest + Vue Test Utils), accessibility (axe), plus smoke E2E (Playwright) once flows exist.
+- Visual identity starter kit: (candidate) Primary `#1D3557`, Secondary `#E63946`, Accents `#457B9D` / `#A8DADC`, Neutral `#F1FAEE`; typography pairing `Inter` (UI) + `Cardo` (headings). Dark-mode optional but design tokens must support contrast-friendly swap.
 
 ## API boundary guidance (migration-friendly)
 
@@ -110,6 +112,7 @@ Coordination rules:
 - **Q5 (AI features)** — ANSWERED: All AI-powered endpoints run server-side with streaming responses; must support free-form suggestions, optional personalised recommendations, and librarian analytics Q&A. Architecture should make deferred delivery easy if time-constrained.
 - **Q6 (checkout history & retention)** — PARTIAL: Confirm retention policy for loan history (e.g., anonymise after X years). Currently tracked as TODO; need explicit rule for compliance narrative.
 - **Q7 (deferred scaffolding)** — OPEN: When spec is final, schedule creation of `.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, and optional `docs/ux/wireframes.md` so they reflect the locked spec.
+- **Q8 (color palette confirmation)** — OPEN: Approve proposed palette (`#1D3557`, `#E63946`, `#457B9D`, `#A8DADC`, `#F1FAEE`) and typography pairing (`Inter` + `Cardo`) or supply alternates.
 
 ## Recent changes & state
 
