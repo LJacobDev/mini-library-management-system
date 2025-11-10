@@ -455,6 +455,13 @@ the admin librarian can also press the delete key
 Their view of the media modal shows everything about its metadata, including other user IDs that have signed it out and what its due date is.  
 
 
+
+#### Nuxt 4 vs Nuxt 3
+
+Codex says its model training cutoff date was about Oct 2023, so Nuxt 3 was the main version back then.  I've quickly investigated the possibility that the LLMs will struggle to build in nuxt 4 and might want to downgrade, but Codex seems to think it will be worth using 4 and referring to docs frequently.  Made a new file in /docs/dev/ about it as a reference.
+
+
+
 #### Checking for any remaining undiscussed areas to get right to avoid having to rebuild later
 
 Investigate whether there is anything else undiscussed at this stage as useful as sure user flow stories.
@@ -469,9 +476,7 @@ Agent might ask a question about a ux consideration backlog question but it come
 
 
 
-
-
-
+when this tickbox is checked off move to spec-2 as an iteration checkpoint
 
 
 
@@ -690,3 +695,10 @@ It appears that keeping this running dev-process.md file, as well as writing a p
 #### Interesting effect from using agent-actions.json
 
 I only wanted the JSON file to store some reusable prompts for myself, but GPT-5 Codex has interpreted the file as an agents onboarding file and has been adding some prompts or guard rails into the library that aren't necessarily prompts I would use, but it thinks that agents are going to read these things and be informed by them, likely because it somehow automatically was.  I'll be interested in seeing if the implementation agents actually default to treating it like this as well.
+
+
+#### Taking time to explore potential UX improvements was a time cost but is profoundly helpful
+
+Given its goals, it would have been best for this project to have pushed faster toward a working prototype in the shortest possible amount of time.
+
+However while investigating ways to improve product quality quickly, many important considerations were surfaced, discussed, decided upon, and the takeaways from it will make my next similar app trivial to create in far less time after what I've discovered making this one.

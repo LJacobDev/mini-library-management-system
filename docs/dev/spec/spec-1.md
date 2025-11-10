@@ -40,6 +40,7 @@ _Last updated: 2025-11-10_
 - Layouts: Default shell with header, sidebar nav for authenticated users, responsive mobile nav drawer; separate minimal layout for auth screens.
 - Styling: Tailwind CSS v4 (`tailwindcss/preflight`, `tailwindcss/utilities`) + Nuxt UI component primitives. Guard rails in tests ensure directives remain v4.
 - Component strategy: Compose Nuxt UI components (cards, tables, forms) styled with Tailwind tokens. Shared UI atoms stored in `app/components/ui/*`.
+- Navigation & guards: Global middleware hydrates the Supabase session on every navigation, then role-specific middleware (`auth`, `librarian`, `admin`) gate protected routes with loading indicators and friendly redirects to `/login`. Server-rendered guards were considered for stronger SSR protection but deferred for the MVP to keep complexity low.
 
 ### 3.2 Backend (Nuxt Server Routes + Supabase)
 

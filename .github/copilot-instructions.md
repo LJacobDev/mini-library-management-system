@@ -34,6 +34,15 @@ This project is to be done in a way that prioritizes Test Driven Development (TD
 Please see /docs/dev/edge-case-first-checklist.md for the full edge-case-first checklist that should be used to guide test generation and feature implementation.
 
 
+## Nuxt 4 project awareness
+
+- The active application targets Nuxt 4. Some patterns differ from Nuxt 3 (directory layout under `app/`, data fetching defaults, TypeScript contexts, Nitro behavior). Always assume Nuxt 4 behaviors unless documentation or code explicitly states otherwise.
+- Before proposing implementation details, troubleshooting ideas, or refactors, open the current Nuxt documentation to confirm any APIs, defaults, or module compatibility. This reduces drift from Nuxt 3-era assumptions.
+- Keep `~/` mapped to `/app` and `@/` to the project root in both `nuxt.config.ts` and `tsconfig.json`; update context notes if this changes so implementation agents stay aligned.
+
+for more information please check /docs/dev/nuxt-4-vs-nuxt-3-llm-awareness.md
+
+
 
 # UI considerations
 
