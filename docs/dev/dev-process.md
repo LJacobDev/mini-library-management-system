@@ -312,6 +312,10 @@ I have a little more to go with making sure tailwindcss is configured right beca
 
 LLM missed importing the Tailwind Test component, writing that part in solved the hydration mismatch
 
+Tailwind config is elusive and suggestions are conflicting between LLMs and tailwind docs.  Tailwind docs are missing info about postcss option that seems important.  Would almost abandon using tailwind to save time getting started, but learning what to fix to get the config working would be worth personally understanding in general.
+
+Lots of conflicts in documentation sources from tailwind to nuxt docs, LLMs disagree - finally found in [stackoverflow](https://stackoverflow.com/questions/79733577/how-to-use-install-tailwind-css-in-nuxt-4) someone who explained that it seems to need @nuxt/ui to also be imported in main.css for it to make tailwind v4 work.  Regarding tailwind v4, it seemed difficult to get the intended v3 config set up, and it's currently unclear why it was so different with Nuxt than with other frameworks.
+
 
 
 
@@ -319,7 +323,12 @@ LLM missed importing the Tailwind Test component, writing that part in solved th
 
 I have a few priorities to juggle at the same time:
 
-- remember that tailwindcss forms and tailwindcss typography is available if you want it
+
+- test run this on vercel now that tailwind renders
+
+
+- I'd like to fix the fact that path aliases aren't working yet because I will proably want to customize them to help cover CICD situations
+
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 
@@ -337,6 +346,8 @@ I'm aware that having truly complete docs might not be happening unless I take a
 Don't forget to add prompts you're using often or find that are helpful into the prompt library
 
 Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
+
+- remember that tailwindcss forms and tailwindcss typography is available if you want it
 
 
 ```

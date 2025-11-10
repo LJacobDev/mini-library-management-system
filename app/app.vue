@@ -12,11 +12,5 @@
 </template>
 
 <script setup>
-  import TailwindStatus from '../components/TailwindStatus.vue'
+  import TailwindStatus from '../app/components/TailwindStatus.vue'
 </script>
-
-<!-- <style>
-* {
-  background:#afa;
-}
-</style> -->
