@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+/* Optional, in case I want to use CSS variables */
+/* :root {
+	--brand-primary: 14 165 164;
+} */
