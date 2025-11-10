@@ -25,16 +25,19 @@ Complete these items in order. Each unlocks critical aspects of the prototype, a
    - Clarify hydration rules and Supabase client availability on server/client.
 6. **Design tokens baseline**  
    - Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
-7. **Client data layer contract**  
-   - List API endpoints/Edge Functions, response shapes, and zod validation schemas.  
+7. **Nuxt UI/Icon/Image usage plan**  
+   - Decide how `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` integrate with Tailwind utilities for layouts, cards, navigation, and media.  
+   - Capture preferred components/patterns so agents default to these modules instead of rebuilding fundamentals.
+8. **Client data layer contract**  
+   - List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and zod validation schemas.  
    - Document error handling, retry/backoff, and integration test expectations.
-8. **Edge Function responsibilities**  
-   - Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling.  
+9. **Server API responsibilities**  
+   - Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage.  
    - Capture idempotency expectations and failure modes.
-9. **Seed data & baseline CI**  
+10. **Seed data & baseline CI**  
    - Produce seed scripts for demo media, users, and loans.  
    - Define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
-10. **Operational guardrails**  
+11. **Operational guardrails**  
     - Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
 
 When all ten are resolved, the essential spec is complete and implementation can start without major unknowns.

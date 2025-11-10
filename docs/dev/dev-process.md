@@ -388,12 +388,21 @@ I'm arranging all the outstanding things left to do before a spec can be locked 
 spec-preparation-list.md is the 'everything that we could ever have to think about listed in order of what can be done fastest with the most impact' and then spec-preparation-list-essential.md is the same information but arranged where the most important things that have to be in the prototype are highlighted in a case where time is short.
 
 
+While building the spec, I want you to create have you start a spec-1.md file that has a full spec that matches our current understanding of the application and plan, and then has a second section below where it lists all of the considerations in /docs/dev/spec-preparation-essential.md.
 
 It has grouped things into essential buckets like what to do early on to make sure the prototype works, and things to do later on.  It included optimistic UI and empty states as something to deal with later, even though I'd almost want that as a minimum.
 
 I'm about to go through spec-preparation-list-essential's questions on at a time and resolve them while converting the decisions into a spec-1.md file, leading to a spec-final.md file.
 
 
+
+#### agent-actions.json
+
+I've extended the prompt library to include prompts I think are reusable as well as ones I'm planing to use next.  It seems to be really helping the work more forward more easily.
+
+I'm noticing that I could either use it like [{"action":"action-name", "prompt":"prompt-text"},...] which is fine for now for human use in a editor, but it would be useful to have it like {"action-name" : "prompt-text"} for faster lookups from a chat session.
+
+The manager agent is seeing this file as an agents onboarding file and wanted to add a prompt to it that was more like a context / instruction more than a prompt that would be getting used.  I find that sort of helpful but it would be better to put those in actual instruction files and not mix them in with prompts that are meant to be selected at specific times by the user.
 
 
 
@@ -402,10 +411,23 @@ I'm about to go through spec-preparation-list-essential's questions on at a time
 I have a few priorities to juggle at the same time:
 
 
+- I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
+
+- I still want to get book cover art, maybe other media cover art.  Check stock photo sites and free photo sites like pexels, using image gen to get a few examples, etc.
 
 
-- I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
+- I'm going to run the prompt that turns the spec and unanswered questions into spec-1 and works through them.
 
+
+-- create a file that explains implemetnation instructions:
+
+    make a gh issue that addresses what the next step to do it
+    think of the edge cases according to edge case guide
+    write unit tests that cover edge cases
+    implement feature/function/handler/etc so that tests pass
+    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
+    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and manual, then do pull request that links to the issue and closes it
+    see issue template and pr template files
 
 
 -- when that part is done move these temp notes down to keep with the flow of the original plan with these as reminders
@@ -637,3 +659,20 @@ Then I gave those categories to copilot, and it was able to narrow down ones tha
 Then I gave that list back to the web browser chat instance, and it retrieved a list of modules that might actually help by name and category.
 
 From this, copilot was able to identify that nuxt has a tailwind v3 integration, and pointed out their devtools module, and addressed some auth modules that might help if I need something beyond what I can get with the supabase module.
+
+
+#### Prompt library upgrade
+
+I found it far more useful to create a single prompt file in JSON format, even just to use as something to have in a side panel as I work along.  It made it much easier to think about what I want to do and when and how I want to do it.  It caused me to think of other prompts that would be useful and resuable.  It also greatly reduced cognitive load in that instead of thinking of future steps as things I had to still work out when I got there, the prompts being pre-written took that off my mind and put the process on a set of rails that allowed it to gain momentum.
+
+
+#### Agent understanding checks are working and helping
+
+I notice that when I start a new chat session and ask the agent what its understanding of the project, its goals, what has been done, its current state, and what we need to do next, it is correctly looking at the context files and instructions sets to produce a reply that is either fully accurate, or is very close but that has some outdated pieces of information that I can catch and correct.
+
+It appears that keeping this running dev-process.md file, as well as writing a prompt-libart/agent-actions.json file with all the prompts ahead of time, is causing the agent to keep a very good handle on what the workflow and plans are going to go like, even without me having to directly tell it in the chat session.  These files are helping me to think and track progress but it's also helping to inform the agent in a similar way without having to directly draw attention to the files in conversation.
+
+
+#### Interesting effect from using agent-actions.json
+
+I only wanted the JSON file to store some reusable prompts for myself, but GPT-5 Codex has interpreted the file as an agents onboarding file and has been adding some prompts or guard rails into the library that aren't necessarily prompts I would use, but it thinks that agents are going to read these things and be informed by them, likely because it somehow automatically was.  I'll be interested in seeing if the implementation agents actually default to treating it like this as well.

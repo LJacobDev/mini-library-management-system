@@ -1,70 +1,60 @@
 # Spec Preparation Checklist
 
-This document captures every outstanding decision needed to ship an implementation-ready specification. Items are ordered from fastest, highest-impact wins through to slower, high-effort initiatives so we can stack momentum efficiently.
+This document tracks the outstanding decisions and definition work required before we can lock a complete, implementation-ready specification. Items are grouped by impact and ease of delivery so we can front-load the fastest, highest-value work.
 
 ---
 
-## 1. High-impact quick wins (do first)
+## 1. Prototype-ready essentials (fast, low risk)
 
-Resolve these definitions immediately; they unblock core development with minimal lift:
+Decide and document the following to stand up a working prototype quickly while keeping future changes manageable:
 
-- **Personas & minimal RBAC** – Lock guest, member, desk librarian, and admin roles plus Supabase `profiles.role` conventions and baseline RLS rules.
-- **Catalog data contract** – Finalize required columns, `jsonb` metadata conventions, and the initial Supabase migration set.
-- **Critical user journeys** – Map MVP flows (browse/search/paginate, media detail, member reservation, librarian checkout/check-in, admin CRUD) and note edge cases.
-- **Auth & account lifecycle** – Nail down signup/onboarding, SSO providers, password reset, email verification callbacks, session expiry handling, and error surfaces inside Nuxt.
-- **Nuxt shell & routing** – Define SSR/SSG/CSR usage per route, layout zones, route middleware for role gating, and hydration guardrails.
-- **Design tokens baseline** – Choose primary/secondary palette, typography scale, Tailwind spacing/breakpoints, and clarify whether Tailwind config or Nuxt UI theme is the single source of truth.
-- **Client data layer contract** – Specify API adapter surface, validation (zod), error handling expectations, and minimal integration test coverage.
-- **Edge Function responsibilities** – Assign Supabase Edge Functions for catalog CRUD, circulation actions, and reservation queue collision handling.
-- **Seed data & CI starter** – Commit demo data scripts, lint/type/unit GitHub Actions checks, preview deployment gate, and `.env.example` expectations.
-- **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and how secrets stay in sync across environments.
+- **Personas & access model** – Confirm guest, member, librarian-desk, librarian-admin roles and the minimal RBAC enforcement (Supabase `profiles.role` + RLS rules).
+- **Catalog data model** – Finalize required columns, optional metadata stored in `jsonb`, initial Supabase schema and migrations.
+- **Critical user flows** – Define MVP interactions: browse/search/paginate, media detail view, member reservations, librarian checkout/check-in, admin CRUD for media items.
+- **Account management & auth UX** – Decide on signup/onboarding flow, SSO providers, profile editing, password reset, and error states for session expiry or logout.
+- **SPA shell & design tokens** – Lock routing structure, layout zones, Tailwind v4 baseline (spacing, typography, breakpoints), basic accessibility patterns (ARIA landmarks, focus traps). Add a regression guard (lint/test) that fails if Tailwind is downgraded or its directives drift from v4 defaults.
+- **Visual identity starter kit** – Pick primary/secondary color palette (with Tailwind tokens), typography scale, iconography guidelines, and dark-mode/contrast strategy so UI agents can iterate quickly.
+- **Nuxt UI module adoption** – Decide how `@nuxt/ui`, `@nuxt/icon`, and `@nuxt/image` are composed with Tailwind utilities to accelerate UI delivery, and capture do/don't guidelines for agents.
+- **Server API responsibilities** – Assign Nuxt server routes (or other Nitro handlers) for catalog CRUD, checkout/check-in, reservation queue updates, and collision handling, reaching for Supabase Edge Functions only when they offer a clear advantage.
+- **Client data layer contract** – Specify API adapter surface, validation (zod), error handling conventions, and integration test expectations.
+- **Seed data & CI basics** – Decide on demo data scripts, minimal GitHub Actions checks (lint, type-check, unit tests, preview deployment), and required env/config scaffolding.
+- **Ops guardrails** – Branch protection rules, rollback note-taking, `.env.example` structure, Supabase project separation (dev/staging/prod) baseline.
 
-## 2. Fast polish boosters (after Section 1 is green)
+## 2. Rapid polish upgrades (low risk, high payoff)
 
-Tackle these once the prototype runs end-to-end; they level up product quality quickly without heavy engineering cost:
+Prioritize these once the prototype is functional—they make the app feel complete without high engineering risk:
 
-- **Member dashboard UX** – Design "My loans" / "My reservations" pages, proactive notices, and empty states.
-- **Advanced catalog tooling** – Prioritize filter facets (genre, availability, tags), sorting logic, and supporting indexes.
-- **Perceived performance patterns** – Define skeleton loaders, optimistic updates, undo/snackbar behaviors, and global error boundaries.
-- **Accessibility & QA plan** – Automate axe checks, set manual keyboard/screen-reader protocols, and document acceptance criteria.
-- **Component quality gates** – Decide on Storybook usage, snapshot/visual regression scope, and reusability rules.
-- **CI/preview enhancements** – Wire Supabase staging credentials, automated migrations, and a smoke E2E checkout script.
-- **Telemetry & feature flags** – Outline logging approach (client/server), analytics events, and basic configuration/flag tooling.
-- **Documentation touchpoints** – Produce setup scripts, integrate the edge-case checklist workflow, and draft an API contract (OpenAPI or similar) with sync strategy.
-- **Style reference guide** – Catalog layout patterns (cards vs. list, modal sizing, form spacing), component density expectations, and imagery guidelines for implementation agents.
+- **Member dashboard UX** – Define "My loans" / "My reservations" pages, empty-state copy, alerts for soon-due items.
+- **Advanced catalog tooling** – Decide on filter facets (genre, availability, tags), sorting, and how they map to indexes.
+- **Perceived performance & feedback** – Skeleton loaders, optimistic UI rules, undo/snackbar patterns, global error boundaries.
+- **Accessibility audit plan** – Automate axe checks, manual keyboard testing strategy, screen-reader validation steps.
+- **Component quality gates** – Determine Storybook usage, snapshot/visual regression scope, reusable component library rules.
+- **CI enhancements** – Expand pipeline with Supabase staging connections, automated migrations, smoke E2E scripts (checkout scenario).
+- **Telemetry & flags** – Pick logging structure (client/server), minimal analytics events, and configuration/feature flag approach.
+- **Documentation touchpoints** – Establish setup scripts, edge-case checklist workflow, API contract draft (OpenAPI or similar) and how it stays in sync.
+- **Style reference** – Document reusable layout patterns (cards vs list, modal sizing, form spacing), component density, and illustration/imagery rules for consistent handoff to UI implementation.
+- **Module-driven UI enhancements** – Plan targeted uses of Nuxt UI/Icon/Image components for polish work (e.g., iconography, responsive media, prebuilt primitives) so agents default to them instead of rebuilding from scratch.
 
-## 3. Medium-horizon upgrades (schedule after polish)
+## 3. Later-stage / higher-effort enhancements (tackle after 1 & 2)
 
-These deepen the experience and resilience; plan for them once Sections 1 and 2 are locked:
+These add depth and differentiation but can be scheduled once the core experience and polish are locked in:
 
-- **Extensible RBAC** – Design full role/permission tables, admin UI for role assignments, and migration path from the minimal model.
-- **Draft & moderation workflows** – Introduce version history, approval queues, diff viewing, and soft-delete with restore windows.
-- **Notification ecosystem** – Define email templates, scheduling, opt-in preferences, and failure fallbacks with Supabase or third-party services.
-- **AI & recommendations** – Clarify recommendation goals, Edge Function prompt strategy, evaluation loops, and guardrails.
-- **Deep observability** – Plan metrics dashboards, alert thresholds, structured logging, and distributed tracing (if backend hosting warrants).
-- **Bulk operations & reporting** – Scope CSV import/export, conflict resolution UX, dashboards, and scheduled exports.
-- **Performance governance** – Set bundle-size budgets, automated threshold enforcement, dependency hygiene checks, and (optional) offline queues.
-- **Data retention & compliance** – Document archival/anonymisation policies, user data export tooling, and legal considerations baked into schema and storage rules.
-- **API versioning & migration posture** – Outline versioned endpoint strategy, contract testing approach, and future Nuxt SSR migration paths.
-
-## 4. Long-range differentiators (tackle when core is mature)
-
-Invest here once the platform is stable and the earlier categories are complete:
-
-- **Nuxt caching & freshness strategy** – Define `routeRules`, ISR/CSR cache windows, and Supabase revalidation hooks to balance freshness vs. load.
-- **Supabase RLS test harness** – Build automated proof-of-concept tests that exercise RLS policies via Nuxt server routes.
-- **Operational resilience** – Extend rollback playbook, add incident response drills, and codify observability dashboards.
-- **Contact form with bot protection** – Ship guest-access contact form featuring hidden honeypot fields (e.g., unseen "How did you hear about us"), with optional success messaging even when blocked submissions are dropped.
-- **Extended telemetry & analytics** – Layer in richer event taxonomy, BI exports, and governance for analytics consumers.
-- **Future Nuxt deployment scenarios** – Evaluate hybrid rendering, edge deployments, and internationalisation/locale expansion strategies.
-
+- **Extensible RBAC** – Plan full role/permission tables, admin UI for role assignments, and migration strategy from minimal roles.
+- **Draft & moderation workflows** – Version history, approval queues, change diffs, soft-delete with restore windows.
+- **Notification ecosystem** – Email templates, scheduling, opt-in preferences, failure fallbacks, integration with Nuxt server actions or (if superior) Supabase Edge Functions/third-party services.
+- **AI & recommendations** – Define recommendation goals, Edge Function prompts/integration, and testing safeguards.
+- **Deep observability** – Metrics dashboards, alert thresholds, structured logging vocabulary, distributed tracing (if hosting backend separately).
+- **Bulk operations & reports** – CSV import/export with conflict resolution, reporting dashboards, scheduled data exports.
+- **Performance governance** – Bundle-size budgets, automated thresholds, dependency hygiene, optional offline/queued operations.
+- **Data retention & compliance** – Policies for archival, anonymization, user data export, and documentation of legal considerations.
+- **API versioning & migration** – Outline approach for versioned endpoints, contract testing, and future Nuxt/SSR migration path without breaking the SPA.
+--**Contact Form for Guest with Bot protection** - After other things are working well, adding a contact form that unauthenticated can use to send a contact is desired, but it should have a measure to filter out bot spam.  Intention: have a field "how did you hear about us" that is not visible to human users, so if it's filled out, it means it was a bot and can be ignored rather than sent to mailbox.  May or may not still return a submission success message in that case.
 ---
 
 ### How to use this list
 
-1. Complete Section 1 sequentially, logging decisions in `docs/dev/spec.md` and relevant agent context files.
-2. Queue Section 2 items as the immediate follow-up milestone once MVP flows clear manual QA.
-3. Slot Section 3 initiatives into roadmap planning with success metrics before engineering begins.
-4. Treat Section 4 as strategic stretch goals; revisit after initial launch metrics confirm stability.
+1. Walk through Section 1 items in order, resolving open questions and recording decisions in `docs/dev/spec.md` and agent context files.
+2. Feed Section 2 decisions into the spec as "Phase 1.5" / polish milestones to ensure they are queued right after the MVP is stable.
+3. Log Section 3 items as stretch goals with clear success metrics so implementation agents can pick them up once the main spec is delivered.
 
-Update the checklist whenever scope shifts—if any Section 1 item remains unresolved, the spec is not yet ready to freeze.
+Update this checklist as decisions are made or scope changes; once every item in Section 1 is defined, the spec is ready to finalize.

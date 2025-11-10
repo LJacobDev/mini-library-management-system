@@ -12,7 +12,7 @@ This is so that both the user and the LLMs involved can read this file in order 
 
 ## Project summary
 
-Mini Library Management System coordinated via multi-agent workflow. The application is now a Nuxt 3 full-stack project (Vue 3 Composition API on the client, Nitro server routes in-repo) backed by Supabase for Postgres + Auth. All backend logic (server routes, Supabase SQL, OpenAI prompts) must live in the repository.
+Mini Library Management System coordinated via multi-agent workflow. The application is now a Nuxt 4.2 full-stack project (Vue 3 Composition API on the client, Nitro server routes in-repo) backed by Supabase for Postgres + Auth. All backend logic (server routes, Supabase SQL, OpenAI prompts) must live in the repository.
 
 High-level goals:
 
@@ -32,7 +32,7 @@ High-level goals:
 
 ## Current decisions (fixed)
 
-- Framework: Nuxt 3 (Vue 3 Composition API + Nitro server routes) already initialised in repo.
+- Framework: Nuxt 4.2 (Vue 3 Composition API + Nitro server routes) already initialised in repo.
 - Backend data/auth: Supabase Postgres + Supabase Auth (mirror SQL/Edge logic in repo; no opaque hosted-only code).
 - Language/tooling: TypeScript across Nuxt app; SQL for migrations; OpenAI integration via server routes.
 - Hosting/CI: Vercel deployment (Nuxt) with GitHub Actions for lint/test/build before deploy.
@@ -41,6 +41,8 @@ High-level goals:
 - Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
 - TDD discipline: Edge-case checklist → tests → implementation. Tests at minimum per feature: unit (composables/utils), integration (adapter), component tests (Vitest + Vue Test Utils), accessibility (axe), plus smoke E2E (Playwright) once flows exist.
 - Visual identity starter kit: (candidate) Primary `#1D3557`, Secondary `#E63946`, Accents `#457B9D` / `#A8DADC`, Neutral `#F1FAEE`; typography pairing `Inter` (UI) + `Cardo` (headings). Dark-mode optional but design tokens must support contrast-friendly swap.
+- Styling baseline: Tailwind CSS v4 via `@nuxtjs/tailwindcss` with `tailwindcss/preflight` + `tailwindcss/utilities`. Add lint/test guardrails to detect dependency downgrades back to v3 scaffolding.
+- Nuxt UI/Icon/Image modules: default to `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` for common UI patterns (navigation, lists, media, iconography) before rolling custom components.
 
 ## API boundary guidance (migration-friendly)
 
@@ -116,7 +118,7 @@ Coordination rules:
 
 ## Recent changes & state
 
-- Nuxt 3 selected as the framework; Supabase remains primary DB/auth; FastAPI exploration dropped.
+- Nuxt 4.2 selected as the framework; Supabase remains primary DB/auth; FastAPI exploration dropped.
 - Data model updated to generic `media` + `media_loans` tables with sample seeds in `docs/data/schema.sql`.
 - AI scope clarified with emphasis on streaming responses and admin analytics; architecture must make deferred implementation easy.
 - CRUD first, reservations second, AI third — spec will reflect this sequence.
@@ -129,6 +131,8 @@ Coordination rules:
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
 - [ ] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements.
 - [ ] Draft the API adapter interface and provide mock implementations (including streaming simulators) for Agent 2 once spec is locked.
+- [ ] Capture styling patterns in a forthcoming `docs/dev/styling-playbook.md` once enough Tailwind v4 component examples exist; link it from the hybrid styling guide.
+- [ ] Document preferred usage patterns for `@nuxt/ui`, `@nuxt/icon`, and `@nuxt/image` so implementation agents consistently leverage installed modules.
 
 ---
 
@@ -139,6 +143,7 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-08: Q1 answered — minimal roles chosen (`librarian`, `member`). Implement minimal RBAC via `profiles.role` + RLS. TypeScript preference recorded earlier.
 - 2025-11-08: Schema pivoted to generic `media` table with creator required, optional `book_format`/`language`, and due-date tracking. Index list documented.
 - 2025-11-08: AI requirements clarified — describe-your-need assistant, optional personalised recommendations, librarian analytics Q&A. All LLM calls run server-side with streaming responses and code/prompts stored in repo.
-- 2025-11-09: Dropped spec-kit, locked Tailwind v3 guidance, mapped priority Nuxt modules (image/ipx, ui/icon, tailwind, supabase, content, test-utils), and confirmed agents will follow the GH CLI issue→branch→PR workflow with optional CDN adoption deferred.
-- 2025-11-10: Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
+- 2025-11-09: Dropped spec-kit, initially locked Tailwind v3 guidance, mapped priority Nuxt modules (image/ipx, ui/icon, tailwind, supabase, content, test-utils), and confirmed agents will follow the GH CLI issue→branch→PR workflow with optional CDN adoption deferred.
+- 2025-11-10 (AM): Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
+- 2025-11-10 (PM): Tailwind CSS v4 confirmed as the production baseline (v3 discarded after repeated integration failures). Edge-case checklist and spec prep list updated accordingly. Outstanding: refresh agent prompts to reference v4 defaults and draft the styling playbook addendum once real-world examples accrue.
 

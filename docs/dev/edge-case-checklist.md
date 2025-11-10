@@ -1,5 +1,7 @@
 ## Edge-case-first checklist for code-generation agents
 
+> Stack note (2025-11-10): The front end runs on Nuxt 4.2 with Tailwind CSS v4. When tests reference styling behaviour (snapshot assertions, visual regressions, CSS tokens), ensure they align with the v4 directives (`tailwindcss/preflight` + `tailwindcss/utilities`) and raise a regression alert if a dependency downgrade attempts to reintroduce Tailwind v3 scaffolding.
+
 Purpose: Always prioritize edge cases. For any new feature/function/endpoint/handler, run through this checklist first, generate tests that cover applicable items, then implement code until tests pass. Tests must assert correct handling of success cases, failure cases, invalid inputs, and resource/state edge conditions.
 
 Usage rules for the agents:
