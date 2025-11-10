@@ -300,7 +300,17 @@ I've worked out that tailwindcss should coexist well with nuxt ui components but
 
 I've installed tailwindcss and the nuxt tailwind module, but I notice that when I asked copilot to help set config files for it, it was doing strange things like getting the paths a little wrong.  I restored a checkpoint and tried again with Codex as the model, thinking it was because the number of files I had being changed all at once would be tough for GPT-5 mini to get right.
 
+Needs a little debugging, had to resolve css path other than the alias that the model wrote it as
 
+Adding @types/node so some linter complaints clear out
+
+LLM said that using the path module to get dirname was not optimal for Nuxt, so I attempted setting up the aliases according to its instructions but it consistently failed, and the LLM began to seem to not have a grasp on it.  I'm going to try codex to see if it can handle the multi file question better... 
+
+The LLMs seemed to circle around the problem and keep telling me to make fixes and changes by installing vitest and changing vitest.config.ts files, but none of that worked, and it seemed to keep coming back to using the path and url packages to solve this and find the main.css file, and I'm moving on with the rest.
+
+I have a little more to go with making sure tailwindcss is configured right because it's not displaying yet.
+
+LLM missed importing the Tailwind Test component, writing that part in solved the hydration mismatch
 
 
 
@@ -309,7 +319,7 @@ I've installed tailwindcss and the nuxt tailwind module, but I notice that when 
 
 I have a few priorities to juggle at the same time:
 
-
+- remember that tailwindcss forms and tailwindcss typography is available if you want it
 
 - I have another agent ready to talk about undiscussed and easy to miss aspects, one question at a time
 

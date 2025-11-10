@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import { defineNuxtConfig } from 'nuxt/config'
 import { dirname, resolve } from 'path'
 import {fileURLToPath } from 'url'
@@ -10,6 +11,12 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   css: [resolve(__dirname, 'assets/css/main.css')],
+
+  vite: {
+    plugins: [
+      tailwindcss(),
+    ],
+  },
 
   postcss: {
     plugins: {
