@@ -495,7 +495,9 @@ Might save iterative versions along the way for reference or as checkpoints.
 While working on the 'backlog of spec questions' I was really wanting to see if I could start just building some things while continuing to talk about spec questions, but the agent suggested finishing up to backlog item 11 before starting any implementation.
 
 
+Spec building agent has been almost exclusively GPT-5-Codex
 
+Implementation agents will probably be gpt-5 mini unless complex operations have to happen
 
 
 

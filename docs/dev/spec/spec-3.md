@@ -163,7 +163,7 @@ Edge cases for each journey tracked via `docs/dev/edge-case-checklist.md`; tests
 | DELETE | `/api/reservations/:id` | Member/Librarian Desk | Cancel hold. |
 | GET | `/api/me/loans` | Authenticated | Fetch current member loans, optionally include history (paginated). |
 | GET | `/api/me/reservations` | Authenticated | Fetch reservations. |
-| POST | `/api/recommendations/suggest` | Authenticated | Placeholder AI endpoint returning curated list (real model integration later). |
+| POST | `/api/recommendations/suggest` | Authenticated | Accepts member interests and optional media context, calls OpenAI Recommender (GPT-4o mini) to return curated media suggestions. |
 
 Every route implements:
 - Input validation with Zod.
@@ -177,12 +177,14 @@ Every route implements:
 
 - A minimal adapter lives in `~/lib/api/client.ts`, exporting an `ApiClient` interface and `createApiClient(fetchImpl?: FetchLike)` factory. Default instance delegates directly to Nuxt server routes using `fetch`/`useFetch`.
 - Adapter surface mirrors the server API (section 6) one-for-one: `listCatalog`, `getCatalogItem`, `createMedia`, `updateMedia`, `deleteMedia`, `checkoutLoan`, `checkinLoan`, `createReservation`, `cancelReservation`, `getMyLoans`, `getMyReservations`, and `suggestRecommendations`.
+- `suggestRecommendations(input: RecommendationPrompt)` posts member-declared interests plus optional `mediaId` focus and returns `RecommendationResult` (ranked media IDs plus model rationale snippets). Endpoint calls are single-shot (no streaming) and include a circuit breaker to prevent retry storms on upstream failures.
 - Each method unwraps the shared response envelope, applies schema validation, and returns typed POJOs without additional transformation. Mutations opt out of retries; GET endpoints use a shared retry helper (max two attempts, jittered backoff, abort support).
 - A companion `createMockApiClient(overrides)` factory in `~/lib/api/mocks.ts` powers Vitest/component tests, preloading happy-path fixtures but allowing per-test overrides.
 
 ### 7.2 Shared types & validation
 
-- Canonical domain types and Zod schemas reside in `~/lib/api/types.ts` and are imported by both server routes and the adapter via `z.infer`. Core models: `MediaSummary`, `MediaDetail`, `LoanRecord`, `ReservationRecord`, and `PaginatedResponse<T>`.
+- Canonical domain types and Zod schemas reside in `~/lib/api/types.ts` and are imported by both server routes and the adapter via `z.infer`. Core models: `MediaSummary`, `MediaDetail`, `LoanRecord`, `ReservationRecord`, `RecommendationPrompt`, `RecommendationResult`, and `PaginatedResponse<T>`.
+- Recommendation schema requires `interests: string[]`, optional `mediaId`, and optional `tone` flag (`'shortlist' | 'discovery'`) that nudges the prompt. Result array carries `mediaId`, `score`, `reason`, and `callId` for traceability.
 - Response envelope is standardised as `ApiResponse<T> = { success: true; data: T } | { success: false; error: { code: 'VALIDATION_ERROR' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'CONFLICT' | 'SERVER_ERROR'; message: string; details?: unknown } }`.
 - `~/lib/api/errors.ts` exports `ApiError` plus `assertSuccess(response)`; adapter methods call `assertSuccess` after parsing. Error codes map directly to UI handling (toasts, redirects, retry prompts).
 - Streaming endpoints expose helper types (`StreamingChunk`, `StreamingResult`) so UI can render incremental responses while tests can simulate streams deterministically.
@@ -191,7 +193,7 @@ Every route implements:
 
 - Feature composables (`useCatalog`, `useLoans`, etc.) receive the adapter via dependency injection (provide/inject token) to keep tests deterministic.
 - Unit tests consume `createMockApiClient`, swapping in success/error scenarios without touching network code. Integration tests hit real Nuxt server routes and assert their payloads validate against the shared schemas.
-- Retry logic and error translation are centralised in `~/lib/api/retry.ts` and `~/lib/api/errors.ts`, ensuring UI layers simply respond to typed outcomes. Global error boundary continues to surface toasts and triggers optional revalidation.
+- Retry logic and error translation are centralised in `~/lib/api/retry.ts` and `~/lib/api/errors.ts`, ensuring UI layers simply respond to typed outcomes. Recommendation calls skip automatic retries if the upstream returns `429` or `rate_limit_exceeded` to avoid breaching OpenAI policies; UI surfaces a friendly retry timer instead.
 - Cache policy leverages Nuxt `useAsyncData` with `stale-while-revalidate` defaults; adapter methods stay synchronous wrappers so composables can opt into advanced caching later without contract changes.
 
 ## 8. UI & Design Tokens
@@ -240,6 +242,13 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - All mutations wrap Supabase calls in transactions so catalog mutations, loan state changes, audit logging, and queue adjustments succeed or fail together. Transient database errors trigger safe retries (up to two attempts with jitter) before surfacing `retryable_error` to the adapter.
 - Error taxonomy aligns with the shared envelope: `validation_failed`, `unauthenticated`, `forbidden`, `not_found`, `conflict` (with rich `conflictCode`), `precondition_failed`, `locked`, and `server_error`. Adapters map these codes to UI behaviours (inline messaging, retry prompts, escalation modals).
 
+### 9.6 AI recommendations
+
+- `POST /api/recommendations/suggest` is handled in a Nitro server route that validates the member payload, enriches it with catalog metadata (top genres, availability snapshots), and calls OpenAI’s `responses.create` endpoint with the GPT-4o mini model. Prompt template lives in `server/services/recommendations/templates.ts` and is versioned to keep changes reviewable.
+- OpenAI key is read from server runtime config (`runtimeConfig.openai.apiKey`) and never exposed client-side. Requests include `user` identifier (`memberId`) for audit and adhere to OpenAI usage policies (max 10 requests/min per member via in-memory token bucket).
+- Response is normalised into `RecommendationResult` objects, cross-referenced against Supabase catalog to ensure recommended IDs exist and are available to the member’s role. Missing or archived items are filtered out before returning to the adapter.
+- Failure modes bubble up as `validation_failed`, `upstream_unavailable`, or `rate_limited`. Rate limits return `retryAfter` (seconds) so UI can display appropriate messaging. All errors are logged with correlation IDs for later observability (wired to Sentry/Logflare).
+
 ## 10. Accessibility & UX Guardrails
 
 - All interactive components have accessible labels and keyboard focus management.
@@ -260,6 +269,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - **Test stack**: `vitest` for unit/integration, `@nuxt/test-utils` for component + server route tests. Future E2E via Playwright once MVP stable.
 - **CI gates**: `pnpm lint`, `pnpm typecheck`, `pnpm test`, optional `pnpm test:e2e -- --reporter=line` (skippable initially).
 - **Coverage goals**: 80% lines on core server routes and composables.
+- **Recommendation endpoint**: unit tests stub OpenAI via MSW and ensure prompt payloads, rate-limiting response, and filtering logic behave. CI includes a daily canary job hitting OpenAI’s testing model with a synthetic prompt (feature-flagged to run only when `OPENAI_API_KEY` is present in non-fork contexts).
 
 ## 12. Deployment & Operations
 
@@ -294,7 +304,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
   2. `pnpm db:migrate`
   3. `pnpm db:seed`
 - `pnpm db:seed` runs `tsx scripts/db/seed.ts` targeting the Supabase connection string from `.env.local` (`SUPABASE_SERVICE_ROLE_KEY` required).
-- `.env.example` enumerates all required variables: Supabase URL/anon/service keys, Vercel site URL, Nuxt public base URL, image domain allowlist, and seed asset path (`NUXT_APP_DEFAULT_COVER_URL`). The file is kept in sync whenever a new variable is introduced.
+- `.env.example` enumerates all required variables: Supabase URL/anon/service keys, Vercel site URL, Nuxt public base URL, image domain allowlist, seed asset path (`NUXT_APP_DEFAULT_COVER_URL`), plus `OPENAI_API_KEY` and `OPENAI_MODEL` (default `gpt-4o-mini`). The file is kept in sync whenever a new variable is introduced.
 
 ### 13.4 CI integration
 
@@ -302,15 +312,44 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - Preview deployments on Vercel depend on a successful CI run and pull Supabase credentials from Vercel project secrets. Seeded assets (default cover) are uploaded to the dev Supabase storage bucket and referenced by environment variable so previews render real imagery.
 - Once Supabase bucket access is available, replace the placeholder cover in seeds with the uploaded default asset to maintain parity between local and hosted environments.
 
-## 14. Future-facing Hooks (documented, not MVP)
+## 14. Operational Guardrails
 
-- AI recommendation endpoint stub to be replaced with OpenAI/Supabase AI call.
+This project is a demo and only needs lightweight operational guidance.
+
+### 14.1 Source control
+
+- Develop on short‑lived branches and raise PRs into `main`.
+- Keep `main` protected: require the CI workflow (lint → typecheck → test → build) plus one approval before merge. Direct pushes stay disabled.
+
+### 14.2 Hosting & environment
+
+- A single Supabase project `mlms-demo` backs every environment (local dev, preview, and the live demo). Provision one storage bucket for covers and reuse seeded data.
+- Vercel hosts the Nuxt app; the same project handles preview deploys and production. `.env.example` lists the required variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NUXT_APP_SITE_URL`, `NUXT_APP_DEFAULT_COVER_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`). Copy these into Vercel project settings and GitHub Actions environment secrets.
+
+### 14.3 Deployment & uptime
+
+- Any merge to `main` triggers Vercel to rebuild and redeploy automatically. If a deploy needs to be retried, click “Redeploy” from the Vercel dashboard.
+- No additional release cadence or staging promotion is required—keep the demo running through the technical assessment window.
+
+### 14.4 Secrets & rollback
+
+- Rotate Supabase or OpenAI keys manually by updating Vercel env vars and `.env.example`; rerun CI to confirm everything still builds.
+- If a problematic change lands, revert the commit in GitHub or roll back to a previous Vercel deployment. For data resets, re-run `pnpm db:seed` against `mlms-demo` or restore the seed snapshot manually.
+
+### 14.6 Observability & audits
+
+- Supabase logs (auth/storage/db) are forwarded to Logflare (built-in) with 14-day retention; production errors are mirrored to Sentry (Nuxt module to be configured during implementation) using DSNs stored in environment secrets.
+- GitHub Actions artifacts retain CI logs for 30 days to aid debugging.
+- Access control changes (role promotions, service role rotations) are recorded in `docs/dev/ops-changelog.md` so implementation agents can verify environment parity.
+
+## 15. Future-facing Hooks (documented, not MVP)
+
 - Notification infrastructure (email reminders) tracked in backlog.
 - Contact form with honeypot anti-spam targeted post-MVP.
 
 ---
 
-## 15. Considerations Backlog (from `spec-preparation-list-essential`)
+## 16. Considerations Backlog (from `spec-preparation-list-essential`)
 
 ### Essential decisions to secure before coding
 
@@ -325,7 +364,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 8.2. [x] **Client data layer contract** – Locked the thin adapter surface (mirrors server routes), shared Zod/TypeScript models, response envelope, retry strategy, and testing/mocking guidance in section 7.
 9. [x] **Server API responsibilities** – Locked in Nuxt server ownership for catalog, circulation, and reservations (section 9), documented idempotency tokens, conflict codes, and when to escalate to future Supabase Edge Functions.
 10. [x] **Seed data & baseline CI** – Section 13 captures the seed dataset, commands (`pnpm db:reset`, `pnpm db:seed`), `.env.example` contract, and GitHub Actions gates (lint, typecheck, test, build, migration + seed smoke). Bucket placeholder swap remains queued once assets exist.
-11. [ ] **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
+11. [x] **Operational guardrails** – Section 14 codifies branch protections, Supabase environment separation, secret rotation cadence, deployment flow, rollback playbook, and observability notes.
 
 ### Defer until after the prototype is working
 
@@ -341,7 +380,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - **Extended RBAC** – Admin UI for permissions, migration strategy for complex roles.
 - **Draft/moderation workflows** – Version history, approval queues, soft-delete restores.
 - **Notification ecosystem** – Email templates, scheduling, opt-in preferences, failure fallbacks.
-- **AI & recommendations** – Recommendation goals, prompt strategy, evaluation harness.
+- **AI & recommendations (advanced)** – Personalised embeddings, long-term preference learning, evaluation harness.
 - **Deep observability** – Metrics dashboards, alert thresholds, distributed tracing.
 - **Bulk operations & reporting** – CSV import/export, dashboards, scheduled exports.
 - **Performance governance** – Bundle budgets, dependency hygiene, optional offline queues.
