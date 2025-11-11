@@ -4,7 +4,8 @@ The following is a flow of my plans, thoughts, and decisions made from start to 
 
 - [Initial Plan](#initial-plan)
 - [Development Process](#development-process)
-- [Final Outcome and Insights](#final-outcome-and-insights)
+- [Insights](#insights)
+- [Final Outcome](#final-outcome)
 
 ## Initial Plan
 
@@ -611,6 +612,11 @@ And it should be fun to see what happens next
 
 
 
+I'm going to keep writing the dev process notes based on the branch the manager is on.  Thinking of how to make the agents work in sync has been fun to get used to.
+
+I want to just take a wild jump into telling the agents to try their first steps, now that it's easy to restore and resync everything.
+
+
 
 
 
@@ -640,35 +646,11 @@ Run npm run lint && npm run build locally after copying .env.example to .env wit
 
 
 
-
-
-
-
 - I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
 
 - I still want to get book cover art, maybe other media cover art.  Check stock photo sites and free photo sites like pexels, using image gen to get a few examples, etc.
 
-
-
-
-
-
-
 - I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
-
-
-
-
-
-
-
-
-Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
-
-- remember that tailwindcss forms and tailwindcss typography is available if you want it
-
-
-
 
 
 - something is strange with path aliases.  Nuxt is supposed to use ~ for src folder and @ for root folder, but in mine it seems like ~ and @ both point to /app/ and so I seem to need to move my components directory into app if I want to use aliases.
@@ -677,27 +659,17 @@ I think that if I keep my intentional use of ~/ as meaning app folder, and @ as 
 
 --- is the above about path aliases related to the fact that this is Nuxt4 and not 3?
 
-
-
-- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
-
+run formatter on all ts files
 
 ```
 
 
-run formatter on all ts files
-
-- fix the dev-process rendered markdown readability especially in 'insights'
-
-I'm aware that having truly complete docs might not be happening, but get the readme well polished especially with any walkthroughs or ways to help a tester check the app out.
-
-
-## Final Outcome
 
 
 
 
-### Insights
+
+## Insights
 
 
 These are discoveries as I went along that helped improve things like speed of productivity or quality of the final product.
@@ -705,20 +677,20 @@ These are discoveries as I went along that helped improve things like speed of p
 They are presented in the order in which they occurred while I worked from planning to implementation and finalizing.
 
 
-#### Workflow speed boost: Encountering development pain points and thinking of ways to overcome them
+### Workflow speed boost: Encountering development pain points and thinking of ways to overcome them
 
 While working on this, I found that it was useful to ask GPT-5 mini to reply in as few words as possible for asking quick iterative exploratory questions.  The rapid short answers were more helpful to navigate ideas and unpack information in less time without feeling reading fatigue.
 
-#### Model choices: Codex was good for making updates to Manager context files that needed to be well thought and well stated
+### Model choices: Codex was good for making updates to Manager context files that needed to be well thought and well stated
 
 When updating the Manager agent's context file of its understanding of the state of the project, I found it was useful to switch the active chat session's model to GPT-5-Codex so that it would more effectively translate chat session context into a well stated, well thought out out context file that GPT-5 mini could then be switched back to for continuing spec building plans.
 
 
-#### Product maintainability: The agent suggested abstracting the API so that it could be swapped out without rewriting the UI
+### Product maintainability: The agent suggested abstracting the API so that it could be swapped out without rewriting the UI
 
 I didn't originally plan to do this, but I like the idea in that it's something I'd like to have as a way to make the app more flexible at seemingly little cost
 
-#### Workflow speed boost:  Several agents working from one context file
+### Workflow speed boost:  Several agents working from one context file
 
 Discovered a way to boost a specific agent's capacity without extra friction or overhead.
 
@@ -731,7 +703,7 @@ Example:
 One chat session could discuss the agent's workflow and needs, and another chat session for performing tasks that take time for the agent to perform.  They carry their own chat session context so they can specialize into areas to cover more ground, but they can keep their work cohesive by reading and writing to their common role's context file.
 
 
-#### Workflow speed and product quality boost: Github Projects API and Codex code reviews
+### Workflow speed and product quality boost: Github Projects API and Codex code reviews
 
 I felt like it was probably overengineering for the goal of this application, but I entertained doing the workflow through Github Projects where the agents could use GH CLI to create Issues and do PRs that get automatically reviewed by Codex at the repo level (a newly announced capability).
 
@@ -742,14 +714,14 @@ Update: I found it to be helpful without losing any time to use a basic issue / 
 I nearly began to use Codex CLI to do code reviews locally but I decided to move forward with getting the prototype done.  Now I know that I can add in Codex if I find it's helpful to do so or use it from the start in future projects.
 
 
-#### Workflow speed boost:  The time spent upfront on planning this project will make future projects complete much faster
+### Workflow speed boost:  The time spent upfront on planning this project will make future projects complete much faster
 
 A lot of the time spent on this project was upfront work of planning things out so that it could be built quickly but also avoid having to rework it part way through due to not being foresighted enough.
 
 A lot of new ideas and ways to do things better were discovered along the way at a small time cost, but it will pay off in that all future projects will be much faster to build because of this.
 
 
-#### Workflow effectiveness boost: Making use of GH Copilot @workspace Chat Extension
+### Workflow effectiveness boost: Making use of GH Copilot @workspace Chat Extension
 
 I noticed that if I used the @workspace extension I could get far better agent conversations about the project to take place.
 
@@ -757,7 +729,7 @@ I investigated whether @workspace would help me do repo-wide code reviews, and i
 
 
 
-#### Taking a moment to re-explore using spec kit
+### Taking a moment to re-explore using spec kit
 
 My plan has been to do my own spec driven workflow even though I was recently told about GitHub Spec Kit.  I thought it would take too much time spent upfront to get to it for this project, but wanted to learn it for my next project.
 
@@ -770,7 +742,7 @@ Due to that it now it is worthwhile to investigate using spec kit at least for t
 Github Copilot with Codex model appears to do decent but imperfect code reivews using @workspace chat extension at least for now as well.
 
 
-#### Taking a moment to explore if any more nuxt modules exist that could help
+### Taking a moment to explore if any more nuxt modules exist that could help
 
 I noticed when I saw the Nuxt 'Welcome' page in the dev server, it mentions a modules link.  I saw that there are around 300 modules.  I found that VCCode Github Copilot didn't seem to be able to search the site for module names, but using a web browser search engine was able to get me a list of the modules categories.
 
@@ -781,31 +753,31 @@ Then I gave that list back to the web browser chat instance, and it retrieved a 
 From this, copilot was able to identify that nuxt has a tailwind v3 integration, and pointed out their devtools module, and addressed some auth modules that might help if I need something beyond what I can get with the supabase module.
 
 
-#### Prompt library upgrade
+### Prompt library upgrade
 
 I found it far more useful to create a single prompt file in JSON format, even just to use as something to have in a side panel as I work along.  It made it much easier to think about what I want to do and when and how I want to do it.  It caused me to think of other prompts that would be useful and resuable.  It also greatly reduced cognitive load in that instead of thinking of future steps as things I had to still work out when I got there, the prompts being pre-written took that off my mind and put the process on a set of rails that allowed it to gain momentum.
 
 
-#### Agent understanding checks are working and helping
+### Agent understanding checks are working and helping
 
 I notice that when I start a new chat session and ask the agent what its understanding of the project, its goals, what has been done, its current state, and what we need to do next, it is correctly looking at the context files and instructions sets to produce a reply that is either fully accurate, or is very close but that has some outdated pieces of information that I can catch and correct.
 
 It appears that keeping this running dev-process.md file, as well as writing a prompt-libart/agent-actions.json file with all the prompts ahead of time, is causing the agent to keep a very good handle on what the workflow and plans are going to go like, even without me having to directly tell it in the chat session.  These files are helping me to think and track progress but it's also helping to inform the agent in a similar way without having to directly draw attention to the files in conversation.
 
 
-#### Interesting effect from using agent-actions.json
+### Interesting effect from using agent-actions.json
 
 I only wanted the JSON file to store some reusable prompts for myself, but GPT-5 Codex has interpreted the file as an agents onboarding file and has been adding some prompts or guard rails into the library that aren't necessarily prompts I would use, but it thinks that agents are going to read these things and be informed by them, likely because it somehow automatically was.  I'll be interested in seeing if the implementation agents actually default to treating it like this as well.
 
 
-#### Taking time to explore potential UX improvements was a time cost but is profoundly helpful
+### Taking time to explore potential UX improvements was a time cost but is profoundly helpful
 
 Given its goals, it would have been best for this project to have pushed faster toward a working prototype in the shortest possible amount of time.
 
 However while investigating ways to improve product quality quickly, many important considerations were surfaced, discussed, decided upon, and the takeaways from it will make my next similar app trivial to create in far less time after what I've discovered making this one.
 
 
-#### Linking the agent to urls of current docs seems to overcome information defaulting to outdated things.
+### Linking the agent to urls of current docs seems to overcome information defaulting to outdated things.
 
 Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an idea to me that used tailwind.config.ts, I noticed that v4 doesn't use that file anymore.  So I pointed it to tailwind docs, and it seemed to correct its plan.  I will probably need to rely on this for all tailwind and all nuxt code because of using later version than these models are used to.
 
@@ -815,7 +787,7 @@ It appears that it is possible for it to get in long periods of checking documen
 
 
 
-#### Managing context / truth sources
+### Managing context / truth sources
 
 I found that there was a lot of value in converging on a spec and then at the point of locking it in, making sure to check the docs of each related technology in order to make sure the plan wasn't broken by recent updates.  This often resulted in what at the least looks like the LLM being confident that we're catching important changes.  We'll find out what happens when implementation starts.
 
@@ -824,8 +796,28 @@ It seems like the training cutoff date and where to find recent docs is a massiv
 
 
 
-#### The agent can help accomplish large tasks but it comes with a risk of having to verify that large thing
+### The agent can help accomplish large tasks but it comes with a risk of having to verify that large thing
 
 Codex made openapi.yaml which sounded like a great idea as a reference that implementation agents could use to build their work from.  However when it created it, it created it as a stub that isn't consistent with the spec.  Then it took many edits to pass through it and make it consistent.
 
 This is a file that is meant to facilitate development, but it's also a liability because if it has any subtle errors in it, it could be difficult to trace and resolve, so I might want to avoid this kind of approach unless I can find a way to ensure the quality of the statements being included in the file.
+
+
+### Getting immediate feedback and taking a more direct route
+
+It would have likely been helpful to not try to pull together a perfect spec first without doing more immediate feedback tests that things were working.  I tried using immediate feedback up to the point of confirming that Nuxt and Tailwind were working, but from that point on, the planning phase turned into designing task lists that were intended to make implementation a simple process of taking unmistakable steps.  The spec sounded good and well thought out by the time it was locked for implementing, but it swelled to high complexity and became hard to carry out.
+
+It looks like it's possible to still finish off the app but it might come with significant friction to resolve a lot of the details that got included into the spec without possibly reworking or even starting over again with a leaner plan.
+
+
+
+
+## Final Outcome
+
+The app has not yet been finally completed, but it was intended to be something that could be completed in one or two days.  Currently it might go on well beyond that goal depending on whether I try to keep moving in the direction it is currently going or whether I rework it again from a simpler starting point.
+
+During this process I have been doing a large amount of experimental workflow methods to see if they would help, and I learned an extremely helpful amount of information about considerations that have to go into planning UI, UX, API contracts, CSR, SSR and when to use each, creative ways to use Git and GitHub, and ways to help LLM coding agents to double check their assumptions by checking recent docs against the plans they come up with.
+
+Many incredible concepts, time saving tips, design considerations to remember, tools to use for future projects, and useful strategies were surfaced by this experience as well.
+
+The effort spent has produced a huge gain in capability and understanding compared to before doing this.
