@@ -575,10 +575,7 @@ The manager can perhaps then check off that file to show the requirement is read
 
 #### Setting up github issue templates and instructions for how to use Issues and PRs
 
-I'm not sure whether the config.yml requirement to check the spec before opening an issue will interfere with things here but I'll find out when I open an issue on it
-
-
-
+I like the way it looks, can't wait to see how it runs though
 
 
 
@@ -590,6 +587,22 @@ I'm not sure whether the config.yml requirement to check the spec before opening
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
+
+
+
+A thing I need to watch out for:
+
+Verify .env.example
+
+Compare keys with spec-final.md §12–13 and openapi.yaml (Supabase, OpenAI settings, feature flags).
+
+Cross-check against Supabase dashboard and Vercel project to make sure the variable names match exactly.
+
+Run npm run lint && npm run build locally after copying .env.example to .env with placeholder values; Nitro should warn if any required variable is missing.
+
+
+
+
 
 
 
