@@ -590,7 +590,13 @@ Some first draft has been made, but it needs to be reworked until it has well or
 They appear to be in an order where even if any of their steps are exploded into sub-steps, the order in which they occur won't radically change, so these can be turned into task list files now, and then the task list files can be exploded into sub-steps as needed.
 
 
+#### Checking if more scaffolding or help needs to be done
 
+The manager says that the division of the remaining work between the agents will take care of everything else, and no additional scaffolding or mocks or anything needs to be made by the manager.
+
+I'm now turning the responsibility files into task list files that will be broken into smaller steps until simple enough to implement easily.
+
+Once I have these files ready, I'm planning to switch to using GPT-5 mini
 
 
 #### I still want to hook up and test supabase auth and image storage as early on as possible so I know it's working while I build
