@@ -49,3 +49,5 @@ for more information please check /docs/dev/nuxt-4-vs-nuxt-3-llm-awareness.md
 This project aims to leverage nuxt ui components wherever they're helpful, but any new components made by agents here are to prefer using tailwindcss wherever it facilitates rapid UI development toward having a prototype that also looks excellent.  However when it is more helpful to use Vue 3 Single File Components `<style>` blocks, use them instead (for things like animations or other things they help facilitate where TailwindCSS is not as helpful)
 
 For further information about considerations, the text at docs/dev/tailwindcss-and-style-block-hybrid-approach.md
+
+MOST IMPORTANT NOTE ABOUT TAILWIND.  There seem to be lots of times where LLMs are speaking about it in a v3 sense - so any time tailwind classes or especially configs that use tailwind.config.ts, refer to the tailwindcss docs for truth about v4 which is what we're using: https://tailwindcss.com/docs/

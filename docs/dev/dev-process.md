@@ -476,9 +476,6 @@ Agent might ask a question about a ux consideration backlog question but it come
 
 
 
-when this tickbox is checked off move to spec-2 as an iteration checkpoint
-
-
 
 
 
@@ -521,6 +518,7 @@ By just having an llm check it, these things were identified but I know that thi
 
 I have a few priorities to juggle at the same time:
 
+- fix the dev-process rendered markdown readability especially in 'insights'
 
 - I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
 
@@ -702,3 +700,10 @@ I only wanted the JSON file to store some reusable prompts for myself, but GPT-5
 Given its goals, it would have been best for this project to have pushed faster toward a working prototype in the shortest possible amount of time.
 
 However while investigating ways to improve product quality quickly, many important considerations were surfaced, discussed, decided upon, and the takeaways from it will make my next similar app trivial to create in far less time after what I've discovered making this one.
+
+
+#### Linking the agent to urls of current docs seems to overcome information defaulting to outdated things.
+
+Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an idea to me that used tailwind.config.ts, I noticed that v4 doesn't use that file anymore.  So I pointed it to tailwind docs, and it seemed to correct its plan.  I will probably need to rely on this for all tailwind and all nuxt code because of using later version than these models are used to.
+
+

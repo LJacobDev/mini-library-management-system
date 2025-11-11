@@ -40,9 +40,10 @@ High-level goals:
 - API contract: Frontend consumes a thin API adapter module hitting Nuxt server routes (which may call Supabase/OpenAI). Adapter returns typed POJOs and has mockable implementations for tests.
 - Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
 - TDD discipline: Edge-case checklist → tests → implementation. Tests at minimum per feature: unit (composables/utils), integration (adapter), component tests (Vitest + Vue Test Utils), accessibility (axe), plus smoke E2E (Playwright) once flows exist.
-- Visual identity starter kit: (candidate) Primary `#1D3557`, Secondary `#E63946`, Accents `#457B9D` / `#A8DADC`, Neutral `#F1FAEE`; typography pairing `Inter` (UI) + `Cardo` (headings). Dark-mode optional but design tokens must support contrast-friendly swap.
+- Visual identity starter kit (awaiting confirmation): Primary `#1F3A8A`, Secondary `#10B981`, Accent `#F59E0B`, Neutral base `#111827` / `#F9FAFB`; type pairing `Inter` (UI) with scalable weights. Dark-mode still deferred but palette chosen to invert cleanly later.
 - Styling baseline: Tailwind CSS v4 via `@nuxtjs/tailwindcss` with `tailwindcss/preflight` + `tailwindcss/utilities`. Add lint/test guardrails to detect dependency downgrades back to v3 scaffolding.
 - Nuxt UI/Icon/Image modules: default to `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` for common UI patterns (navigation, lists, media, iconography) before rolling custom components.
+- Specification source of truth: `docs/dev/spec/spec-2.md` (cloned from spec-1 after routing decisions locked). `spec-1.md` remains as the historical draft.
 
 ## API boundary guidance (migration-friendly)
 
@@ -109,12 +110,12 @@ Coordination rules:
 
 - **Q1 (roles)** — ANSWERED: Minimal roles (`librarian`, `member`) via `profiles.role` + RLS.
 - **Q2 (media metadata)** — ANSWERED: Adopt the generic `media` schema above (required: `media_type`, `title`, `creator`; optional fields enumerated).
-- **Q3 (checkout & reservations)** — PARTIAL: Need detailed behaviour for holds/reservations (queueing, expiry, auto-convert to checkout) and whether due dates auto-calc (e.g., default 14 days, librarian override).
+- **Q3 (checkout & reservations)** — PARTIAL: Queue order (FIFO), max active holds (default 5), and due-date defaults (14 days, librarian override) are documented in spec-2; still need clarity on reservation expiry windows and auto-convert rules when an item is returned.
 - **Q4 (auth providers)** — OPEN: Decide whether to enable social OAuth (Google, GitHub) alongside email/password.
 - **Q5 (AI features)** — ANSWERED: All AI-powered endpoints run server-side with streaming responses; must support free-form suggestions, optional personalised recommendations, and librarian analytics Q&A. Architecture should make deferred delivery easy if time-constrained.
 - **Q6 (checkout history & retention)** — PARTIAL: Confirm retention policy for loan history (e.g., anonymise after X years). Currently tracked as TODO; need explicit rule for compliance narrative.
 - **Q7 (deferred scaffolding)** — OPEN: When spec is final, schedule creation of `.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, and optional `docs/ux/wireframes.md` so they reflect the locked spec.
-- **Q8 (color palette confirmation)** — OPEN: Approve proposed palette (`#1D3557`, `#E63946`, `#457B9D`, `#A8DADC`, `#F1FAEE`) and typography pairing (`Inter` + `Cardo`) or supply alternates.
+- **Q8 (color palette confirmation)** — OPEN: Approve the refreshed palette (`#1F3A8A`, `#10B981`, `#F59E0B`, neutral `#111827`/`#F9FAFB`) and confirm typography baseline (proposed `Inter`). Once approved, mark design tokens checklist item complete.
 
 ## Recent changes & state
 
@@ -126,6 +127,7 @@ Coordination rules:
 
 ## Short checklist / next steps for Manager
 
+- [ ] Resolve design tokens baseline (spec-prep item 6): confirm palette, typography, spacing, and Tailwind config decisions in `spec-2.md`.
 - [ ] Answer open questions above (reservations detail, auth providers, retention policy, scaffolding schedule).
 - [ ] Finalise `docs/dev/spec.md` with milestones, acceptance criteria, schema diagrams, reservation flow, and AI behaviour definitions (retrieval steps, streaming requirements).
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
@@ -146,4 +148,5 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-09: Dropped spec-kit, initially locked Tailwind v3 guidance, mapped priority Nuxt modules (image/ipx, ui/icon, tailwind, supabase, content, test-utils), and confirmed agents will follow the GH CLI issue→branch→PR workflow with optional CDN adoption deferred.
 - 2025-11-10 (AM): Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
 - 2025-11-10 (PM): Tailwind CSS v4 confirmed as the production baseline (v3 discarded after repeated integration failures). Edge-case checklist and spec prep list updated accordingly. Outstanding: refresh agent prompts to reference v4 defaults and draft the styling playbook addendum once real-world examples accrue.
+- 2025-11-10 (late PM): Spec routing/middleware decisions locked in `spec-1.md` and promoted to `spec-2.md`; next backlog focus is design tokens baseline (checklist item 6).
 

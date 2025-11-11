@@ -250,3 +250,8 @@ export default {
 - Update agent onboarding prompts and `docs/dev/edge-case-checklist.md` references to remove assumptions about Tailwind v3.
 - Note in upcoming specs that Tailwind v4 is the authoritative version; add regression checks to ensure accidental downgrades don’t occur.
 - Consider adding a `docs/dev/styling-playbook.md` addendum once more v4 experience accumulates, highlighting proven component patterns.
+
+### New discovery (Nov 10 2025)
+
+- Defining design tokens with Tailwind v4’s `@theme` directive inside `app/assets/css/main.css` lets Tailwind emit both utilities and CSS variables, so Nuxt UI can reference the exact same values via `app.config.ts` without duplicating theme data. This keeps Tailwind utilities and Nuxt UI components in sync automatically.
+- Tailwind v4 departs sharply from v3’s reliance on `tailwind.config.*` for theme tokens and plugin wiring. The config file still exists (Nuxt generates `tailwind.config.ts`) but is now primarily for content paths or rare plugin hooks; all theme customization happens in CSS via `@theme`. Attempting to reintroduce v3-style `theme.extend` blocks or PostCSS scaffolding leads to redundant configuration and, in our case, broke the Nuxt build—so future agents should treat the CSS-first `@theme` approach as canonical for v4 projects.
