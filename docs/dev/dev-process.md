@@ -599,6 +599,22 @@ I'm now turning the responsibility files into task list files that will be broke
 Once I have these files ready, I'm planning to switch to using GPT-5 mini
 
 
+
+
+#### Opening the new implementation-agent workspaces
+
+Inside of the manager workspace I'm creating /implementation-agents/1,2,3/
+
+I will clone the repo in each one, set up their .agent-info file
+
+And it should be fun to see what happens next
+
+
+
+
+
+
+
 #### I still want to hook up and test supabase auth and image storage as early on as possible so I know it's working while I build
 
 
