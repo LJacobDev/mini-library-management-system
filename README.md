@@ -16,7 +16,7 @@ Some files of interest include the following:
 - The [Implementation Guide](agents/implementation-guide.md) shows the process through which the agents were intended to perform a rigorous edge case checking, test driven development style approach to lock in a solid result.
 - My favourite part of this repo is [spec-final.md](docs/dev/spec/spec-final.md), which turned out to be a time sink and overengineering, but it was a fascinating experience to work out such full details for the application's intended success, including route and API contract and user experience stories and roles.  This file was actually very exciting to build up and watch it take form.  I would have liked only to be able to perform as quick of an implementation of it as I was intending to.
 
-A great amount of value was gained by myself as a developer during this process due to the intensive learning from the continuous exposure to extremely wide ranging and thoughtful aspects of application architecture and development, user experience, deployment options, freely available timesaving tools I can use for future projects and more.
+A great amount of value was gained by me as a developer during this process due to the intensive learning from the continuous exposure to extremely wide ranging and thoughtful aspects of application architecture and development, user experience, deployment options, freely available timesaving tools I can use for future projects and more.
 
 
 
