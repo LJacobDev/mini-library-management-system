@@ -1,13 +1,15 @@
--- Mini Library Management System — canonical schema + seed data
 -- This file is source-of-truth documentation for the Supabase Postgres schema.
 -- It is intentionally repository-owned so reviewers can inspect DB structure without logging into Supabase.
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =============================
 --  ENUMS
 -- =============================
 
-CREATE TYPE media_type AS ENUM ('book','video','audio','other');
-CREATE TYPE book_format AS ENUM ('paperback','hardcover');
+CREATE TYPE IF NOT EXISTS media_type AS ENUM ('book','video','audio','other');
+CREATE TYPE IF NOT EXISTS media_format AS ENUM ('print','ebook','audiobook','dvd','blu-ray');
+CREATE TYPE IF NOT EXISTS user_role AS ENUM ('member','librarian','admin');
 
 -- =============================
 --  USERS (minimal reference table)
@@ -17,8 +19,8 @@ CREATE TYPE book_format AS ENUM ('paperback','hardcover');
 
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email text,
-  role text,
+  email text NOT NULL UNIQUE,
+  role user_role NOT NULL DEFAULT 'member',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   deleted_at timestamptz
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE media (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   media_type media_type NOT NULL,
+  media_format media_format NOT NULL DEFAULT 'print',
   title text NOT NULL,
   creator text NOT NULL,
   isbn text,
@@ -38,16 +41,10 @@ CREATE TABLE media (
   subject text,
   description text,
   cover_url text,
-  format text,
-  book_format book_format,
   language varchar(8),
   pages int,
   duration_seconds int,
   published_at date,
-  checked_out boolean NOT NULL DEFAULT false,
-  checked_out_by uuid REFERENCES users(id) ON DELETE SET NULL,
-  checked_out_at timestamptz,
-  due_date timestamptz,
   metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -59,9 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_media_title_creator ON media (lower(title), lower
 CREATE INDEX IF NOT EXISTS idx_media_genre_lower ON media (lower(genre));
 CREATE INDEX IF NOT EXISTS idx_media_subject_lower ON media (lower(subject));
 CREATE INDEX IF NOT EXISTS idx_media_media_type ON media (media_type);
-CREATE INDEX IF NOT EXISTS idx_media_format ON media (format);
-CREATE INDEX IF NOT EXISTS idx_media_checked_out ON media (checked_out);
-CREATE INDEX IF NOT EXISTS idx_media_due_date ON media (due_date) WHERE checked_out = true;
+CREATE INDEX IF NOT EXISTS idx_media_media_format ON media (media_format);
 CREATE INDEX IF NOT EXISTS idx_media_fulltext ON media USING gin (
   to_tsvector('english', coalesce(title,'') || ' ' || coalesce(description,'') || ' ' || coalesce(subject,'') || ' ' || coalesce(genre,'') || ' ' || coalesce(creator,''))
 );
@@ -93,6 +88,51 @@ CREATE INDEX IF NOT EXISTS idx_media_loans_due_date_active ON media_loans (due_d
 CREATE INDEX IF NOT EXISTS idx_media_loans_returned_at ON media_loans (returned_at);
 
 -- =============================
+--  TIMESTAMP TRIGGERS
+-- =============================
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_media_updated_at
+BEFORE UPDATE ON media
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_media_loans_updated_at
+BEFORE UPDATE ON media_loans
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+-- =============================
+--  ROW LEVEL SECURITY PREP
+-- =============================
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Users manage own profile" ON users ...
+
+ALTER TABLE media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Catalog read access" ON media FOR SELECT TO anon, authenticated USING (true);
+-- TODO: CREATE POLICY "Catalog write access" ON media FOR ALL TO authenticated USING ((auth.jwt() ->> 'role') IN ('librarian','admin'));
+
+ALTER TABLE media_loans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_loans FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Members read own loans" ON media_loans FOR SELECT TO authenticated USING ((auth.uid() IS NOT NULL) AND (auth.uid() = user_id));
+-- TODO: CREATE POLICY "Circulation staff manage loans" ON media_loans FOR ALL TO authenticated USING ((auth.jwt() ->> 'role') IN ('librarian','admin'));
+
+-- =============================
 --  SEED DATA (illustrative sample — safe to adjust)
 -- =============================
 
@@ -113,11 +153,11 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Sample media (two copies of same book + one DVD)
-INSERT INTO media (id, media_type, title, creator, genre, isbn, subject, description, cover_url, format, book_format, language, pages, published_at, metadata)
+INSERT INTO media (id, media_type, media_format, title, creator, genre, isbn, subject, description, cover_url, language, pages, published_at, metadata)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'book', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'A compelling fiction title.', 'https://example.com/covers/example-book-1.jpg', 'print', 'paperback', 'EN', 320, '2019-03-15', '{"tags": ["staff-pick"]}'),
-  ('00000000-0000-0000-0000-000000000002', 'book', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'Second copy of the same title.', 'https://example.com/covers/example-book-2.jpg', 'print', 'paperback', 'EN', 320, '2019-03-15', '{"condition": "gently-used"}'),
-  ('00000000-0000-0000-0000-000000000003', 'video', 'Example Movie', 'D. Director', 'Drama', NULL, 'Cinema', 'Award-winning drama on DVD.', 'https://example.com/covers/example-movie.jpg', 'dvd', NULL, 'EN', NULL, '2021-07-01', '{"rating": "PG-13"}')
+  ('00000000-0000-0000-0000-000000000001', 'book', 'print', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'A compelling fiction title.', 'https://example.com/covers/example-book-1.jpg', 'EN', 320, '2019-03-15', '{"tags": ["staff-pick"]}'),
+  ('00000000-0000-0000-0000-000000000002', 'book', 'print', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'Second copy of the same title.', 'https://example.com/covers/example-book-2.jpg', 'EN', 320, '2019-03-15', '{"condition": "gently-used"}'),
+  ('00000000-0000-0000-0000-000000000003', 'video', 'dvd', 'Example Movie', 'D. Director', 'Drama', NULL, 'Cinema', 'Award-winning drama on DVD.', 'https://example.com/covers/example-movie.jpg', 'EN', NULL, '2021-07-01', '{"rating": "PG-13"}')
 ON CONFLICT (id) DO NOTHING;
 
 -- Sample loans (one active, one returned late)

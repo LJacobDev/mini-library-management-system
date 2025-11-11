@@ -181,13 +181,16 @@ Every route implements:
 
 ## 8. UI & Design Tokens
 
-- Palette: Primary `#1F3A8A` (blue-900), Secondary `#10B981` (emerald-500), Neutral base `#111827` / `#F9FAFB`, Accent `#F59E0B` for cautions.
-- Typography: Inter font, sizes tokenised (`text-sm`, `text-base`, `text-lg`, `text-xl`). Line-heights matching Tailwind defaults.
-- Spacing scale: Tailwind default 4px base; container max width 1200px.
-- Breakpoints: Tailwind defaults (`sm`, `md`, `lg`, `xl`); nav collapses to drawer below `lg`.
-- Iconography: `@nuxt/icon` with Heroicons outline by default.
-- Image handling: `@nuxt/image` for responsive cover art with placeholders.
-- Dark mode: Deferred (documented in backlog) but color tokens chosen to allow later inversion.
+- **Palette (light mode first)**: Primary `#1B4F72` (deep blue reminiscent of civic signage), Secondary `#2E8B57` (balanced evergreen), Accent `#F4A261` (warm highlight for CTAs and alerts). Neutral stack anchors on `#F7F9FC` backgrounds, `#1F2933` body text, and `#64748B` for subdued copy. Success/Warning/Error colours map to Tailwind-adjacent values (`#2ECC71`, `#F59E0B`, `#E74C3C`) to keep overrides simple. Documented as placeholders we can revise quickly once the live UI takes shape.
+- **Typography scale**: Inter typography with display text at `clamp(2.25rem, 3vw + 1rem, 3rem)` for hero moments, heading tiers at Tailwind `text-4xl`, `text-3xl`, `text-2xl` (1.1 line-height), body copy at `text-base` (1rem, 1.6 line-height), and supporting text at `text-sm` (0.875rem, 1.5 line-height). `font-medium` anchors labels, `font-semibold` highlights primary actions.
+- **Spacing rhythm**: Tailwind 4px base unit; section padding `py-12` desktop / `py-8` mobile, and card spacing anchored to 16/24/32px (multiples of 4/6/8). All values captured as guidelines so agents can fine-tune once screens are visible.
+- **Breakpoints**: Mobile-first tiers tuned for responsive civic sites—`sm` ≥480px (large phones), `md` ≥768px (tablets landscape), `lg` ≥1024px (laptops), `xl` ≥1280px (wider desktops). Align Tailwind config to these thresholds and keep `2xl` in reserve for future dashboard density needs.
+- **Iconography**: `@nuxt/icon` renders icons via the Iconify catalog (Heroicons outline by default). We'll expose aliases and size defaults through `app.config.ts` (`icon.size = '20px'`, `icon.class = 'text-primary-500'`) and keep the module in `css` mode with `cssLayer: 'base'` so Tailwind utilities style icons predictably. Collections stay scoped (e.g., install `@iconify-json/heroicons-outline`) and can be swapped by editing `nuxt.config.ts > icon.serverBundle.collections`, making the icon system fast to adjust without code churn.
+- **Image handling**: `@nuxt/image` drives all cover art. We define a `cover` preset in `nuxt.config.ts` with `sizes="100vw sm:60vw md:400px lg:360px"`, `modifiers: { fit: 'cover', format: 'webp', quality: 75 }`, and `placeholder: [32, 18, 70, 4]` for a blur-up experience. Media cards call `<NuxtImg preset="cover" loading="lazy" densities="x1 x2" />`, producing a mobile-friendly default that narrows on larger screens while staying adjustable from one config stanza. Supabase public storage domains are whitelisted via `image.domains` so switching storage buckets or resizing rules is a one-line change.
+- **Tailwind ↔ Nuxt UI contract**: Tailwind v4 remains the single source of truth for design tokens using the `@theme` directive inside `app/assets/css/main.css`. Tokens defined there (palette, fonts, spacing, breakpoints) generate Tailwind utilities and CSS variables simultaneously. Nuxt UI reads those variables via `app.config.ts` (e.g., `ui.colors.primary: 'var(--color-primary-500)'`), keeping both systems aligned without duplication. Any bespoke components keep using Tailwind utilities, while Nuxt UI components inherit the same tokens through the shared variables. This arrangement is easy to evolve—update the token once in CSS, and both layers stay synced.
+- **Nuxt UI component defaults (Nuxt 4.2 verified)**: Lean on Nuxt UI v4.1 primitives that ship with Nuxt 4.2. The librarian/admin app shell uses the dashboard suite (`DashboardGroup`, `DashboardNavbar`, `DashboardSidebar`, `DashboardSidebarToggle`, `DashboardToolbar`, `USlideover`) for responsive navigation. Public/member views combine `Header`, `NavigationMenu`, `Main`, `Footer`, and `Container`/`PageSection` blocks. Surface content with `UCard`, `UTabs`, `PageHeader`, `PageSection`, `Empty`, and `UTable` + `Pagination`. Modals and confirmations standardize on `UModal`, `UDialog`, and toast utilities bundled in `UApp`. Forms use `UForm`, `UFormField`, `UInput`, `USelect`, `USelectMenu`, `UCheckbox`, `URadioGroup`, `UTextarea`, `USwitch`, and `UButton`, with Tailwind utilities for layout tweaks. This catalogue is copied directly from the Nuxt UI docs, ensuring agents don’t reach for pro-only or deprecated APIs.
+
+These tokens bias toward a welcoming, well-lit municipal aesthetic and are intentionally easy to revisit after the MVP lands.
 
 ## 9. Accessibility & UX Guardrails
 
@@ -241,11 +244,13 @@ Every route implements:
 3. [x] **Critical user journeys** – Document the exact screens and transitions for browse → detail → reserve/checkout → return; capture edge cases (empty results, overdue, reservation conflicts).
 4. [x] **Auth & account lifecycle** – Decide on signup/onboarding, supported SSO providers, password reset, email verification flows, and error handling for expired sessions; note Supabase UI vs custom Nuxt pages.
 5. [x] **Nuxt shell, routing, and middleware** – Choose SSR/SSG/CSR per route, define layout zones, and specify route middleware for role gating/loading states; clarify hydration rules and Supabase client availability on server/client.
-6. [ ] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
-7. [ ] **Nuxt UI/Icon/Image usage plan** – Decide how `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` integrate with Tailwind utilities for layouts, cards, navigation, and media; capture preferred components/patterns so agents default to these modules instead of rebuilding fundamentals.
-8. [ ] **Client data layer contract** – List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and Zod validation schemas; document error handling, retry/backoff, and integration test expectations.
+6. [x] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
+7. [x] **Nuxt UI/Icon/Image usage plan** – Documented component catalogue, icon defaults (aliases + 20px base size via `app.config.ts`), and the mobile-first `cover` preset for `@nuxt/image` (`sizes="100vw sm:60vw md:400px lg:360px"`, lazy loading, blur placeholder). Tailwind tokens stay the shared contract so swapping components or resizing rules is a single-config edit.
+8.1. [x] **Schema.sql quality pass** – Hardened migrations (`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, new `user_role`/`media_format` enums), tightened `users` constraints, dropped redundant media checkout columns, added timestamp triggers, and enabled RLS with policy stubs so downstream contracts stay in sync.
+8.2. [ ] **Client data layer contract** – List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and Zod validation schemas; document error handling, retry/backoff, and integration test expectations.
 9. [ ] **Server API responsibilities** – Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage; capture idempotency expectations and failure modes.
 10. [ ] **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
+  - As soon as the Supabase bucket is reachable, swap the seed cover placeholders to a real default asset in storage so Nuxt Image previews render something real end-to-end.
 11. [ ] **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
 
 ### Defer until after the prototype is working
@@ -274,3 +279,4 @@ Every route implements:
 - **Contact form with bot protection** – Honeypot anti-bot logic and messaging.
 - **Extended telemetry & analytics** – BI exports and governance.
 - **Future Nuxt deployment scenarios** – Hybrid rendering, edge deployment, localisation expansion.
+- **Dark mode theme follow-up** – Define and implement a complementary dark palette once the light-mode MVP is validated.

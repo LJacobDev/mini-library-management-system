@@ -1,0 +1,1471 @@
+openapi: 3.1.0
+info:
+  title: Mini Library Management System API
+  version: 0.1.0
+  summary: Contract derived from docs/dev/spec/spec-final.md (locked 2025-11-10)
+  description: >-
+    Nuxt 4 + Supabase API surface for catalog, circulation, reservations, and AI
+    recommendations. Schemas mirror the shared Zod models declared in
+    `~/lib/api/types.ts`. Streaming endpoints return Server-Sent Events in-flight
+    and resolve to the documented payload when completed.
+servers:
+  - url: http://localhost:3000
+    description: Local development (Nuxt dev server)
+  - url: https://mlms-demo.vercel.app
+    description: Production (Vercel)
+
+tags:
+  - name: Catalog
+  - name: Circulation
+  - name: Reservations
+  - name: Account
+  - name: AI
+
+paths:
+  /api/catalog:
+    get:
+      tags: [Catalog]
+      operationId: listCatalog
+      summary: List catalog items
+      description: >-
+        Mirrors the `listCatalog` adapter call with server-side filtering, full-text search,
+        and pagination. Publicly accessible for guests while authenticated users receive the
+        same payload. Query parameters map one-to-one with the spec contract in
+        `spec-final.md` §4.2 and §6.
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/MediaType'
+        - $ref: '#/components/parameters/Availability'
+        - $ref: '#/components/parameters/Genre'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedia'
+        '400':
+          description: Invalid query parameter combination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Catalog]
+      operationId: createMedia
+      summary: Create media item
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaCreateInput'
+      responses:
+        '201':
+          description: Media item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        '409':
+          description: Media item already exists with the provided unique fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/catalog/{id}:
+    get:
+      tags: [Catalog]
+      operationId: getMediaById
+      summary: Retrieve media detail
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        '404':
+          description: Media item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Catalog]
+      operationId: updateMedia
+      summary: Update media item
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaUpdateInput'
+      responses:
+        '200':
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        '409':
+          description: Precondition failed due to concurrent update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Media item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Catalog]
+      operationId: archiveMedia
+      summary: Archive media item
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Item archived
+        '404':
+          description: Media item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Precondition failed due to stale `If-Match` header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/checkout:
+    post:
+      tags: [Circulation]
+      operationId: checkoutLoan
+      summary: Checkout a media copy
+      description: >-
+        Creates a new loan record for the supplied `mediaId`. Payload must include a
+        client-generated `loanRequestId` for idempotency. Librarians may specify the
+        borrowing member and custom due date; members are inferred from the session.
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutInput'
+      responses:
+        '201':
+          description: Checkout completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        '400':
+          description: Validation error (missing request ID, invalid due date, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to checkout this item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Conflict (already checked out, member limit reached, reservation waiting)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Resource locked due to concurrent circulation operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/checkin:
+    post:
+      tags: [Circulation]
+      operationId: checkinLoan
+      summary: Check in a media copy
+      description: >-
+        Convenience endpoint for desk and member self-returns. Reconciles reservations and
+        emits hand-off metadata when the next patron should be notified.
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinInput'
+      responses:
+        '200':
+          description: Check-in completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReturnResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Loan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Loan is locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/{id}/renew:
+    patch:
+      tags: [Circulation]
+      operationId: renewLoan
+      summary: Renew an active loan
+      description: >-
+        Renews an existing loan when policy allows. Members can only renew their own loans and
+        only when no reservations are waiting. Librarians may force renewals by supplying
+        `force: true` with `justification`.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewInput'
+      responses:
+        '200':
+          description: Renewed loan record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to renew this loan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Conflict (reservation waiting or renewal limit reached)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Loan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/{id}/return:
+    patch:
+      tags: [Circulation]
+      operationId: returnLoan
+      summary: Return an active loan
+      description: >-
+        Marks an active loan as returned and returns hand-off metadata when the reservation
+        queue advances. Supports waiving fines for librarian overrides.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnInput'
+      responses:
+        '200':
+          description: Returned loan record and next reservation handoff when applicable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReturnResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Loan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Loan currently locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/{id}/override:
+    post:
+      tags: [Circulation]
+      operationId: overrideLoan
+      summary: Apply a librarian/admin override to an active loan
+      description: >-
+        Allows elevated staff to adjust due dates, mark items lost/damaged, or waive fines. All
+        overrides require a unique `overrideRequestId` for idempotency and capture optional notes
+        for audit trails.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideInput'
+      responses:
+        '200':
+          description: Override applied and loan updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to perform override
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Loan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Loan locked by concurrent operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations:
+    post:
+      tags: [Reservations]
+      operationId: createReservation
+      summary: Place a hold on a media item
+      description: >-
+        Queues a reservation for the authenticated member. Enforces per-member reservation
+        limits and prevents duplicate holds for the same media. Requires a client-generated
+        `reservationRequestId` for idempotency.
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreateInput'
+      responses:
+        '201':
+          description: Reservation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationActionResponse'
+        '400':
+          description: Validation error (missing IDs, exceeds member reservation limit, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to reserve this item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Media item not found or not reservable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Conflict (duplicate reservation, queue already full, or queue changed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Reservation queue locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations/{id}:
+    delete:
+      tags: [Reservations]
+      operationId: cancelReservation
+      summary: Cancel a reservation
+      description: >-
+        Cancels a pending reservation for the authenticated member or an eligible staff role
+        and rebalances queue positions. Requires a client-generated `cancelRequestId` for
+        idempotency.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCancelInput'
+      responses:
+        '200':
+          description: Reservation cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationActionResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to cancel this reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Queue changed during cancellation attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Reservation locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations/{id}/claim:
+    patch:
+      tags: [Reservations]
+      operationId: claimReservation
+      summary: Mark a reservation as ready for pickup
+      description: >-
+        Transitions the targeted reservation to `ready_for_pickup`, setting the pickup window and
+        notifying the next member in queue. Requires a client-generated request ID for
+        idempotency. Future policy extensions may auto-checkout digital items.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationClaimInput'
+      responses:
+        '200':
+          description: Reservation marked ready for pickup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationActionResponse'
+        '400':
+          description: Validation error (reservation already ready or collected, missing IDs)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to claim this reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Queue changed during claim attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Reservation locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations/{id}/advance:
+    post:
+      tags: [Reservations]
+      operationId: advanceReservationQueue
+      summary: Advance the reservation queue after a no-show
+      description: >-
+        Skips the targeted reservation (typically after a no-show) and promotes the next member
+        in line. Requires a client-generated `advanceRequestId` for idempotency and returns the
+        updated queue snapshot.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueAdvanceInput'
+      responses:
+        '200':
+          description: Reservation queue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationQueueResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission to advance the queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Reservation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '409':
+          description: Queue changed during advance attempt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '423':
+          description: Reservation queue locked by another operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/me/loans:
+    get:
+      tags: [Account]
+      operationId: listSelfLoans
+      summary: List authenticated user loans
+      description: >-
+        Returns the signed-in member's loans. Supports pagination and an `includeHistory`
+        flag to surface returned/closed loans in addition to active checkouts. Results are
+        ordered by `dueAt` ascending for active loans, then most recent activity for history.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IncludeHistory'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Loans for the signed-in member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLoans'
+        '400':
+          description: Invalid pagination or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/me/reservations:
+    get:
+      tags: [Account]
+      operationId: listSelfReservations
+      summary: List authenticated user reservations
+      description: >-
+        Lists the signed-in member's reservations. The optional `filter` can narrow to active
+        holds or historical records. Responses include queue metadata so the UI can surface
+        position changes and upcoming expirations.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Reservations for the signed-in member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReservations'
+        '400':
+          description: Invalid filter or pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/recommendations/suggest:
+    post:
+      tags: [AI]
+      operationId: requestRecommendations
+      summary: Stream role-aware recommendations or catalog insights
+      description: >-
+        Streams OpenAI-backed recommendations tailored to the caller's role. Clients must
+        provide a unique `X-Client-Request-Id` header for observability and idempotent logging.
+        The response is a Server-Sent Events stream of chunk messages culminating in a
+        `RecommendationResponse` payload once complete.
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClientRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationPrompt'
+      responses:
+        '200':
+          description: >-
+            SSE stream of textual chunks that resolves to a discriminated union payload once
+            completed. The final JSON mirrors `RecommendationResponse`.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/RecommendationStreamEvent'
+            application/json:
+              deprecated: true
+              description: Legacy non-streaming fallback; avoid for new clients.
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        '400':
+          description: Validation error (bad payload, unsupported mode, rate limit policy breach)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Caller lacks permission for recommendations (e.g., suspended account)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Rate limit exceeded; client should retry after the provided interval
+          headers:
+            Retry-After:
+              description: Seconds until the client may retry the request.
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '503':
+          description: Upstream OpenAI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        default:
+          $ref: '#/components/responses/Error'
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    MediaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LoanId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReservationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SearchQuery:
+      name: q
+      in: query
+      schema:
+        type: string
+        maxLength: 200
+    MediaType:
+      name: mediaType
+      in: query
+      schema:
+        type: string
+        enum: [book, audiobook, ebook, video, other]
+    Availability:
+      name: availability
+      in: query
+      schema:
+        type: string
+        enum: [available, checked-out, reserved]
+    Genre:
+      name: genre
+      in: query
+      schema:
+        type: string
+        maxLength: 80
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    IncludeHistory:
+      name: includeHistory
+      in: query
+      schema:
+        type: boolean
+        default: false
+    ReservationFilter:
+      name: filter
+      in: query
+      schema:
+        type: string
+        enum: [active, history]
+    IfMatch:
+      name: If-Match
+      in: header
+      description: Strong ETag representing the latest `updated_at` value returned by the API.
+      required: true
+      schema:
+        type: string
+    ClientRequestId:
+      name: X-Client-Request-Id
+      in: header
+      description: Unique client-generated UUID used for tracing and idempotent logging of recommendation requests.
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: Error response envelope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiError:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - UNAUTHENTICATED
+                - PERMISSION_DENIED
+                - NOT_FOUND
+                - CONFLICT
+                - PRECONDITION_FAILED
+                - LOCKED
+                - RATE_LIMITED
+                - SERVER_ERROR
+                - RETRYABLE_ERROR
+                - UPSTREAM_UNAVAILABLE
+            message:
+              type: string
+            details:
+              type: object
+              nullable: true
+    PaginatedMeta:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    MediaSummary:
+      type: object
+      required: [id, title, creator, mediaType, available]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+          enum: [book, audiobook, ebook, video, other]
+        available:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        coverUrl:
+          type: string
+          format: uri
+    MediaDetail:
+      allOf:
+        - $ref: '#/components/schemas/MediaSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            isbn:
+              type: string
+            durationSeconds:
+              type: integer
+            metadata:
+              type: object
+              additionalProperties: {}
+            queueLength:
+              type: integer
+            loanStatus:
+              type: string
+              enum: [available, checked-out, reserved]
+    PaginatedMedia:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [items, meta]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/MediaSummary'
+            meta:
+              $ref: '#/components/schemas/PaginatedMeta'
+    MediaCreateInput:
+      type: object
+      required: [title, creator, mediaType]
+      properties:
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+          enum: [book, audiobook, ebook, video, other]
+        isbn:
+          type: string
+        durationSeconds:
+          type: integer
+          minimum: 0
+        metadata:
+          type: object
+          additionalProperties: {}
+    MediaUpdateInput:
+      type: object
+      description: Partial update; same fields as MediaCreateInput but optional.
+      properties:
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+        isbn:
+          type: string
+        durationSeconds:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: {}
+    CheckoutInput:
+      type: object
+      required: [mediaId, loanRequestId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        dueAt:
+          type: string
+          format: date-time
+        loanRequestId:
+          type: string
+          format: uuid
+    CheckinInput:
+      type: object
+      required: [mediaId, returnRequestId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        loanId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        returnRequestId:
+          type: string
+          format: uuid
+    RenewInput:
+      type: object
+      required: [renewalRequestId]
+      properties:
+        renewalRequestId:
+          type: string
+          format: uuid
+        force:
+          type: boolean
+        justification:
+          type: string
+    ReturnInput:
+      type: object
+      required: [returnRequestId]
+      properties:
+        returnRequestId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        waiveFines:
+          type: boolean
+    LoanRecord:
+      type: object
+      required: [id, mediaId, memberId, checkedOutAt, dueAt, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        processedBy:
+          type: string
+          format: uuid
+        checkedOutAt:
+          type: string
+          format: date-time
+        dueAt:
+          type: string
+          format: date-time
+        returnedAt:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+        status:
+          type: string
+          enum: [active, returned, lost, damaged]
+        loanNumber:
+          type: integer
+        idempotentReplay:
+          type: boolean
+          description: Indicates whether the response is a replay of a previous idempotent call.
+    LoanReturnResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [loan]
+          properties:
+            loan:
+              $ref: '#/components/schemas/LoanRecord'
+            handoff:
+              type: object
+              nullable: true
+              properties:
+                reservationId:
+                  type: string
+                  format: uuid
+                memberId:
+                  type: string
+                  format: uuid
+                expiresAt:
+                  type: string
+                  format: date-time
+            idempotentReplay:
+              type: boolean
+    OverrideInput:
+      type: object
+      required: [overrideRequestId]
+      properties:
+        overrideRequestId:
+          type: string
+          format: uuid
+        dueAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, returned, lost, damaged]
+        waiveFines:
+          type: boolean
+        note:
+          type: string
+    ReservationCreateInput:
+      type: object
+      required: [mediaId, reservationRequestId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        reservationRequestId:
+          type: string
+          format: uuid
+        note:
+          type: string
+          description: Optional note displayed to staff when the reservation is claimed.
+    ReservationRecord:
+      type: object
+      required: [id, mediaId, memberId, position, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        position:
+          type: integer
+        status:
+          type: string
+          enum: [pending, ready_for_pickup, collected, cancelled, expired]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        readyAt:
+          type: string
+          format: date-time
+          nullable: true
+        collectedAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ReservationCancelInput:
+      type: object
+      required: [cancelRequestId]
+      properties:
+        cancelRequestId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          description: Optional context for audit logs when staff cancel a reservation.
+    ReservationClaimInput:
+      type: object
+      required: [claimRequestId]
+      properties:
+        claimRequestId:
+          type: string
+          format: uuid
+        pickupExpiresAt:
+          type: string
+          format: date-time
+          description: Optional override of the default pickup window expiration.
+        note:
+          type: string
+          description: Optional note stored with the reservation claim event.
+    QueueAdvanceInput:
+      type: object
+      required: [advanceRequestId]
+      properties:
+        advanceRequestId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        notifyNext:
+          type: boolean
+          description: Whether the promoted member should be notified immediately.
+        note:
+          type: string
+          description: Optional context captured for audit logging.
+    ReservationActionResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [reservation]
+          properties:
+            reservation:
+              $ref: '#/components/schemas/ReservationRecord'
+            queue:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReservationRecord'
+            handoff:
+              $ref: '#/components/schemas/ReservationHandoff'
+            idempotentReplay:
+              type: boolean
+    ReservationQueueResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [queue]
+          properties:
+            queue:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReservationRecord'
+            promotedReservation:
+              $ref: '#/components/schemas/ReservationRecord'
+              nullable: true
+            handoff:
+              $ref: '#/components/schemas/ReservationHandoff'
+            idempotentReplay:
+              type: boolean
+    ReservationHandoff:
+      type: object
+      nullable: true
+      required: [reservationId, memberId, expiresAt]
+      properties:
+        reservationId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+    PaginatedLoans:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [items, meta]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LoanRecord'
+            meta:
+              $ref: '#/components/schemas/PaginatedMeta'
+    PaginatedReservations:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [items, meta]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReservationRecord'
+            meta:
+              $ref: '#/components/schemas/PaginatedMeta'
+            filter:
+              type: string
+              enum: [active, history]
+              default: active
+    RecommendationPrompt:
+      type: object
+      required: [mode, interests]
+      properties:
+        mode:
+          type: string
+          enum: [member, librarian, admin]
+        interests:
+          type: array
+          items:
+            type: string
+        mediaId:
+          type: string
+          format: uuid
+          nullable: true
+        tone:
+          type: string
+          enum: [shortlist, discovery]
+        context:
+          type: object
+          additionalProperties: {}
+    RecommendationResult:
+      type: object
+      required: [mediaId, score, reason]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+        reason:
+          type: string
+        callId:
+          type: string
+    CatalogInsight:
+      type: object
+      required: [topic, summary]
+      properties:
+        topic:
+          type: string
+        summary:
+          type: string
+        supportingData:
+          type: object
+          additionalProperties: {}
+        suggestedActions:
+          type: array
+          items:
+            type: string
+    RecommendationResponse:
+      oneOf:
+        - type: object
+          required: [mode, mediaRecommendations]
+          properties:
+            mode:
+              type: string
+              enum: [member, librarian]
+            mediaRecommendations:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecommendationResult'
+        - type: object
+          required: [mode, catalogInsights]
+          properties:
+            mode:
+              type: string
+              enum: [admin]
+            catalogInsights:
+              type: array
+              items:
+                $ref: '#/components/schemas/CatalogInsight'
+    RecommendationStreamEvent:
+      description: Representation of each Server-Sent Event message emitted by the recommendations endpoint.
+      oneOf:
+        - type: object
+          required: [event, data]
+          properties:
+            event:
+              type: string
+              enum: [chunk]
+            data:
+              $ref: '#/components/schemas/RecommendationStreamChunk'
+        - type: object
+          required: [event, data]
+          properties:
+            event:
+              type: string
+              enum: [complete]
+            data:
+              $ref: '#/components/schemas/RecommendationStreamCompletion'
+        - type: object
+          required: [event, data]
+          properties:
+            event:
+              type: string
+              enum: [error]
+            data:
+              $ref: '#/components/schemas/ApiError'
+    RecommendationStreamChunk:
+      type: object
+      required: [type, content, at]
+      properties:
+        type:
+          type: string
+          enum: [text, json]
+        content:
+          type: string
+        at:
+          type: number
+          format: float
+          description: Elapsed time in milliseconds since the stream began.
+        role:
+          type: string
+          enum: [analysis, suggestion, insight]
+          description: Stream channel classification used for client rendering.
+    RecommendationStreamCompletion:
+      type: object
+      required: [result, meta]
+      properties:
+        result:
+          $ref: '#/components/schemas/RecommendationResponse'
+        meta:
+          $ref: '#/components/schemas/RecommendationStreamingMeta'
+    RecommendationStreamingMeta:
+      type: object
+      required: [requestId, durationMs]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        durationMs:
+          type: number
+          format: float
+        usage:
+          $ref: '#/components/schemas/TokenUsage'
+    TokenUsage:
+      type: object
+      properties:
+        promptTokens:
+          type: integer
+          minimum: 0
+        completionTokens:
+          type: integer
+          minimum: 0
+        totalTokens:
+          type: integer
+          minimum: 0

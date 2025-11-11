@@ -475,32 +475,21 @@ For each topic considered, if it's important but I decide not to include it for 
 Agent might ask a question about a ux consideration backlog question but it comes as four sections with 2 bullet points each.  It looks efficient to address it all at once but I worry that it's dilluting context or potential quality of the results, so I might like to have it ask me fewer details at a time to keep it focused.
 
 
-
-when this tickbox is checked off move to spec-2 as an iteration checkpoint
-
-
-
-
-
-
-
-#### Make the spec file
-
-Might save iterative versions along the way for reference or as checkpoints.
-
-
-#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
-
-
-
-#### make sure to do test guide files and possibly test-plan files once spec is done
-
-
 #### Review the data schema to check for errors or mistakes
 
 Double check everything before making any hard details for the agents to build out
 
 By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
+
+This has been done in backlog questions 8.1 but I have yet to test run it and check how it will work.  I would not be surprised if it needs more help getting things right.
+
+It has been reviewed and seems ok now
+
+
+
+
+
+
 
 ##### Verify this, modify schema to fix anything that needs it:
 
@@ -517,63 +506,47 @@ By just having an llm check it, these things were identified but I know that thi
 
 
 
-``` Temporary notes
-
-I have a few priorities to juggle at the same time:
-
-
-- I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
-
-- I still want to get book cover art, maybe other media cover art.  Check stock photo sites and free photo sites like pexels, using image gen to get a few examples, etc.
-
-
-- I'm going to run the prompt that turns the spec and unanswered questions into spec-1 and works through them.
-
-
--- create a file that explains implemetnation instructions:
-
-    make a gh issue that addresses what the next step to do it
-    think of the edge cases according to edge case guide
-    write unit tests that cover edge cases
-    implement feature/function/handler/etc so that tests pass
-    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
-    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and manual, then do pull request that links to the issue and closes it
-    see issue template and pr template files
-
-
--- when that part is done move these temp notes down to keep with the flow of the original plan with these as reminders
-
-
-- I want to set up issue templates, PR templates before the implementation agents start their building
-
-- I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
 
 
 
 
-I'm aware that having truly complete docs might not be happening unless I take a moment to make a strategy for them and I'd like to do that as soon as I can as long as I get the prototype made and working as a priority over full docs
 
 
-Don't forget to add prompts you're using often or find that are helpful into the prompt library
+#### Make the spec file
 
-Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
-
-- remember that tailwindcss forms and tailwindcss typography is available if you want it
-
-- something is strange with path aliases.  Nuxt is supposed to use ~ for src folder and @ for root folder, but in mine it seems like ~ and @ both point to /app/ and so I seem to need to move my components directory into app if I want to use aliases.
-
-I think that if I keep my intentional use of ~/ as meaning app folder, and @ as to mean the root, then if I keep using @/components then I should be able to fix the @ targeting and move components back if I want to.  For now I just want the prototype to work and make sure it doesn't break when CICD happens so I'll keep components in /app/ to get moving on making the functionality, UI, etc.
+Might save iterative versions along the way for reference or as checkpoints.
 
 
-run formatter on all ts files
+While working on the 'backlog of spec questions' I was really wanting to see if I could start just building some things while continuing to talk about spec questions, but the agent suggested finishing up to backlog item 11 before starting any implementation.
 
 
-- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
+Spec building agent has been almost exclusively GPT-5-Codex
 
-- I'd like to clean up the tailwindcss doc that is outdated now that v3 isn't being used
+Implementation agents will probably be gpt-5 mini unless complex operations have to happen
+
+Remember to get an AI feature in there, there are lots that are easy to do.
 
 
-```
+Made sure that a recommendation from AI about which books you might like based on your stated interests gets included as part of the MVP and in the API contracts
+
+
+
+#### spec-final.md created
+
+ready to break down into workspace files and agent responsibility files to begin implementation
+
+
+
+
+
+#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
+
+the agent remembered as soon as the spec was locked that we needed to do this, as well as to do test guide files and possibly test-plan files once spec is done.
+
+I just want to check their contents 
+
+The openapi.yaml file was 700 lines and Copilot says it's just a stub file that is not consistent with the spec.  I have it making it consistent with the spec, and then that should be the last thing needed before breaking this into implementation agent responsibilities.
+
 
 
 
@@ -581,14 +554,102 @@ run formatter on all ts files
 
 ### Making the agent responsibilities file
 
-Make a manager responsibilities file as well?  or is that just me working with it and tracking each implementation agent?  Think about if it helps.  Maybe the main spec.md that it generates can also have checkboxes that it completes (or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
+Make a manager responsibilities file as well?  
+
+Or is that just me working with it and tracking each implementation agent?
+
+Think about if it helps.  
+
+Maybe the main spec.md that it generates can also have checkboxes that it completes 
+
+(or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
 
 Remember that some agent tasks might be best set to only be allowed to start when another agent has achieved a certain point on theirs, so have the manager mark instructions on 'requires agent step # to be complete before starting' on each agent step
 
-The manager can perhaps check off that file to show the requirement is ready now.
+The manager can perhaps then check off that file to show the requirement is ready now.
 
 
 
+
+
+
+
+
+
+
+
+
+
+- I want to set up issue templates, PR templates before the implementation agents start their building
+
+
+-- create a file that explains implemetnation instructions:
+
+    make a gh issue that addresses what the next step of the agent responsibility to implement (or bug issue they're going to tackle) is,
+    create a new branch prefixed with {agentname}/ that includes that issue number in the branch name to work on it (agent suggests the branch name so dev can copy and paste, or else agent can run terminal command to create branch)
+    to start working on it, think of the edge cases according to edge case guide
+    write unit tests that cover edge cases
+    implement feature/function/handler/etc so that tests pass
+    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
+    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and any relevant manual test, then do pull request that links to the issue and closes it
+    see issue template and pr template files
+
+
+
+
+
+``` Temporary notes
+
+I have a few priorities to juggle at the same time:
+
+
+
+- I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
+
+- I still want to get book cover art, maybe other media cover art.  Check stock photo sites and free photo sites like pexels, using image gen to get a few examples, etc.
+
+
+
+
+
+
+
+- I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
+
+
+
+
+
+
+
+
+Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
+
+- remember that tailwindcss forms and tailwindcss typography is available if you want it
+
+
+
+
+
+- something is strange with path aliases.  Nuxt is supposed to use ~ for src folder and @ for root folder, but in mine it seems like ~ and @ both point to /app/ and so I seem to need to move my components directory into app if I want to use aliases.
+
+I think that if I keep my intentional use of ~/ as meaning app folder, and @ as to mean the root, then if I keep using @/components then I should be able to fix the @ targeting and move components back if I want to.  For now I just want the prototype to work and make sure it doesn't break when CICD happens so I'll keep components in /app/ to get moving on making the functionality, UI, etc.
+
+--- is the above about path aliases related to the fact that this is Nuxt4 and not 3?
+
+
+
+- add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
+
+
+```
+
+
+run formatter on all ts files
+
+- fix the dev-process rendered markdown readability especially in 'insights'
+
+I'm aware that having truly complete docs might not be happening, but get the readme well polished especially with any walkthroughs or ways to help a tester check the app out.
 
 
 ## Final Outcome
@@ -702,3 +763,29 @@ I only wanted the JSON file to store some reusable prompts for myself, but GPT-5
 Given its goals, it would have been best for this project to have pushed faster toward a working prototype in the shortest possible amount of time.
 
 However while investigating ways to improve product quality quickly, many important considerations were surfaced, discussed, decided upon, and the takeaways from it will make my next similar app trivial to create in far less time after what I've discovered making this one.
+
+
+#### Linking the agent to urls of current docs seems to overcome information defaulting to outdated things.
+
+Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an idea to me that used tailwind.config.ts, I noticed that v4 doesn't use that file anymore.  So I pointed it to tailwind docs, and it seemed to correct its plan.  I will probably need to rely on this for all tailwind and all nuxt code because of using later version than these models are used to.
+
+Significant differences are seeming to emerge by having the agent check its plans for Nuxt, Tailwind against docs.  Am doing the same for Supabase now.  There seem to be large differences between what agents are trained on so I should use older versions or find out how to feed them docs efficiently.
+
+It appears that it is possible for it to get in long periods of checking documentation without seeming to find what it wants.  I'd like to understand what's going on when this happens.
+
+
+
+#### Managing context / truth sources
+
+I found that there was a lot of value in converging on a spec and then at the point of locking it in, making sure to check the docs of each related technology in order to make sure the plan wasn't broken by recent updates.  This often resulted in what at the least looks like the LLM being confident that we're catching important changes.  We'll find out what happens when implementation starts.
+
+It seems like the training cutoff date and where to find recent docs is a massive part of getting good results with this.
+
+
+
+
+#### The agent can help accomplish large tasks but it comes with a risk of having to verify that large thing
+
+Codex made openapi.yaml which sounded like a great idea as a reference that implementation agents could use to build their work from.  However when it created it, it created it as a stub that isn't consistent with the spec.  Then it took many edits to pass through it and make it consistent.
+
+This is a file that is meant to facilitate development, but it's also a liability because if it has any subtle errors in it, it could be difficult to trace and resolve, so I might want to avoid this kind of approach unless I can find a way to ensure the quality of the statements being included in the file.
