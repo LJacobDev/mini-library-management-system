@@ -498,6 +498,11 @@ Double check everything before making any hard details for the agents to build o
 
 By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
 
+This has been done in backlog questions 8.1 but I have yet to test run it and check how it will work.  I would not be surprised if it needs more help getting things right.
+
+
+
+
 ##### Verify this, modify schema to fix anything that needs it:
 
 **Review findings**
@@ -706,3 +711,6 @@ However while investigating ways to improve product quality quickly, many import
 Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an idea to me that used tailwind.config.ts, I noticed that v4 doesn't use that file anymore.  So I pointed it to tailwind docs, and it seemed to correct its plan.  I will probably need to rely on this for all tailwind and all nuxt code because of using later version than these models are used to.
 
 Significant differences are seeming to emerge by having the agent check its plans for Nuxt, Tailwind against docs.  Am doing the same for Supabase now.  There seem to be large differences between what agents are trained on so I should use older versions or find out how to feed them docs efficiently.
+
+It appears that it is possible for it to get in long periods of checking documentation without seeming to find what it wants.  I'd like to understand what's going on when this happens.
+

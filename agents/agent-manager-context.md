@@ -41,7 +41,7 @@ High-level goals:
 - Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
 - TDD discipline: Edge-case checklist → tests → implementation. Tests at minimum per feature: unit (composables/utils), integration (adapter), component tests (Vitest + Vue Test Utils), accessibility (axe), plus smoke E2E (Playwright) once flows exist.
 - Visual identity starter kit (awaiting confirmation): Primary `#1F3A8A`, Secondary `#10B981`, Accent `#F59E0B`, Neutral base `#111827` / `#F9FAFB`; type pairing `Inter` (UI) with scalable weights. Dark-mode still deferred but palette chosen to invert cleanly later.
-- Styling baseline: Tailwind CSS v4 via `@nuxtjs/tailwindcss` with `tailwindcss/preflight` + `tailwindcss/utilities`. Add lint/test guardrails to detect dependency downgrades back to v3 scaffolding.
+- Styling baseline: Tailwind CSS v4 via `@nuxtjs/tailwindcss` with `tailwindcss/preflight` + `tailwindcss/utilities`. Tailwind `@theme` tokens feed both Tailwind utilities and Nuxt UI CSS variables.  Keep lint/test guardrails to detect depencency downgrades back to v3 thinking.
 - Nuxt UI/Icon/Image modules: default to `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` for common UI patterns (navigation, lists, media, iconography) before rolling custom components.
 - Specification source of truth: `docs/dev/spec/spec-2.md` (cloned from spec-1 after routing decisions locked). `spec-1.md` remains as the historical draft.
 
@@ -56,12 +56,17 @@ Keep all Supabase, OpenAI, and server route calls isolated inside a Nuxt server/
 
 ## Data model decisions (latest)
 
-- Generic `media` table (enum `media_type`: `book`, `video`, `audio`, `other`). Each copy is its own UUID row. Optional fields include `genre`, `book_format`, `language`, `pages`, `duration_seconds`, `metadata` jsonb.
-- Circulation columns on `media`: `checked_out`, `checked_out_by`, `checked_out_at`, `due_date` (NULL when not checked out). Automated trigger will sync with `media_loans`.
-- `media_loans` table captures full history (checkout, due, return timestamps, optional note). `user_snapshot` stays nullable to avoid PII retention. Loans survive user/media deletion (`ON DELETE SET NULL`). Partial unique index enforces single active loan per copy.
-- Reservation support will require additional schema (e.g., `media_reservations`) after CRUD lands. Record as TODO in spec.
+- Generic `media` table (enum `media_type`: `book`, `video`, `audio`, `other`) paired with a new `media_format` enum (`print`, `ebook`, `audiobook`, `dvd`, `blu-ray`) so copies specify format without conflicting free-text columns. Each copy is its own UUID row with optional fields (`genre`, `language`, `pages`, `duration_seconds`, `metadata` jsonb).
+- Availability derives from `media_loans` (no redundant `checked_out*` columns on `media`). A partial unique index on `media_loans (media_id) WHERE returned_at IS NULL` still enforces single active loans.
+- `media_loans` retains full circulation history (`checked_out_at`, `due_date`, `returned_at`, `processed_by`, `note`, optional `user_snapshot`). Timestamp triggers keep `updated_at` fresh across all mutable tables.
+- Reservation support will require an additional table (e.g., `media_reservations`) once CRUD + checkout flows are stable. Capture this in spec backlog.
 - Retention/purge: add TODO to document policy (e.g., anonymise or purge loan data after X years while preserving aggregates). No policy text yet, but track the requirement.
-- Migrations: store in `db/migrations`. Seeds (sample users/media/loans) live in `docs/data/schema.sql` (already created) and may be mirrored in Supabase seed scripts.
+- Migrations: store in `db/migrations`. Seeds (sample users/media/loans) live in `docs/data/schema.sql` (already created) and may be mirrored in Supabase seed scripts. `schema.sql` now enables `pgcrypto`, registers enums with `IF NOT EXISTS`, and activates RLS + policy stubs for `users`, `media`, and `media_loans`.
+
+## Auth & security commitments
+
+- Supabase Auth remains the single identity provider; `profiles.role` maps to the new `user_role` enum (`member`, `librarian`, `admin`).
+- RLS is enabled + forced on every public table with TODO policy stubs recorded in `schema.sql`. Service-role key usage stays server-only; browser-facing requests always flow through RLS-aware policies.
 
 ## AI / LLM feature requirements
 
@@ -127,8 +132,8 @@ Coordination rules:
 
 ## Short checklist / next steps for Manager
 
-- [ ] Resolve design tokens baseline (spec-prep item 6): confirm palette, typography, spacing, and Tailwind config decisions in `spec-2.md`.
-- [ ] Answer open questions above (reservations detail, auth providers, retention policy, scaffolding schedule).
+- [ ] Tackle spec backlog item 8.2: document the client data layer contract (endpoints, Zod schemas, error/retry behaviour) now that schema 8.1 is closed.
+- [ ] Answer open questions above (reservation expiry/auto-convert, auth providers, retention policy, scaffolding schedule).
 - [ ] Finalise `docs/dev/spec.md` with milestones, acceptance criteria, schema diagrams, reservation flow, and AI behaviour definitions (retrieval steps, streaming requirements).
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
 - [ ] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements.
@@ -149,4 +154,5 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-10 (AM): Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
 - 2025-11-10 (PM): Tailwind CSS v4 confirmed as the production baseline (v3 discarded after repeated integration failures). Edge-case checklist and spec prep list updated accordingly. Outstanding: refresh agent prompts to reference v4 defaults and draft the styling playbook addendum once real-world examples accrue.
 - 2025-11-10 (late PM): Spec routing/middleware decisions locked in `spec-1.md` and promoted to `spec-2.md`; next backlog focus is design tokens baseline (checklist item 6).
+- 2025-11-10: Schema quality pass (spec backlog 8.1) completed. `schema.sql` now enables `pgcrypto`, introduces `user_role`/`media_format` enums, removes redundant checkout columns, adds timestamp triggers, and enables/forces RLS with policy stubs. Next focus: client data layer contract (8.2).
 
