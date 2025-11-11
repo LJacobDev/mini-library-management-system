@@ -173,11 +173,26 @@ Every route implements:
 
 ## 7. Client Data Layer
 
-- Use Nuxt server-side composables (`useAsyncData`, `useFetch`) wrapped in custom hooks (e.g., `useCatalog`, `useLoans`).
-- Centralise API interactions in `~/lib/api` with typed response models.
-- Global error boundary shows toast and optionally revalidates data.
-- Implement retry/backoff for idempotent GET requests (max 2 retries) and fail-fast for mutations.
-- Cache policy: rely on Nuxt `useAsyncData` caching with `stale-while-revalidate` semantics where appropriate.
+### 7.1 Thin API adapter
+
+- A minimal adapter lives in `~/lib/api/client.ts`, exporting an `ApiClient` interface and `createApiClient(fetchImpl?: FetchLike)` factory. Default instance delegates directly to Nuxt server routes using `fetch`/`useFetch`.
+- Adapter surface mirrors the server API (section 6) one-for-one: `listCatalog`, `getCatalogItem`, `createMedia`, `updateMedia`, `deleteMedia`, `checkoutLoan`, `checkinLoan`, `createReservation`, `cancelReservation`, `getMyLoans`, `getMyReservations`, and `suggestRecommendations`.
+- Each method unwraps the shared response envelope, applies schema validation, and returns typed POJOs without additional transformation. Mutations opt out of retries; GET endpoints use a shared retry helper (max two attempts, jittered backoff, abort support).
+- A companion `createMockApiClient(overrides)` factory in `~/lib/api/mocks.ts` powers Vitest/component tests, preloading happy-path fixtures but allowing per-test overrides.
+
+### 7.2 Shared types & validation
+
+- Canonical domain types and Zod schemas reside in `~/lib/api/types.ts` and are imported by both server routes and the adapter via `z.infer`. Core models: `MediaSummary`, `MediaDetail`, `LoanRecord`, `ReservationRecord`, and `PaginatedResponse<T>`.
+- Response envelope is standardised as `ApiResponse<T> = { success: true; data: T } | { success: false; error: { code: 'VALIDATION_ERROR' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'CONFLICT' | 'SERVER_ERROR'; message: string; details?: unknown } }`.
+- `~/lib/api/errors.ts` exports `ApiError` plus `assertSuccess(response)`; adapter methods call `assertSuccess` after parsing. Error codes map directly to UI handling (toasts, redirects, retry prompts).
+- Streaming endpoints expose helper types (`StreamingChunk`, `StreamingResult`) so UI can render incremental responses while tests can simulate streams deterministically.
+
+### 7.3 Testing & composable usage
+
+- Feature composables (`useCatalog`, `useLoans`, etc.) receive the adapter via dependency injection (provide/inject token) to keep tests deterministic.
+- Unit tests consume `createMockApiClient`, swapping in success/error scenarios without touching network code. Integration tests hit real Nuxt server routes and assert their payloads validate against the shared schemas.
+- Retry logic and error translation are centralised in `~/lib/api/retry.ts` and `~/lib/api/errors.ts`, ensuring UI layers simply respond to typed outcomes. Global error boundary continues to surface toasts and triggers optional revalidation.
+- Cache policy leverages Nuxt `useAsyncData` with `stale-while-revalidate` defaults; adapter methods stay synchronous wrappers so composables can opt into advanced caching later without contract changes.
 
 ## 8. UI & Design Tokens
 
@@ -247,7 +262,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 6. [x] **Design tokens baseline** – Choose the primary/secondary palette, typography scale, spacing/breakpoints, and record whether Tailwind config or Nuxt UI theme is the source of truth.
 7. [x] **Nuxt UI/Icon/Image usage plan** – Documented component catalogue, icon defaults (aliases + 20px base size via `app.config.ts`), and the mobile-first `cover` preset for `@nuxt/image` (`sizes="100vw sm:60vw md:400px lg:360px"`, lazy loading, blur placeholder). Tailwind tokens stay the shared contract so swapping components or resizing rules is a single-config edit.
 8.1. [x] **Schema.sql quality pass** – Hardened migrations (`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, new `user_role`/`media_format` enums), tightened `users` constraints, dropped redundant media checkout columns, added timestamp triggers, and enabled RLS with policy stubs so downstream contracts stay in sync.
-8.2. [ ] **Client data layer contract** – List Nuxt server API endpoints (and note any optional Supabase Edge Functions only if they outperform the Nuxt route), response shapes, and Zod validation schemas; document error handling, retry/backoff, and integration test expectations.
+8.2. [x] **Client data layer contract** – Locked the thin adapter surface (mirrors server routes), shared Zod/TypeScript models, response envelope, retry strategy, and testing/mocking guidance in section 7.
 9. [ ] **Server API responsibilities** – Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage; capture idempotency expectations and failure modes.
 10. [ ] **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
   - As soon as the Supabase bucket is reachable, swap the seed cover placeholders to a real default asset in storage so Nuxt Image previews render something real end-to-end.

@@ -132,7 +132,7 @@ Coordination rules:
 
 ## Short checklist / next steps for Manager
 
-- [ ] Tackle spec backlog item 8.2: document the client data layer contract (endpoints, Zod schemas, error/retry behaviour) now that schema 8.1 is closed.
+- [x] Capture thin client data layer contract in `spec-3.md` (section 7) covering adapter surface, shared schemas, error envelope, retries, and testing guidance.
 - [ ] Answer open questions above (reservation expiry/auto-convert, auth providers, retention policy, scaffolding schedule).
 - [ ] Finalise `docs/dev/spec.md` with milestones, acceptance criteria, schema diagrams, reservation flow, and AI behaviour definitions (retrieval steps, streaming requirements).
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
@@ -154,5 +154,6 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-10 (AM): Nuxt confirmed as final framework; Supabase remains backend; CRUD→reservations→AI sequencing logged; retention policy captured as TODO; deferred scaffolding list noted for post-spec lock.
 - 2025-11-10 (PM): Tailwind CSS v4 confirmed as the production baseline (v3 discarded after repeated integration failures). Edge-case checklist and spec prep list updated accordingly. Outstanding: refresh agent prompts to reference v4 defaults and draft the styling playbook addendum once real-world examples accrue.
 - 2025-11-10 (late PM): Spec routing/middleware decisions locked in `spec-1.md` and promoted to `spec-2.md`; next backlog focus is design tokens baseline (checklist item 6).
-- 2025-11-10: Schema quality pass (spec backlog 8.1) completed. `schema.sql` now enables `pgcrypto`, introduces `user_role`/`media_format` enums, removes redundant checkout columns, adds timestamp triggers, and enables/forces RLS with policy stubs. Next focus: client data layer contract (8.2).
+- 2025-11-10: Schema quality pass (spec backlog 8.1) completed. `schema.sql` now enables `pgcrypto`, introduces `user_role`/`media_format` enums, removes redundant checkout columns, adds timestamp triggers, and enables/forces RLS with policy stubs. Next focus shifts to open questions (reservation expiry, auth providers, retention policy).
+- 2025-11-10: Client data layer contract (spec backlog 8.2) documented in `spec-3.md` — thin adapter preserved for testing benefits with shared Zod models, unified error envelope, retry helper, and mock factory guidance.
 
