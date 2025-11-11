@@ -541,19 +541,30 @@ ready to break down into workspace files and agent responsibility files to begin
 
 #### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
 
+the agent remembered as soon as the spec was locked that we needed to do this, as well as to do test guide files and possibly test-plan files once spec is done.
+
+I just want to check their contents 
 
 
-#### make sure to do test guide files and possibly test-plan files once spec is done
+
 
 
 
 ### Making the agent responsibilities file
 
-Make a manager responsibilities file as well?  or is that just me working with it and tracking each implementation agent?  Think about if it helps.  Maybe the main spec.md that it generates can also have checkboxes that it completes (or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
+Make a manager responsibilities file as well?  
+
+Or is that just me working with it and tracking each implementation agent?
+
+Think about if it helps.  
+
+Maybe the main spec.md that it generates can also have checkboxes that it completes 
+
+(or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
 
 Remember that some agent tasks might be best set to only be allowed to start when another agent has achieved a certain point on theirs, so have the manager mark instructions on 'requires agent step # to be complete before starting' on each agent step
 
-The manager can perhaps check off that file to show the requirement is ready now.
+The manager can perhaps then check off that file to show the requirement is ready now.
 
 
 

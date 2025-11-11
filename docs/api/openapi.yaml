@@ -1,0 +1,796 @@
+openapi: 3.1.0
+info:
+  title: Mini Library Management System API
+  version: 0.1.0
+  summary: Contract derived from docs/dev/spec/spec-final.md (locked 2025-11-10)
+  description: >-
+    Nuxt 4 + Supabase API surface for catalog, circulation, reservations, and AI
+    recommendations. Schemas mirror the shared Zod models declared in
+    `~/lib/api/types.ts`. Streaming endpoints return Server-Sent Events in-flight
+    and resolve to the documented payload when completed.
+servers:
+  - url: http://localhost:3000
+    description: Local development (Nuxt dev server)
+  - url: https://mlms-demo.vercel.app
+    description: Production (Vercel)
+
+tags:
+  - name: Catalog
+  - name: Circulation
+  - name: Reservations
+  - name: Account
+  - name: AI
+
+paths:
+  /api/catalog:
+    get:
+      tags: [Catalog]
+      summary: List catalog items
+      description: Mirrors `listCatalog` adapter call with search, filter, and pagination support.
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/MediaType'
+        - $ref: '#/components/parameters/Availability'
+        - $ref: '#/components/parameters/Genre'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMedia'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Catalog]
+      summary: Create media item
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaCreateInput'
+      responses:
+        '201':
+          description: Media item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/catalog/{id}:
+    get:
+      tags: [Catalog]
+      summary: Retrieve media detail
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [Catalog]
+      summary: Update media item
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaUpdateInput'
+      responses:
+        '200':
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaDetail'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Catalog]
+      summary: Archive media item
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+      responses:
+        '204':
+          description: Item archived
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/checkout:
+    post:
+      tags: [Circulation]
+      summary: Checkout a media copy
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutInput'
+      responses:
+        '201':
+          description: Checkout completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/checkin:
+    post:
+      tags: [Circulation]
+      summary: Check in a media copy
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinInput'
+      responses:
+        '200':
+          description: Check-in completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/{id}/renew:
+    patch:
+      tags: [Circulation]
+      summary: Renew an active loan
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewInput'
+      responses:
+        '200':
+          description: Renewed loan record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanRecord'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/loans/{id}/return:
+    patch:
+      tags: [Circulation]
+      summary: Return an active loan
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/LoanId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnInput'
+      responses:
+        '200':
+          description: Returned loan record and next reservation handoff when applicable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanReturnResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations:
+    post:
+      tags: [Reservations]
+      summary: Place a hold
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreateInput'
+      responses:
+        '201':
+          description: Reservation queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationRecord'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations/{id}:
+    delete:
+      tags: [Reservations]
+      summary: Cancel a reservation
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '204':
+          description: Reservation cancelled
+        default:
+          $ref: '#/components/responses/Error'
+  /api/reservations/{id}/advance:
+    post:
+      tags: [Reservations]
+      summary: Advance the reservation queue after a no-show
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueAdvanceInput'
+      responses:
+        '200':
+          description: Reservation queue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationQueueResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/me/loans:
+    get:
+      tags: [Account]
+      summary: List authenticated user loans
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IncludeHistory'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Loans for the signed-in member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLoans'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/me/reservations:
+    get:
+      tags: [Account]
+      summary: List authenticated user reservations
+      security:
+        - supabaseAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationFilter'
+      responses:
+        '200':
+          description: Reservations for the signed-in member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/recommendations/suggest:
+    post:
+      tags: [AI]
+      summary: Stream role-aware recommendations or catalog insights
+      security:
+        - supabaseAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationPrompt'
+      responses:
+        '200':
+          description: >-
+            SSE stream of textual chunks that resolves to a discriminated union payload once
+            completed. The final JSON mirrors `RecommendationResponse`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationResponse'
+        default:
+          $ref: '#/components/responses/Error'
+
+components:
+  securitySchemes:
+    supabaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    MediaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LoanId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReservationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SearchQuery:
+      name: q
+      in: query
+      schema:
+        type: string
+        maxLength: 200
+    MediaType:
+      name: mediaType
+      in: query
+      schema:
+        type: string
+        enum: [book, audiobook, ebook, video, other]
+    Availability:
+      name: availability
+      in: query
+      schema:
+        type: string
+        enum: [available, checked-out, reserved]
+    Genre:
+      name: genre
+      in: query
+      schema:
+        type: string
+        maxLength: 80
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    IncludeHistory:
+      name: includeHistory
+      in: query
+      schema:
+        type: boolean
+        default: false
+    ReservationFilter:
+      name: filter
+      in: query
+      schema:
+        type: string
+        enum: [active, history]
+  responses:
+    Error:
+      description: Error response envelope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiError:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - PERMISSION_DENIED
+                - NOT_FOUND
+                - CONFLICT
+                - SERVER_ERROR
+                - RETRYABLE_ERROR
+            message:
+              type: string
+            details:
+              nullable: true
+    PaginatedMeta:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    MediaSummary:
+      type: object
+      required: [id, title, creator, mediaType, available]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+          enum: [book, audiobook, ebook, video, other]
+        available:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        coverUrl:
+          type: string
+          format: uri
+    MediaDetail:
+      allOf:
+        - $ref: '#/components/schemas/MediaSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            isbn:
+              type: string
+            durationSeconds:
+              type: integer
+            metadata:
+              type: object
+              additionalProperties: {}
+            queueLength:
+              type: integer
+            loanStatus:
+              type: string
+              enum: [available, checked-out, reserved]
+    PaginatedMedia:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [items, meta]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/MediaSummary'
+            meta:
+              $ref: '#/components/schemas/PaginatedMeta'
+    MediaCreateInput:
+      type: object
+      required: [title, creator, mediaType]
+      properties:
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+          enum: [book, audiobook, ebook, video, other]
+        isbn:
+          type: string
+        durationSeconds:
+          type: integer
+          minimum: 0
+        metadata:
+          type: object
+          additionalProperties: {}
+    MediaUpdateInput:
+      type: object
+      description: Partial update; same fields as MediaCreateInput but optional.
+      properties:
+        title:
+          type: string
+        creator:
+          type: string
+        mediaType:
+          type: string
+        isbn:
+          type: string
+        durationSeconds:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties: {}
+    CheckoutInput:
+      type: object
+      required: [mediaId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date-time
+        loanRequestId:
+          type: string
+          format: uuid
+    CheckinInput:
+      type: object
+      required: [mediaId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        loanId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        returnRequestId:
+          type: string
+          format: uuid
+    RenewInput:
+      type: object
+      required: [renewalRequestId]
+      properties:
+        renewalRequestId:
+          type: string
+          format: uuid
+        force:
+          type: boolean
+        justification:
+          type: string
+    ReturnInput:
+      type: object
+      required: [returnRequestId]
+      properties:
+        returnRequestId:
+          type: string
+          format: uuid
+        note:
+          type: string
+        waiveFines:
+          type: boolean
+    LoanRecord:
+      type: object
+      required: [id, mediaId, memberId, checkedOutAt, dueAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        processedBy:
+          type: string
+          format: uuid
+        checkedOutAt:
+          type: string
+          format: date-time
+        dueAt:
+          type: string
+          format: date-time
+        returnedAt:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+    LoanReturnResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [loan]
+          properties:
+            loan:
+              $ref: '#/components/schemas/LoanRecord'
+            handoff:
+              type: object
+              nullable: true
+              properties:
+                reservationId:
+                  type: string
+                  format: uuid
+                memberId:
+                  type: string
+                  format: uuid
+    ReservationCreateInput:
+      type: object
+      required: [mediaId]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        reservationRequestId:
+          type: string
+          format: uuid
+    ReservationRecord:
+      type: object
+      required: [id, mediaId, memberId, position, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaId:
+          type: string
+          format: uuid
+        memberId:
+          type: string
+          format: uuid
+        position:
+          type: integer
+        status:
+          type: string
+          enum: [pending, ready_for_pickup, collected, cancelled, expired]
+        expiresAt:
+          type: string
+          format: date-time
+    QueueAdvanceInput:
+      type: object
+      required: [advanceRequestId]
+      properties:
+        advanceRequestId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+    ReservationQueueResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            reservations:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReservationRecord'
+    PaginatedLoans:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          required: [items, meta]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LoanRecord'
+            meta:
+              $ref: '#/components/schemas/PaginatedMeta'
+    ReservationList:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        data:
+          type: object
+          properties:
+            reservations:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReservationRecord'
+    RecommendationPrompt:
+      type: object
+      required: [mode, interests]
+      properties:
+        mode:
+          type: string
+          enum: [member, librarian, admin]
+        interests:
+          type: array
+          items:
+            type: string
+        mediaId:
+          type: string
+          format: uuid
+          nullable: true
+        tone:
+          type: string
+          enum: [shortlist, discovery]
+        context:
+          type: object
+          additionalProperties: {}
+    RecommendationResult:
+      type: object
+      required: [mediaId, score, reason]
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        score:
+          type: number
+          format: float
+        reason:
+          type: string
+        callId:
+          type: string
+    CatalogInsight:
+      type: object
+      required: [topic, summary]
+      properties:
+        topic:
+          type: string
+        summary:
+          type: string
+        supportingData:
+          type: object
+          additionalProperties: {}
+        suggestedActions:
+          type: array
+          items:
+            type: string
+    RecommendationResponse:
+      oneOf:
+        - type: object
+          required: [mode, mediaRecommendations]
+          properties:
+            mode:
+              type: string
+              enum: [member, librarian]
+            mediaRecommendations:
+              type: array
+              items:
+                $ref: '#/components/schemas/RecommendationResult'
+        - type: object
+          required: [mode, catalogInsights]
+          properties:
+            mode:
+              type: string
+              enum: [admin]
+            catalogInsights:
+              type: array
+              items:
+                $ref: '#/components/schemas/CatalogInsight'

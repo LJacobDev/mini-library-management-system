@@ -28,7 +28,7 @@ High-level goals:
 - Create `/agents/agent{1,2,3}-responsibility.md` and `/agents/agent{1,2,3}-context.md` aligned with the confirmed Nuxt + Supabase stack and schema.
 - Maintain shared context files and coordinate overlap points, API contracts, migrations, prompt libraries, and AI UX expectations (streaming output, role-gated admin queries).
 - Review and validate implementer agents' work against the spec (tests, lint, TDD checks) and ensure outputs remain portfolio-ready.
-- Track deferred scaffolding (OpenAPI contract, unit-test HOWTO, `.env.example`, wireframes) so they are produced once the spec stabilises, avoiding churn.
+- Maintain scaffolding artifacts (OpenAPI contract, unit-test HOWTO, `.env.example`, wireframes) now that the spec is stable; keep them in sync as implementation evolves.
 
 ## Current decisions (fixed)
 
@@ -40,10 +40,10 @@ High-level goals:
 - API contract: Frontend consumes a thin API adapter module hitting Nuxt server routes (which may call Supabase/OpenAI). Adapter returns typed POJOs and has mockable implementations for tests.
 - Feature sequencing: 1) CRUD + inventory + check-in/out, 2) Reservations/holds, 3) AI endpoints (describe-your-need, personalised recs, admin Q&A) with streaming UX.
 - TDD discipline: Edge-case checklist → tests → implementation. Tests at minimum per feature: unit (composables/utils), integration (adapter), component tests (Vitest + Vue Test Utils), accessibility (axe), plus smoke E2E (Playwright) once flows exist.
-- Visual identity starter kit (confirmed in spec-4): Primary `#1B4F72`, Secondary `#2E8B57`, Accent `#F4A261`, neutrals `#F7F9FC` / `#1F2933` / `#64748B`; typography anchored on Inter with the spec’s documented scale. Dark-mode still deferred but palette is chosen to invert cleanly later.
+- Visual identity starter kit (confirmed in `spec-final.md`): Primary `#1B4F72`, Secondary `#2E8B57`, Accent `#F4A261`, neutrals `#F7F9FC` / `#1F2933` / `#64748B`; typography anchored on Inter with the spec’s documented scale. Dark-mode still deferred but palette is chosen to invert cleanly later.
 - Styling baseline: Tailwind CSS v4 via `@nuxtjs/tailwindcss` with `tailwindcss/preflight` + `tailwindcss/utilities`. Tailwind `@theme` tokens feed both Tailwind utilities and Nuxt UI CSS variables.  Keep lint/test guardrails to detect depencency downgrades back to v3 thinking.
 - Nuxt UI/Icon/Image modules: default to `@nuxt/ui` primitives, `@nuxt/icon`, and `@nuxt/image` for common UI patterns (navigation, lists, media, iconography) before rolling custom components.
-- Specification source of truth: `docs/dev/spec/spec-4.md` (single shared AI chat panel, streaming guidance, reservation expiry). Earlier drafts (`spec-1.md`–`spec-3.md`) remain for history only.
+- Specification source of truth: `docs/dev/spec/spec-final.md` (single shared AI chat panel, streaming guidance, reservation expiry). Earlier drafts (`spec-1.md`–`spec-4.md`) remain for history only.
 
 ## API boundary guidance (migration-friendly)
 
@@ -60,7 +60,7 @@ Keep all Supabase, OpenAI, and server route calls isolated inside a Nuxt server/
 - Availability derives from `media_loans` (no redundant `checked_out*` columns on `media`). A partial unique index on `media_loans (media_id) WHERE returned_at IS NULL` still enforces single active loans.
 - `media_loans` retains full circulation history (`checked_out_at`, `due_date`, `returned_at`, `processed_by`, `note`, optional `user_snapshot`). Timestamp triggers keep `updated_at` fresh across all mutable tables.
 - Reservation support will require an additional table (e.g., `media_reservations`) once CRUD + checkout flows are stable. Capture this in spec backlog.
-- Retention/purge: add TODO to document policy (e.g., anonymise or purge loan data after X years while preserving aggregates). No policy text yet, but track the requirement.
+- Retention/purge: keep loan history indefinitely for the demo build; note in backlog that real deployments may require anonymisation/expiry rules.
 - Migrations: store in `db/migrations`. Seeds (sample users/media/loans) live in `docs/data/schema.sql` (already created) and may be mirrored in Supabase seed scripts. `schema.sql` now enables `pgcrypto`, registers enums with `IF NOT EXISTS`, and activates RLS + policy stubs for `users`, `media`, and `media_loans`.
 
 ## Auth & security commitments
@@ -115,12 +115,12 @@ Coordination rules:
 
 - **Q1 (roles)** — ANSWERED: Minimal roles (`librarian`, `member`) via `profiles.role` + RLS.
 - **Q2 (media metadata)** — ANSWERED: Adopt the generic `media` schema above (required: `media_type`, `title`, `creator`; optional fields enumerated).
-- **Q3 (checkout & reservations)** — ANSWERED: FIFO queue, max five active holds/member, default 14-day due dates with librarian override, and 72-hour reservation expiry with auto-advance captured in spec-4 §9.4.
-- **Q4 (auth providers)** — ANSWERED: Launch with email/password only; OAuth deferred (spec-4 §4.4).
-- **Q5 (AI features)** — ANSWERED: All AI endpoints stream responses via shared chat panel; role-aware prompting handled server-side (spec-4 §4.6 & §9.6).
-- **Q6 (checkout history & retention)** — PARTIAL: Need explicit retention/anonymisation policy for loan history; still tracked as TODO.
-- **Q7 (deferred scaffolding)** — OPEN: With spec locked, schedule `.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, and optional `docs/ux/wireframes.md` deliverables.
-- **Q8 (color palette confirmation)** — ANSWERED: Palette and typography baseline confirmed in spec-4 §8; design tokens checklist item satisfied.
+- **Q3 (checkout & reservations)** — ANSWERED: FIFO queue, max five active holds/member, default 14-day due dates with librarian override, and 72-hour reservation expiry with auto-advance captured in `spec-final.md` §9.4.
+- **Q4 (auth providers)** — ANSWERED: Launch with email/password only; OAuth deferred (`spec-final.md` §4.4).
+- **Q5 (AI features)** — ANSWERED: All AI endpoints stream responses via shared chat panel; role-aware prompting handled server-side (`spec-final.md` §4.6 & §9.6).
+- **Q6 (checkout history & retention)** — ANSWERED: Keep loan history indefinitely for this demo; capture anonymisation/expiry as a future ops consideration.
+- **Q7 (deferred scaffolding)** — ANSWERED: Baseline scaffolding committed (`.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, `docs/ux/wireframes.md`). Treat them as living documents.
+- **Q8 (color palette confirmation)** — ANSWERED: Palette and typography baseline confirmed in `spec-final.md` §8; design tokens checklist item satisfied.
 
 ## Recent changes & state
 
@@ -128,13 +128,13 @@ Coordination rules:
 - Data model updated to generic `media` + `media_loans` tables with sample seeds in `docs/data/schema.sql`.
 - AI scope clarified with emphasis on streaming responses and admin analytics; architecture must make deferred implementation easy.
 - CRUD first, reservations second, AI third — spec will reflect this sequence.
-- `.env.example`, OpenAPI contract, test plan, unit-test README, and wireframes are intentionally deferred until spec lock to avoid churn (track in TODOs).
+- Baseline scaffolding (`.env.example`, OpenAPI contract, test plan, unit-test README, wireframe notes) checked in and treated as living documents.
 
 ## Short checklist / next steps for Manager
 
 - [x] Capture thin client data layer contract in `spec-3.md` (section 7) covering adapter surface, shared schemas, error envelope, retries, and testing guidance.
-- [ ] Resolve remaining open questions (loan history retention policy; delivery schedule for deferred scaffolding assets).
-- [x] Finalise `docs/dev/spec.md` — spec-4 locked with AI streaming UX, shared chat panel, reservation expiry, and design tokens.
+- [x] Resolve remaining open questions (loan history retention: keep indefinitely; scaffolding assets created and tracked as living docs).
+- [x] Finalise `docs/dev/spec.md` — `spec-final.md` locked with AI streaming UX, shared chat panel, reservation expiry, and design tokens.
 - [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
 - [ ] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements.
 - [ ] Draft the API adapter interface and provide mock implementations (including streaming simulators) for Agent 2 now that the spec is locked.
@@ -156,5 +156,6 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-10 (late PM): Spec routing/middleware decisions locked in `spec-1.md` and promoted to `spec-2.md`; next backlog focus is design tokens baseline (checklist item 6).
 - 2025-11-10: Schema quality pass (spec backlog 8.1) completed. `schema.sql` now enables `pgcrypto`, introduces `user_role`/`media_format` enums, removes redundant checkout columns, adds timestamp triggers, and enables/forces RLS with policy stubs. Next focus shifts to open questions (reservation expiry, auth providers, retention policy).
 - 2025-11-10: Client data layer contract (spec backlog 8.2) documented in `spec-3.md` — thin adapter preserved for testing benefits with shared Zod models, unified error envelope, retry helper, and mock factory guidance.
-- 2025-11-10 (evening): `spec-4.md` and its duplicate and successor, `spec-final.md` locked with unified AI chat panel, streaming contract, and 72-hour reservation expiry; palette updated to civic blue/evergreen/warm accent and checklist migrated accordingly. Remaining gap: loan-history retention policy + scaffolding asset schedule.
+- 2025-11-10 (evening): `spec-4.md` and its duplicate and successor, `spec-final.md` locked with unified AI chat panel, streaming contract, and 72-hour reservation expiry; palette updated to civic blue/evergreen/warm accent and checklist migrated accordingly (flagged retention + scaffolding TODOs now resolved below).
+- 2025-11-10 (night): Resolved retention policy (keep loans indefinitely for demo) and landed scaffolding assets (`.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, `docs/ux/wireframes.md`).
 
