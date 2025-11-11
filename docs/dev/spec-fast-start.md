@@ -191,3 +191,39 @@ Follow this sequence to assemble the UI, backend, database touchpoints, and AI s
   - Update this file with learnings, sync `llm-training-cutoff-updates.md`, capture screenshots for stakeholders.
 
 Cross-check: every bullet above maps back to prior sections (`§2`–`§9`), ensuring no earlier detail is dropped. Use this condensed runbook for rapid execution, and refer upward when deeper context is required.
+
+## 11. Nuxt UI-Accelerated Execution Checklist
+
+Layer Nuxt UI primitives onto the single-pass plan to minimize hand-crafted markup while staying compatible with Tailwind v4 tokens.
+
+1. **Shell + Layouts**
+  - Wrap `app.vue` with `UApp` for providers. In `default` layout use `Header`, `NavigationMenu`, `Main`, `Footer`, and `Container` to scaffold public/member pages. For `dashboard` layout (member/librarian/admin) compose `DashboardGroup`, `DashboardNavbar`, `DashboardSidebar`, `DashboardSidebarToggle`, and `DashboardToolbar`, pairing `USlideover` for mobile navigation.
+
+2. **Catalog Screens (M1)**
+  - Landing hero and catalog grids use `PageHeader`, `PageSection`, and `UCard` with `NuxtImg` for covers. Filters rendered via `UTabs` or `NavigationMenu` plus `UButton` chips. Empty states handled by `Empty` component.
+
+3. **Service Composables + Debug UI**
+  - Keep `useCatalogService`, `useLoanService`, `useMockSession` as before, but expose status badges using `StatusBadge` + `UButton` styled variants. `/debug/data` leverages `UCard` sections with `UButton` triggers and `Toast` feedback.
+
+4. **Mock API Wiring**
+  - No change to backend steps; surface responses in UI via `UTable` for listings and `UNotification`/`Toast` for errors or success states.
+
+5. **Supabase Handshake (M1.5)**
+  - `/debug/data` card displays live connection status with `UCard`, `Badge` (Tailwind), and `UButton` to invoke the `health/supabase` endpoint. Use `USkeleton` while awaiting responses.
+
+6. **OpenAI Streaming (M1.6)**
+  - Build `AiPane` around `UCard`, `PageSection`, and a `Textarea` + `UButton` form (`UForm`, `UFormField`, `UInput`, `UTextarea`). Streamed text appears inside `ScrollArea` (if added) or a Tailwind-styled div; status toasts via `Toast` when SSE errors occur.
+
+7. **Interactive Mock Flows (M2)**
+  - Member renewals and desk checkout forms leverage `UForm`, `UFormField`, `UInput`, `USelect`, `UCheckbox`, and submit buttons with `UButton`. Resulting confirmations use `UModal` or `UDialog` for optional detail popovers.
+
+8. **Admin CRUD (M3)**
+  - Admin tables rely on `UTable` + `Pagination`. Editing modal or page uses `UForm` suite and `UTabs` for metadata sections. `USlideover` can host quick edits without leaving the list view.
+
+9. **SQLite Optional Step (M4)**
+  - If retained, present results in `UCard` with `UTabs` showing mock vs. SQLite output for quick comparison.
+
+10. **Docs + Alignment (M5)**
+   - Capture component usage patterns in `llm-training-cutoff-updates.md` and reference this checklist for future agents to ensure consistency.
+
+This Nuxt UI-focused overlay keeps the execution order from §10 intact while clarifying which off-the-shelf components we can drop in to accelerate each milestone.
