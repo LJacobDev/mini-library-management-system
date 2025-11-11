@@ -11,7 +11,8 @@ In its current state, some of the more impressive files in the repo are mainly d
 
 Some files of interest include the following:
 
-- Those in the /agents directory, where a manager agent and three implementation agents kept track of their individual context, instructions, and task progress.  [Agent-manager-context.md](agents/agent-manager-context.md)
+- Those in the /agents directory, where a manager agent and three implementation agents kept track of their individual context, instructions, and a history of their progress.  Example: [Agent-manager-context.md](agents/agent-manager-context.md)
+- [A prompt library that was built up while working](agents/prompt-library/agent-actions.json) turned out to be extremely helpful not just for tracking my goals and progress through them, but helpin the agent to notice the text in the file and through that gain an idea of what the current and future goals of the work would be, which helped it align with it with less manual explanation needed from me.
 
 A great amount of value was gained by myself as a developer during this process due to the intensive learning from the continuous exposure to extremely wide ranging and thoughtful aspects of application architecture and development, user experience, deployment options, freely available timesaving tools I can use for future projects and more.
 
