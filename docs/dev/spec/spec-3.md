@@ -271,9 +271,36 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 
 ## 13. Seed Data & Bootstrapping
 
-- Supabase SQL file (`docs/data/schema.sql`) is canonical; migrations generated from it and committed.
-- Seed script (to be implemented) inserts demo users (member, librarian, admin) and media items.
-- On first boot, run `pnpm db:reset` (script to push schema + seed). Implementation agent to create this script when database tooling added.
+### 13.1 Canonical schema & migrations
+
+- `docs/data/schema.sql` remains the single source of truth. Supabase migrations are generated with `supabase db diff --linked --file migrations/<timestamp>_<slug>.sql` and committed alongside change notes.
+- Every migration is replayed locally via `pnpm db:migrate` (wrapper around `supabase db push`) before opening a PR. CI runs the same command against a disposable database to guarantee drift-free deploys.
+
+### 13.2 Seed dataset
+
+- Authoritative seed lives in `scripts/db/seed.ts` (TypeScript) and is compiled/run via `tsx`. It imports shared Zod schemas to guarantee data parity.
+- Initial records:
+  - **Users**: one admin (`admin@example.com`), one librarian desk user (`librarian@example.com`), two members (`member.alice@example.com`, `member.bob@example.com`). Passwords follow Supabase’s seeded auth convention; plaintext stored only in documentation for local onboarding.
+  - **Profiles**: mirror `user_role` enum, include display names, avatar placeholder URLs, and preferences (timezone, notification opt-in).
+  - **Media**: minimum 12 items across formats (`book`, `audiobook`, `ebook`, `video`). Each entry carries metadata (`authors`, `subjects`, `published_at`, `tags`, `description`, `cover_url` placeholder referencing Supabase storage `public/covers/default.webp`).
+  - **Loans**: showcase at least one active loan, one overdue loan, and one returned loan for demo dashboards.
+  - **Reservations**: populate a short queue (two members waiting on the same title) to exercise reservation UI states.
+- Seed script upserts by stable identifiers (`external_id`, email) so re-running remains idempotent.
+
+### 13.3 Commands & local setup
+
+- `pnpm db:reset` (to be added) wipes the local Supabase instance, runs migrations, executes the TypeScript seed, and prints seeded user credentials. Under the hood:
+  1. `supabase db reset --linked`
+  2. `pnpm db:migrate`
+  3. `pnpm db:seed`
+- `pnpm db:seed` runs `tsx scripts/db/seed.ts` targeting the Supabase connection string from `.env.local` (`SUPABASE_SERVICE_ROLE_KEY` required).
+- `.env.example` enumerates all required variables: Supabase URL/anon/service keys, Vercel site URL, Nuxt public base URL, image domain allowlist, and seed asset path (`NUXT_APP_DEFAULT_COVER_URL`). The file is kept in sync whenever a new variable is introduced.
+
+### 13.4 CI integration
+
+- GitHub Actions workflow `ci.yml` (to be authored) executes: `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. A follow-up job provisions a temporary Postgres using Supabase Docker image, runs `pnpm db:migrate`, and executes `pnpm db:seed` to verify migrations plus seed remain green in headless mode.
+- Preview deployments on Vercel depend on a successful CI run and pull Supabase credentials from Vercel project secrets. Seeded assets (default cover) are uploaded to the dev Supabase storage bucket and referenced by environment variable so previews render real imagery.
+- Once Supabase bucket access is available, replace the placeholder cover in seeds with the uploaded default asset to maintain parity between local and hosted environments.
 
 ## 14. Future-facing Hooks (documented, not MVP)
 
@@ -297,8 +324,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 8.1. [x] **Schema.sql quality pass** – Hardened migrations (`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, new `user_role`/`media_format` enums), tightened `users` constraints, dropped redundant media checkout columns, added timestamp triggers, and enabled RLS with policy stubs so downstream contracts stay in sync.
 8.2. [x] **Client data layer contract** – Locked the thin adapter surface (mirrors server routes), shared Zod/TypeScript models, response envelope, retry strategy, and testing/mocking guidance in section 7.
 9. [x] **Server API responsibilities** – Locked in Nuxt server ownership for catalog, circulation, and reservations (section 9), documented idempotency tokens, conflict codes, and when to escalate to future Supabase Edge Functions.
-10. [ ] **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
-  - As soon as the Supabase bucket is reachable, swap the seed cover placeholders to a real default asset in storage so Nuxt Image previews render something real end-to-end.
+10. [x] **Seed data & baseline CI** – Section 13 captures the seed dataset, commands (`pnpm db:reset`, `pnpm db:seed`), `.env.example` contract, and GitHub Actions gates (lint, typecheck, test, build, migration + seed smoke). Bucket placeholder swap remains queued once assets exist.
 11. [ ] **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
 
 ### Defer until after the prototype is working
