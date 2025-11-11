@@ -2,6 +2,10 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
+### This project is being revised with a new [fast start approach in another branch](https://github.com/LJacobDev/mini-library-management-system/blob/manager/fast-restart-test/docs/dev/spec-fast-start-2.md)
+
+## Everything Below Here is the Final State of the Initial Documentation-First TDD Approach Before Switching To Fast Start Approach
+
 
 This application was meant to be a demonstration of rapidly making a high quality demo application in a very short amount of time by leveraging modern Agentic Coding workflows, involving spec-driven and multi-agent aspects.
 
