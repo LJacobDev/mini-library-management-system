@@ -13,8 +13,9 @@ Use the GitHub CLI workflow (`agents/implementation-guide.md`): issue → branch
 
 ### 1. CLI and tooling baseline
 1.1. Install/verify GitHub CLI, Supabase CLI, and Vercel CLI instructions in `README.md`.
-1.2. Add npm scripts for lint, typecheck, test, build, db migrate/reset (`package.json`) per spec.
+1.2. Add npm scripts for lint, typecheck, test, build, db migrate/reset (`package.json`) per spec; confirm `npm run` parity across docs.
 1.3. Ensure `.github/ISSUE_TEMPLATE` and PR template instructions appear in `docs/dev/dev-process.md`.
+1.4. Sweep `docs/dev/spec` and other guides to confirm all command references use npm syntax.
 
 **Dependency:** None.
 
@@ -22,6 +23,7 @@ Use the GitHub CLI workflow (`agents/implementation-guide.md`): issue → branch
 2.1. Create `.github/workflows/ci.yml` matching spec-final §13.3 (npm install, lint, typecheck, test, build, db migrate+seed).
 2.2. Add matrix for Node 20.x (single entry is fine for demo) with cache setup.
 2.3. Configure CI secrets usage (`SUPABASE_DB_URL`, `OPENAI_API_KEY` placeholders) via `README` notes.
+2.4. Publish workflow badge in `README.md` and ensure CI emits preview deploy status for Vercel once configured.
 
 **Dependency:** Requires Agent 1 Step 1 (schema/migrations) to exist before CI runs migrations.
 
@@ -34,7 +36,7 @@ Use the GitHub CLI workflow (`agents/implementation-guide.md`): issue → branch
 
 ### 4. Environment onboarding
 4.1. Create `docs/dev/env-setup.md` describing copy `.env.example` → `.env`, provide Vercel/Supabase CLI commands to set secrets.
-4.2. Add script `npm run env:check` (simple Node script) to verify required variables present; integrate into CI.
+4.2. Add scripts `npm run env:check`, `npm run db:reset`, and `npm run db:seed` (wrapping Supabase CLI + seed) and integrate env check into CI.
 4.3. Notify Agent 1 & 2 when env doc is published; update manager context if keys change.
 
 **Dependency:** Step 1 (tooling) and Step 2 (CI) ideally complete.
@@ -49,7 +51,8 @@ Use the GitHub CLI workflow (`agents/implementation-guide.md`): issue → branch
 ### 6. Observability & logging glue
 6.1. Create `plugins/logging.client.ts` and `logging.server.ts` to wrap `consola` or Sentry placeholders per spec §15.
 6.2. Define `~/lib/telemetry/trace.ts` helper to attach `X-Client-Request-Id` to logs; ensure backend/front-end call sites documented.
-6.3. Document log levels and manual monitoring steps in `docs/dev/operations.md`.
+6.3. Document log levels, `/api/logs/client` expectations, and manual monitoring steps in `docs/dev/operations.md`.
+6.4. Configure Sentry/Logflare DSN placeholders in environment docs and ensure toggles exist for local vs production logging.
 
 **Dependency:** Agent 1 Step 8 (AI streaming) may add additional telemetry requirements—coordinate before finalizing.
 
@@ -63,12 +66,12 @@ Use the GitHub CLI workflow (`agents/implementation-guide.md`): issue → branch
 ### 8. Final polish
 8.1. Run full CI locally (`npm run lint && npm run typecheck && npm test && npm run build`) and log results in manager context.
 8.2. Verify GitHub workflow badges in README once CI runs.
-8.3. Review repo for orphan docs or outdated notes; archive or flag for post-demo backlog.
+8.3. Review repo for orphan docs or outdated notes; archive or flag for post-demo backlog. Confirm Vercel preview and production settings documented.
 
 **Dependency:** All prior steps complete.
 
 ## Coordination checkpoints
 - After Step 2: notify all agents CI is live; ensure they rebase to pick up `.github/workflows`.
-- After Step 4: confirm everyone can run `npm run env:check` successfully.
+- After Step 4: confirm everyone can run `npm run env:check`, `npm run db:reset`, and `npm run db:seed` successfully.
 - After Step 7: schedule cross-team manual QA session before final deploy.
 - Update `agent-3-context.md` after each PR with issue #, branch, status, next action, and blockers.

@@ -42,7 +42,7 @@ Jobs (parallel where possible):
 
 1. **test-nuxt**
    - Setup Node.js (use the version in `.nvmrc` or `package.json`).
-   - Install dependencies via `pnpm install`/`npm ci` (match repo tooling).
+   - Install dependencies via `npm install` (or `npm ci` when a lockfile-driven install is required).
    - Run lint (`npm run lint`), unit tests (`npm run test:unit` with Vitest), component tests if using Playwright/Cypress, and type checks (`npm run typecheck`).
 
 2. **build-nuxt** *(optional but recommended)*

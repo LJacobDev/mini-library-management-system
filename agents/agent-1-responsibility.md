@@ -47,23 +47,26 @@ Each step should be executed via the GitHub CLI workflow described in `agents/im
 
 **Dependency:** Step 3 (contracts) must be in place so responses match adapters.
 
-### 5. Implement catalog & account endpoints
 
-5.1. Connect Supabase client for server use (`server/utils/supabaseServiceClient.ts`) using service-role key from runtime config.
-5.2. Implement `/api/catalog` & `/api/catalog/:id` with pagination, filtering, queue summary, respecting caching hints (spec §9.2). Include integration tests hitting an in-memory Supabase or mocked responses.
-5.3. Implement `/api/me/loans` and `/api/me/reservations` (spec §9.4) with SSR-friendly pagination metadata.
-5.4. Update seed script to include demo catalog, loans, reservations so Agent 2 can visualize dashboards quickly.
+### 5. Catalog endpoints & account surfaces
 
-**Dependency:** Step 4 complete; tests rely on seeded or mocked data. Coordinate with Agent 2 before altering response shapes.
+5.1. Connect Supabase client for server use (`server/utils/supabaseServiceClient.ts`) using the service-role key from runtime config.
+5.2. Implement `GET /api/catalog` and `GET /api/catalog/:id` with pagination, filtering, queue summary, short-lived cache headers, and integration tests that verify Zod parsing + conflict codes (spec §9.2).
+5.3. Implement admin mutations `POST /api/catalog`, `PATCH /api/catalog/:id`, `DELETE /api/catalog/:id` with optimistic locking via `If-Match`/`updated_at`, audit log inserts, and duplicate protection (`409_conflict`).
+5.4. Implement `/api/me/loans` and `/api/me/reservations` (spec §9.4) with SSR-friendly pagination metadata and happy-path/edge-case tests.
+5.5. Update seed script to include demo catalog, loans, reservations so Agent 2 can visualize dashboards quickly; document seeded admin/librarian credentials in `docs/dev/backend-notes.md`.
+
+**Dependency:** Step 4 complete; tests rely on seeded or mocked data. Coordinate with Agent 2 before altering response shapes and tag Agent 3 when audit log schema lands.
 
 ### 6. Implement circulation workflows
 
-6.1. `/api/loans/checkout` with idempotency via `loanRequestId` and Supabase transaction locking (spec §9.3, §9.5).
-6.2. `/api/loans/{id}/renew`, `/return`, `/override` with conflict/error handling per spec (`reservation_waiting`, `policy_violation`, etc.).
-6.3. Ensure returning a loan triggers reservation queue reconciliation, reusing helper utilities; add tests covering queue auto-advance.
-6.4. Document business rules in `docs/dev/backend-notes.md` (new file) so Agent 2 can surface messaging.
+6.1. Implement `POST /api/loans/checkout` with idempotency via `loanRequestId`, Supabase transaction locking, and `loan_events` persistence for replay detection (spec §9.3, §9.5).
+6.2. Implement `PATCH /api/loans/:id/renew` enforcing reservation guardrails and `POST /api/loans/:id/override` for due date/condition overrides. Surface typed conflict codes (`reservation_waiting`, `policy_violation`, etc.).
+6.3. Implement `POST /api/loans/checkin` for member self-return and librarian desk flows; ensure queue reconciliation runs inside the transaction and returns `handoff` metadata.
+6.4. Add integration tests covering idempotent replay, lock contention, and queue hand-off; persist structured audit entries for each action.
+6.5. Document business rules and conflict copy in `docs/dev/backend-notes.md` so Agent 2 can surface accurate messaging.
 
-**Dependency:** Step 5 must be merged. Coordinate with Agent 3 for any new scripts required in CI (e.g., Supabase migrations/tests).
+**Dependency:** Step 5 must be merged. Coordinate with Agent 3 for any new scripts required in CI (e.g., Supabase migrations/tests) and notify Agent 2 when payloads stabilise.
 
 ### 7. Implement reservation queue endpoints
 
@@ -83,12 +86,13 @@ Each step should be executed via the GitHub CLI workflow described in `agents/im
 
 **Dependency:** Steps 3–7 complete. Agent 2 must have UI hooks ready; coordinate before changing chunk schema.
 
-### 9. Final backend polish
+### 9. Final backend polish & observability
 
-9.1. Audit logs & observability: hook up structured logging (`consola`) and ensure key flows log correlation IDs.
-9.2. Ensure server errors are surfaced to Sentry placeholders (Agent 3 will finalize config).
-9.3. Double-check guardrails: RLS policies enabled, SSR route rules consistent, edge-case tests documented.
-9.4. Update `docs/dev/backend-notes.md` and OpenAPI changelog summarizing final state, then signal green light to other agents.
+9.1. Implement `/api/logs/client` route accepting client-side error payloads; store records in Supabase with correlation IDs and role metadata.
+9.2. Hook up structured logging (`consola`) across server routes, ensuring `X-Client-Request-Id` propagation and alignment with Agent 3’s telemetry helpers.
+9.3. Ensure server errors surface to Sentry placeholders and rate-limit events respect spec limits; sync logging options with Agent 3.
+9.4. Double-check guardrails: RLS policies enabled, response envelopes validated, edge-case tests documented, and OpenAPI schemas regenerated.
+9.5. Update `docs/dev/backend-notes.md` (business rules + error codes) and the OpenAPI changelog summarizing final state, then signal green light to other agents.
 
 **Dependency:** All prior steps complete.
 

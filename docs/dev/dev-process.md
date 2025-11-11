@@ -585,6 +585,13 @@ Some first draft has been made, but it needs to be reworked until it has well or
 
 
 
+#### The repsonsibility files are made now
+
+They appear to be in an order where even if any of their steps are exploded into sub-steps, the order in which they occur won't radically change, so these can be turned into task list files now, and then the task list files can be exploded into sub-steps as needed.
+
+
+
+
 
 #### I still want to hook up and test supabase auth and image storage as early on as possible so I know it's working while I build
 

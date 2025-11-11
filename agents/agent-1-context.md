@@ -28,5 +28,7 @@ Use this file to keep everyone aligned on backend progress. Update after every i
 - Demo shortcuts acceptable if they improve product creation in less time - suggest them if any are available, but do not choose them unless explicitly approved by dev user.
 - Reservation queue logic depends on loan return flows—coordinate changes carefully.
 - Keep OpenAPI and TypeScript definitions in lockstep; failing to do so blocks the other agents.
+- Admin catalog mutations must respect `If-Match` concurrency checks and emit audit logs so UI copy stays accurate.
+- Persist idempotency request IDs in `loan_events` and expose `/api/logs/client` once circulation flows land; Agent 3 depends on both for observability.
 
 Append dated updates below as work progresses.
