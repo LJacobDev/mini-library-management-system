@@ -581,6 +581,8 @@ I like the way it looks, can't wait to see how it runs though
 
 #### Creating the separated responsibilities implementation agent files
 
+Some first draft has been made, but it needs to be reworked until it has well organized, well co-ordinated, and well broken down substeps.
+
 
 
 
