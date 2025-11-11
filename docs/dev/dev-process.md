@@ -483,29 +483,8 @@ By just having an llm check it, these things were identified but I know that thi
 
 This has been done in backlog questions 8.1 but I have yet to test run it and check how it will work.  I would not be surprised if it needs more help getting things right.
 
+It has been reviewed and seems ok now
 
-
-
-
-#### Make the spec file
-
-Might save iterative versions along the way for reference or as checkpoints.
-
-
-While working on the 'backlog of spec questions' I was really wanting to see if I could start just building some things while continuing to talk about spec questions, but the agent suggested finishing up to backlog item 11 before starting any implementation.
-
-
-Spec building agent has been almost exclusively GPT-5-Codex
-
-Implementation agents will probably be gpt-5 mini unless complex operations have to happen
-
-
-
-#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
-
-
-
-#### make sure to do test guide files and possibly test-plan files once spec is done
 
 
 
@@ -524,6 +503,57 @@ Implementation agents will probably be gpt-5 mini unless complex operations have
 - `updated_at` columns never auto-refresh; add triggers/defaults if the timestamp is meant to track changes.  
 - Sample inserts accept NULL `creator`/`title` etc. only via schema constraints; ensure future data respects NOT NULLs.
 
+
+
+
+
+
+
+
+
+
+#### Make the spec file
+
+Might save iterative versions along the way for reference or as checkpoints.
+
+
+While working on the 'backlog of spec questions' I was really wanting to see if I could start just building some things while continuing to talk about spec questions, but the agent suggested finishing up to backlog item 11 before starting any implementation.
+
+
+Spec building agent has been almost exclusively GPT-5-Codex
+
+Implementation agents will probably be gpt-5 mini unless complex operations have to happen
+
+Remember to get an AI feature in there, there are lots that are easy to do.
+
+
+Made sure that a recommendation from AI about which books you might like based on your stated interests gets included as part of the MVP and in the API contracts
+
+
+
+#### spec-final.md created
+
+ready to break down into workspace files and agent responsibility files to begin implementation
+
+
+
+
+
+#### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
+
+
+
+#### make sure to do test guide files and possibly test-plan files once spec is done
+
+
+
+### Making the agent responsibilities file
+
+Make a manager responsibilities file as well?  or is that just me working with it and tracking each implementation agent?  Think about if it helps.  Maybe the main spec.md that it generates can also have checkboxes that it completes (or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
+
+Remember that some agent tasks might be best set to only be allowed to start when another agent has achieved a certain point on theirs, so have the manager mark instructions on 'requires agent step # to be complete before starting' on each agent step
+
+The manager can perhaps check off that file to show the requirement is ready now.
 
 
 
@@ -585,20 +615,6 @@ run formatter on all ts files
 
 
 ```
-
-
-
-
-
-### Making the agent responsibilities file
-
-Make a manager responsibilities file as well?  or is that just me working with it and tracking each implementation agent?  Think about if it helps.  Maybe the main spec.md that it generates can also have checkboxes that it completes (or its own manager responsibilities file that is just the full spec with check boxes to keep the files cleaner)
-
-Remember that some agent tasks might be best set to only be allowed to start when another agent has achieved a certain point on theirs, so have the manager mark instructions on 'requires agent step # to be complete before starting' on each agent step
-
-The manager can perhaps check off that file to show the requirement is ready now.
-
-
 
 
 
@@ -722,4 +738,13 @@ Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an ide
 Significant differences are seeming to emerge by having the agent check its plans for Nuxt, Tailwind against docs.  Am doing the same for Supabase now.  There seem to be large differences between what agents are trained on so I should use older versions or find out how to feed them docs efficiently.
 
 It appears that it is possible for it to get in long periods of checking documentation without seeming to find what it wants.  I'd like to understand what's going on when this happens.
+
+
+
+#### Managing context / truth sources
+
+I found that there was a lot of value in converging on a spec and then at the point of locking it in, making sure to check the docs of each related technology in order to make sure the plan wasn't broken by recent updates.  This often resulted in what at the least looks like the LLM being confident that we're catching important changes.  We'll find out what happens when implementation starts.
+
+It seems like the training cutoff date and where to find recent docs is a massive part of getting good results with this.
+
 
