@@ -53,4 +53,4 @@
         "prompt" : "If I were to ask you, would you be able to create a file at /docs/dev/spec-fast-start.md and use it as a working file that will be added to as we plan out how to make a rough very quick outline app that has a working front end and back end, even if it's simply something that runs on localhost and has a hello screen and it can click a button to get a sqlite query from a nuxt back end, but where it uses the knowledge of spec-final.md to make the shapes of these basic simple things able to later be easily swapped in for the future plan?  "
     }
 ]
- 
+ while we are working on this plan, I'd like you to make only additional text at the bottom of the #file:spec-fast-start.md file, so that we can use it as a way of collecting thoughts that help us with our goal, and it can serve as a history of the thinking.  Later on we might lock the file or rework it into something like a shorter mixture of the decisions but for now just add to it.

@@ -22,6 +22,11 @@ Our job is to build the front end ui as fast as possible using nuxt 4, tailwindc
 Speed of development is paramount in this, so use the /docs/dev/spec/spec-final.md as a loose reference for what a future version of this app will be about, and BUT DO NOT FOLLOW THE OPENAPI DOCUMENTS OR THE SPEC GUIDE'S REQUIREMENTS WHILE WE DEVELOP THIS APP NOW - build the front end as fast as possible using mocks where needed to get something working quickly.
 
 
+## How to communicate with dev about this
+
+As a default, in order to reduce reading fatigue for the developer, please keep your messages as few words as possible to convey the needed information, and then if the dev asks for more explanation, provide it in follow up messages.  Keep the follow up messages concise as well so that fast information iteration can occur.  If dev asks you to be thorough or detailed, then please use as much detail as needed to convey complete information especially when writing docs like .md files.
+
+
 ## How to handle agent training cutoff date causing issues with not knowing about nuxt 4, tailwindcss v4, supabase latest best practices, openai latest best practices
 
 It is likely that your training data cutoff is from back when nuxt 3 was the latest version of nuxt, so before every design or implementation suggestion you make, please check https://nuxt.com/docs as the source of truth about how to do things in nuxt 4.  This is very important to avoid nuxt 3 vs nuxt 4 confusion.  

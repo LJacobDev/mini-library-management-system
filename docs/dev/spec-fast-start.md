@@ -110,3 +110,84 @@ This living document captures the rough plan for spinning up a super-fast, mock-
 ---
 
 _This document is intentionally lightweight. Update it as we iterate, keeping focus on rapid delivery while laying tracks for the full spec implementation._
+
+## 8. Supabase + OpenAI Fast-Track Alignment
+
+- **Earliest “hello Supabase”**: target immediately after Milestone M1 (skeleton UI renders). Introduce a guarded `server/api/health/supabase.get.ts` that uses the Supabase service client with the `mlms-demo` instance to fetch `select 1` (e.g., `supabase.rpc('ping')` once created). Front end surfaces this via a `/debug/data` page button so we can validate environment variables, Route Rules, and SSR interplay without blocking on mock data replacement.
+- **Dual-source data**: keep mock composables as default, but add `runtimeConfig.public.dataSource = 'mock' | 'supabase'`. This allows flipping to live queries route-by-route while we stabilize UI wiring.
+- **Session bridge**: wire the Supabase client plugin early (alongside `useMockSession`) so auth-ready code paths exist, even if we keep using hard-coded roles until after the “hello live” check.
+- **OpenAI streaming checkpoint**: as soon as the Nuxt backend can hit Supabase (same sprint as the health check), stand up `server/api/ai/recommend.post.ts` that proxies a streaming `client.chat.completions.create({ stream: true })` call. Begin with OpenAI mock responses if keys are unavailable, but aim to flip to the real API once secrets are in place to validate SSE plumbing end-to-end.
+- **Timeline tweak**: insert micro-milestones `M1.5 — Supabase handshake` and `M1.6 — OpenAI SSE probe` between M1 and M2, ensuring live integrations happen before we invest in richer dashboard interactions.
+
+## 9. Minimal File Layout for Live Data + Streaming AI
+
+Taking cues from the `.temp/` React + FastAPI SSE example, the Nuxt project can use the following minimal structure to replicate the event-streaming pattern while staying Nuxt-conventional:
+
+- `app/`
+  - `layouts/`
+    - `default.vue` — nav shell with debug badge showing Supabase/OpenAI status.
+    - `dashboard.vue` — sidebar layout for member/librarian/admin screens.
+  - `pages/`
+    - `index.vue`, `catalog/index.vue`, `catalog/[id].vue` — SSR catalog pages hitting `/api/catalog`.
+    - `debug/data.vue` — buttons triggering Supabase health check and AI stream demo.
+    - `account/loans.vue`, `desk/checkout.vue`, `admin/media/index.vue`, `admin/media/new.vue` — CSR dashboards.
+  - `components/ui/`
+    - `CatalogCard.vue`, `StatusBadge.vue`, `RoleToggle.vue`, `AiPane.vue` (listens to SSE endpoint, similar to `.temp/src/pages/index.tsx`).
+  - `composables/`
+    - `useCatalogService.ts` — wraps `useFetch` to `/api/catalog` (mock vs Supabase toggle).
+    - `useAiStream.ts` — establishes `EventSource` to `/api/ai/recommend` and exposes reactive buffers, mirroring the `.temp` EventSource logic.
+
+- `server/`
+  - `api/catalog/index.get.ts` — returns media list from mock store or Supabase view.
+  - `api/catalog/[id].get.ts` — returns detail payload.
+  - `api/health/supabase.get.ts` — “hello Supabase” endpoint hitting `mlms-demo`.
+  - `api/ai/recommend.post.ts` — streaming OpenAI proxy using `sendStream(event, readable)` and chunking responses into SSE frames.
+  - `api/loans/[id]/renew.post.ts`, `api/desk/checkout.post.ts` — mutable routes against mock/Supabase data.
+  - `utils/supabaseServiceClient.ts` — encapsulates service-role initialization for server handlers.
+  - `utils/openaiClient.ts` — wraps OpenAI SDK configuration (model, streaming options, SSE formatter akin to `.temp/api/index.py`).
+  - `db/mockData.ts` & `db/sqlite.ts` — fallback stores until Supabase tables are fully adopted.
+
+- `config/`
+  - `runtime.ts` — centralizes `runtimeConfig` typing for Supabase keys, OpenAI keys, and the `dataSource` toggle.
+
+This layout keeps the streaming/OpenAI plumbing parallel to the `.temp` FastAPI example while leveraging Nuxt server routes and composables so we can later replace internals with Supabase and Supabase Edge Functions without reorganizing files.
+
+## 10. End-to-End Fast Track — Single-Pass Execution Plan
+
+Follow this sequence to assemble the UI, backend, database touchpoints, and AI streaming with minimal backtracking. Each step references the relevant sections above so you can double-check details without rereading the entire document.
+
+1. **Bootstrap UI shell (M1)**
+  - Scaffold layouts (`default`, `dashboard`) and primary routes (`/`, `/catalog`, `/catalog/:id`).
+  - Plug in Tailwind v4 + Nuxt UI primitives, render static catalog cards using mock data (`§2.1`, `§4`).
+
+2. **Toggle-aware data composables**
+  - Implement `useCatalogService`, `useLoanService`, `useMockSession` using in-memory mocks (`§2`, `§4`).
+  - Introduce `runtimeConfig.public.dataSource` flag with defaults to `mock` (`§8`).
+
+3. **Wire mock API routes**
+  - Add server handlers for catalog, loans, desk checkout (`§3`).
+  - Validate SSR/CSR separation by ensuring `/catalog` renders via `useFetch`, while dashboard routes lazily fetch client-side.
+
+4. **Insert Supabase handshake (M1.5)**
+  - Configure service client helper (`server/utils/supabaseServiceClient.ts`).
+  - Build `/api/health/supabase.get` hitting `mlms-demo` and surface it on `/debug/data` button (`§8`, `§9`).
+  - Record any setup deltas in `llm-training-cutoff-updates.md`.
+
+5. **Bring OpenAI streaming online (M1.6)**
+  - Create `server/utils/openaiClient.ts` and `/api/ai/recommend.post` with SSE wrapper patterned after `.temp/api/index.py` (`§8`, `§9`).
+  - Build `useAiStream` composable + `AiPane` component to display streamed output on `/debug/data` (`§9`).
+
+6. **Upgrade UI interactions (M2)**
+  - Attach renew + checkout actions to respective buttons, using mock mutations or Supabase depending on toggle.
+  - Add toast/snackbar feedback via Nuxt UI.
+
+7. **Admin CRUD scaffolding (M3)**
+  - Implement `/admin/media` list and `/admin/media/new` form, persisting to mock store/Supabase service.
+
+8. **SQLite bridge sanity check (M4) [optional once Supabase live]**
+  - If needed for local dev parity, maintain `server/db/sqlite.ts` and a `/api/debug/sqlite-check` button.
+
+9. **Documentation + alignment (M5)**
+  - Update this file with learnings, sync `llm-training-cutoff-updates.md`, capture screenshots for stakeholders.
+
+Cross-check: every bullet above maps back to prior sections (`§2`–`§9`), ensuring no earlier detail is dropped. Use this condensed runbook for rapid execution, and refer upward when deeper context is required.
