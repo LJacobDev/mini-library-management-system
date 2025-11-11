@@ -579,8 +579,15 @@ I like the way it looks, can't wait to see how it runs though
 
 
 
+#### Creating the separated responsibilities implementation agent files
 
 
+
+
+#### I still want to hook up and test supabase auth and image storage as early on as possible so I know it's working while I build
+
+
+#### My edge case checklist is quite large so I want to remember to tone it down if it gets excessively in the way of development
 
 
 
