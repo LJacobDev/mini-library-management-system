@@ -545,6 +545,8 @@ the agent remembered as soon as the spec was locked that we needed to do this, a
 
 I just want to check their contents 
 
+The openapi.yaml file was 700 lines and Copilot says it's just a stub file that is not consistent with the spec.  I have it making it consistent with the spec, and then that should be the last thing needed before breaking this into implementation agent responsibilities.
+
 
 
 
@@ -568,65 +570,86 @@ The manager can perhaps then check off that file to show the requirement is read
 
 
 
+
+
+
+
+
+
+
+
+
+
+- I want to set up issue templates, PR templates before the implementation agents start their building
+
+
+-- create a file that explains implemetnation instructions:
+
+    make a gh issue that addresses what the next step of the agent responsibility to implement (or bug issue they're going to tackle) is,
+    create a new branch prefixed with {agentname}/ that includes that issue number in the branch name to work on it (agent suggests the branch name so dev can copy and paste, or else agent can run terminal command to create branch)
+    to start working on it, think of the edge cases according to edge case guide
+    write unit tests that cover edge cases
+    implement feature/function/handler/etc so that tests pass
+    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
+    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and any relevant manual test, then do pull request that links to the issue and closes it
+    see issue template and pr template files
+
+
+
+
+
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
 
-- fix the dev-process rendered markdown readability especially in 'insights'
+
 
 - I'd like to make a test connection to supabase and set up its keys (and openai as well) as soon as possible so it's working from the start - will likely need keys set up in github and vercel and test that everything works in local, in any github actions and in vercel
 
 - I still want to get book cover art, maybe other media cover art.  Check stock photo sites and free photo sites like pexels, using image gen to get a few examples, etc.
 
 
-- I'm going to run the prompt that turns the spec and unanswered questions into spec-1 and works through them.
 
 
--- create a file that explains implemetnation instructions:
-
-    make a gh issue that addresses what the next step to do it
-    think of the edge cases according to edge case guide
-    write unit tests that cover edge cases
-    implement feature/function/handler/etc so that tests pass
-    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
-    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and manual, then do pull request that links to the issue and closes it
-    see issue template and pr template files
 
 
--- when that part is done move these temp notes down to keep with the flow of the original plan with these as reminders
-
-
-- I want to set up issue templates, PR templates before the implementation agents start their building
 
 - I still need to link the github repo to vercel, I assume at least, in order to help do CI/CD
 
 
 
 
-I'm aware that having truly complete docs might not be happening unless I take a moment to make a strategy for them and I'd like to do that as soon as I can as long as I get the prototype made and working as a priority over full docs
 
 
-Don't forget to add prompts you're using often or find that are helpful into the prompt library
+
 
 Remember that you have something set up in main.css that helps with adding css variables if I want any (like a colour scheme palette)
 
 - remember that tailwindcss forms and tailwindcss typography is available if you want it
 
+
+
+
+
 - something is strange with path aliases.  Nuxt is supposed to use ~ for src folder and @ for root folder, but in mine it seems like ~ and @ both point to /app/ and so I seem to need to move my components directory into app if I want to use aliases.
 
 I think that if I keep my intentional use of ~/ as meaning app folder, and @ as to mean the root, then if I keep using @/components then I should be able to fix the @ targeting and move components back if I want to.  For now I just want the prototype to work and make sure it doesn't break when CICD happens so I'll keep components in /app/ to get moving on making the functionality, UI, etc.
 
+--- is the above about path aliases related to the fact that this is Nuxt4 and not 3?
 
-run formatter on all ts files
 
 
 - add that I want some kind of logging, but the media_loans database is almost like one, but having actual log files for other things would be a nice thing to also have
 
-- I'd like to clean up the tailwindcss doc that is outdated now that v3 isn't being used
-
 
 ```
 
+
+run formatter on all ts files
+
+- fix the dev-process rendered markdown readability especially in 'insights'
+
+I'm aware that having truly complete docs might not be happening, but get the readme well polished especially with any walkthroughs or ways to help a tester check the app out.
 
 
 ## Final Outcome
@@ -759,3 +782,10 @@ I found that there was a lot of value in converging on a spec and then at the po
 It seems like the training cutoff date and where to find recent docs is a massive part of getting good results with this.
 
 
+
+
+#### The agent can help accomplish large tasks but it comes with a risk of having to verify that large thing
+
+Codex made openapi.yaml which sounded like a great idea as a reference that implementation agents could use to build their work from.  However when it created it, it created it as a stub that isn't consistent with the spec.  Then it took many edits to pass through it and make it consistent.
+
+This is a file that is meant to facilitate development, but it's also a liability because if it has any subtle errors in it, it could be difficult to trace and resolve, so I might want to avoid this kind of approach unless I can find a way to ensure the quality of the statements being included in the file.
