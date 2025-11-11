@@ -1,10 +1,5 @@
 [
     {
-        "action" : "record-styling-baseline",
-        "role" : "any",
-        "prompt" : "Confirm in your agent context that the project is on Nuxt 4.2 with Tailwind CSS v4 (using tailwindcss/preflight + tailwindcss/utilities). Update any lingering references to Tailwind v3 scaffolding and note that automated checks should fail if dependencies downgrade back to v3."
-    },
-    {
         "action" : "agent-context-check",
         "prompt" : "can you tell me what your current understanding of the project is, and its goals, and what we've done so far on it, what its current state is, and what we should do next?"
     },
