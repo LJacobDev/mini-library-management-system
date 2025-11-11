@@ -3,7 +3,7 @@
 Submitted by Lee Jacob (LJacobDev)
 
 
-This application was meant to be a demonstration of rapidly making a high quality demo application in a very short amount of time by leveraging modern Agentic Coding workflows.
+This application was meant to be a demonstration of rapidly making a high quality demo application in a very short amount of time by leveraging modern Agentic Coding workflows, involving spec-driven and multi-agent aspects.
 
 It appeared to be getting off to an excellent start in terms of working out a seemingly robust plan and specification, but the specification began to balloon in size and scope as an unintended side effect of trying to make sure that the MVP would include several high impact low difficulty UX, performance, and AI app features like streaming agent chat.  However, while the purpsoe of striving for a robust high quality spec was to make implementation extremely simple and straightforward and prevent reworking the app part way through, the spec instead took on too much scope for the goals of the project and complicated making further progress.
 
