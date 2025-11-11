@@ -480,7 +480,6 @@ Agent might ask a question about a ux consideration backlog question but it come
 
 
 
-
 #### Make the spec file
 
 Might save iterative versions along the way for reference or as checkpoints.
@@ -706,4 +705,4 @@ However while investigating ways to improve product quality quickly, many import
 
 Copilot keeps talking about v3 TailwindCSS patterns, but when it proposed an idea to me that used tailwind.config.ts, I noticed that v4 doesn't use that file anymore.  So I pointed it to tailwind docs, and it seemed to correct its plan.  I will probably need to rely on this for all tailwind and all nuxt code because of using later version than these models are used to.
 
-
+Significant differences are seeming to emerge by having the agent check its plans for Nuxt, Tailwind against docs.  Am doing the same for Supabase now.  There seem to be large differences between what agents are trained on so I should use older versions or find out how to feed them docs efficiently.
