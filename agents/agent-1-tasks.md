@@ -37,8 +37,11 @@ Use the GitHub CLI workflow in `agents/implementation-guide.md` (issue → branc
 ### 3. API adapter contracts & mocks
 
 - [ ] Lock Zod schemas in `~/lib/api/types.ts` for core models (`MediaSummary`, `LoanRecord`, `ReservationRecord`, `RecommendationPrompt`, `RecommendationResponse`, `PaginatedResponse<T>`).
+- [ ] Add unit tests that validate sample payloads against each schema (happy path + failure cases) and snapshot the contract if practical.
 - [ ] Implement `~/lib/api/client.ts` with methods that mirror the OpenAPI contract, returning typed stubs wired to `fetch`.
+- [ ] Cover the client with tests ensuring request URLs, methods, and error envelopes align with the spec.
 - [ ] Build `createMockApiClient` fixtures (catalog list, overdue loan, reservation queue, AI stream) and confirm Agent 2’s needs are covered.
+- [ ] Document how to swap between mock and live client (README + `docs/dev/backend-notes.md`).
 - [ ] Regenerate/update `docs/api/openapi.yaml` and post the delta + migration notes for Agents 2 & 3.
 
 **Dependency:** Step 1 must have schema decisions locked; Agent 2 blocked until this lands.
@@ -46,7 +49,9 @@ Use the GitHub CLI workflow in `agents/implementation-guide.md` (issue → branc
 ### 4. Nitro server route scaffolding
 
 - [ ] Create placeholder route handlers under `server/api/**` for every endpoint listed in spec §6, with Zod input validation and `501` TODO responses.
+- [ ] Add smoke tests confirming each route exports and responds with `501` while TODOs remain.
 - [ ] Implement shared error translation helpers in `~/lib/api/errors.ts` to enforce the `{ success, error }` envelope contract.
+- [ ] Cover error helpers with unit tests (e.g., maps Supabase errors → spec codes).
 - [ ] Add Vitest route tests that assert error envelopes and status codes for invalid payloads.
 
 **Dependency:** Step 3 (contracts) must be in place so responses match adapters.
