@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Spec & Requirements
+    url: https://github.com/LJacobDev/mini-library-management-system/tree/main/docs/dev
+    about: Review the locked specification and developer documentation before opening a new issue.

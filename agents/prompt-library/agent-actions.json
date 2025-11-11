@@ -16,7 +16,7 @@
     {
         "action" : "build-spec-preparation-list",
         "role" : "manager",
-        "prompt" : "I'd like to take our current understanding of the application and start to drill down to a locked spec that we can hand off to other developers to implement.  Your goal now is to build a /docs/dev/spec-preparation-list.md file that includes a thorough list of every possible thing that could be helpful to planning our work so that we don't end up having to rebuild the app part way through.  Include everything that could relate to UI, UX, security, maintainability, code organization, documentation, or any other factor or consideration that can cause this app to function well, look well, feel intuitive and accessible, etc.  Anything that we have not yet explicitly addressed, I want it to be included in this list so that it is exhaustive"
+        "prompt" : "I'd like to take our current understanding of the application and start to drill down to a locked spec that we can hand off to other developers to implement.  Your goal now is to build a /docs/dev/spec/spec-preparation-list.md file that includes a thorough list of every possible thing that could be helpful to planning our work so that we don't end up having to rebuild the app part way through.  Include everything that could relate to UI, UX, security, maintainability, code organization, documentation, or any other factor or consideration that can cause this app to function well, look well, feel intuitive and accessible, etc.  Anything that we have not yet explicitly addressed, I want it to be included in this list so that it is exhaustive"
     },
     {
         "action" : "build-spec-preparation-list-essential",

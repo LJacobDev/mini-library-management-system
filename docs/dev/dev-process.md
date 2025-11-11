@@ -573,26 +573,15 @@ The manager can perhaps then check off that file to show the requirement is read
 
 
 
+#### Setting up github issue templates and instructions for how to use Issues and PRs
+
+I'm not sure whether the config.yml requirement to check the spec before opening an issue will interfere with things here but I'll find out when I open an issue on it
 
 
 
 
 
 
-
-- I want to set up issue templates, PR templates before the implementation agents start their building
-
-
--- create a file that explains implemetnation instructions:
-
-    make a gh issue that addresses what the next step of the agent responsibility to implement (or bug issue they're going to tackle) is,
-    create a new branch prefixed with {agentname}/ that includes that issue number in the branch name to work on it (agent suggests the branch name so dev can copy and paste, or else agent can run terminal command to create branch)
-    to start working on it, think of the edge cases according to edge case guide
-    write unit tests that cover edge cases
-    implement feature/function/handler/etc so that tests pass
-    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
-    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and any relevant manual test, then do pull request that links to the issue and closes it
-    see issue template and pr template files
 
 
 

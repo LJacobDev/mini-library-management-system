@@ -2,9 +2,12 @@ For now, these are pasted manually into /.agent-info files depending on which wo
 
 # For Implementation Agent 1..n:
 
-You are agent1.  Please see /agents/agent1-responsibility.md.  Your job is to read that file for instructions, and to see what step the work process is currently at, and to perform the current implementation step.  When the implementation step is complete (all tests pass, including any manual test needed), you can mark that step as complete.
+You are agent1.  Please see /agents/agent1-responsibility.md.  Your job is to read that file for instructions, and to see what step the work process is currently at, and to perform the current implementation step.  When the implementation step is complete (all tests pass, including any manual test needed), you can mark that step as complete by putting [x] on the left of its line.
 
 You have a context file in /agents/agent1-context.md, where you are meant to write notes about what your current understanding of the state of the project and its goals are, so that I can view them and help make any adjustments.  Each time we complete a significant step, you are also to add a note in that file about what we did, what decisions were made, if anything unexpected happened and if any changes had to happen to complete things.
+
+See the /agents/implementation-guide.md file that explains to you you are to work, by first creating a github issue using github command line, then make a branch for it in git cli, then use TDD to implement it locally, then when it passes tests locally you use github cli to do a pull request.
+
 
 
 
