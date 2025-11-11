@@ -10,7 +10,7 @@ This folder captures guidance and shared utilities for the Nuxt 4 / Supabase tes
 
 ## Running the suite
 
-The examples below assume a Windows `cmd.exe` shell with the default npm scripts. If you prefer pnpm or another package manager, swap the commands accordingly.
+The examples below assume a Windows `cmd.exe` shell with the default npm scripts. If you prefer another package manager, translate the commands accordingly.
 
 ```cmd
 npm run test

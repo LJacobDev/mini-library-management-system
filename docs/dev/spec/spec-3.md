@@ -267,7 +267,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
   2. Implement minimal code to pass.
   3. Refactor with safety (lint/type check).
 - **Test stack**: `vitest` for unit/integration, `@nuxt/test-utils` for component + server route tests. Future E2E via Playwright once MVP stable.
-- **CI gates**: `pnpm lint`, `pnpm typecheck`, `pnpm test`, optional `pnpm test:e2e -- --reporter=line` (skippable initially).
+- **CI gates**: `npm run lint`, `npm run typecheck`, `npm run test`, optional `npm run test:e2e -- --reporter=line` (skippable initially).
 - **Coverage goals**: 80% lines on core server routes and composables.
 - **Recommendation endpoint**: unit tests stub OpenAI via MSW and ensure prompt payloads, rate-limiting response, and filtering logic behave. CI includes a daily canary job hitting OpenAI’s testing model with a synthetic prompt (feature-flagged to run only when `OPENAI_API_KEY` is present in non-fork contexts).
 
@@ -284,7 +284,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 ### 13.1 Canonical schema & migrations
 
 - `docs/data/schema.sql` remains the single source of truth. Supabase migrations are generated with `supabase db diff --linked --file migrations/<timestamp>_<slug>.sql` and committed alongside change notes.
-- Every migration is replayed locally via `pnpm db:migrate` (wrapper around `supabase db push`) before opening a PR. CI runs the same command against a disposable database to guarantee drift-free deploys.
+- Every migration is replayed locally via `npm run db:migrate` (wrapper around `supabase db push`) before opening a PR. CI runs the same command against a disposable database to guarantee drift-free deploys.
 
 ### 13.2 Seed dataset
 
@@ -299,16 +299,16 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 
 ### 13.3 Commands & local setup
 
-- `pnpm db:reset` (to be added) wipes the local Supabase instance, runs migrations, executes the TypeScript seed, and prints seeded user credentials. Under the hood:
+- `npm run db:reset` (to be added) wipes the local Supabase instance, runs migrations, executes the TypeScript seed, and prints seeded user credentials. Under the hood:
   1. `supabase db reset --linked`
-  2. `pnpm db:migrate`
-  3. `pnpm db:seed`
-- `pnpm db:seed` runs `tsx scripts/db/seed.ts` targeting the Supabase connection string from `.env.local` (`SUPABASE_SERVICE_ROLE_KEY` required).
+  2. `npm run db:migrate`
+  3. `npm run db:seed`
+- `npm run db:seed` runs `tsx scripts/db/seed.ts` targeting the Supabase connection string from `.env.local` (`SUPABASE_SERVICE_ROLE_KEY` required).
 - `.env.example` enumerates all required variables: Supabase URL/anon/service keys, Vercel site URL, Nuxt public base URL, image domain allowlist, seed asset path (`NUXT_APP_DEFAULT_COVER_URL`), plus `OPENAI_API_KEY` and `OPENAI_MODEL` (default `gpt-4o-mini`). The file is kept in sync whenever a new variable is introduced.
 
 ### 13.4 CI integration
 
-- GitHub Actions workflow `ci.yml` (to be authored) executes: `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. A follow-up job provisions a temporary Postgres using Supabase Docker image, runs `pnpm db:migrate`, and executes `pnpm db:seed` to verify migrations plus seed remain green in headless mode.
+- GitHub Actions workflow `ci.yml` (to be authored) executes: `npm install`, `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`. A follow-up job provisions a temporary Postgres using Supabase Docker image, runs `npm run db:migrate`, and executes `npm run db:seed` to verify migrations plus seed remain green in headless mode.
 - Preview deployments on Vercel depend on a successful CI run and pull Supabase credentials from Vercel project secrets. Seeded assets (default cover) are uploaded to the dev Supabase storage bucket and referenced by environment variable so previews render real imagery.
 - Once Supabase bucket access is available, replace the placeholder cover in seeds with the uploaded default asset to maintain parity between local and hosted environments.
 
@@ -334,7 +334,7 @@ This project is a demo and only needs lightweight operational guidance.
 ### 14.4 Secrets & rollback
 
 - Rotate Supabase or OpenAI keys manually by updating Vercel env vars and `.env.example`; rerun CI to confirm everything still builds.
-- If a problematic change lands, revert the commit in GitHub or roll back to a previous Vercel deployment. For data resets, re-run `pnpm db:seed` against `mlms-demo` or restore the seed snapshot manually.
+- If a problematic change lands, revert the commit in GitHub or roll back to a previous Vercel deployment. For data resets, re-run `npm run db:seed` against `mlms-demo` or restore the seed snapshot manually.
 
 ### 14.6 Observability & audits
 
@@ -363,7 +363,7 @@ This project is a demo and only needs lightweight operational guidance.
 8.1. [x] **Schema.sql quality pass** – Hardened migrations (`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, new `user_role`/`media_format` enums), tightened `users` constraints, dropped redundant media checkout columns, added timestamp triggers, and enabled RLS with policy stubs so downstream contracts stay in sync.
 8.2. [x] **Client data layer contract** – Locked the thin adapter surface (mirrors server routes), shared Zod/TypeScript models, response envelope, retry strategy, and testing/mocking guidance in section 7.
 9. [x] **Server API responsibilities** – Locked in Nuxt server ownership for catalog, circulation, and reservations (section 9), documented idempotency tokens, conflict codes, and when to escalate to future Supabase Edge Functions.
-10. [x] **Seed data & baseline CI** – Section 13 captures the seed dataset, commands (`pnpm db:reset`, `pnpm db:seed`), `.env.example` contract, and GitHub Actions gates (lint, typecheck, test, build, migration + seed smoke). Bucket placeholder swap remains queued once assets exist.
+10. [x] **Seed data & baseline CI** – Section 13 captures the seed dataset, commands (`npm run db:reset`, `npm run db:seed`), `.env.example` contract, and GitHub Actions gates (lint, typecheck, test, build, migration + seed smoke). Bucket placeholder swap remains queued once assets exist.
 11. [x] **Operational guardrails** – Section 14 codifies branch protections, Supabase environment separation, secret rotation cadence, deployment flow, rollback playbook, and observability notes.
 
 ### Defer until after the prototype is working

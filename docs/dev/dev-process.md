@@ -573,6 +573,41 @@ The manager can perhaps then check off that file to show the requirement is read
 
 
 
+#### Setting up github issue templates and instructions for how to use Issues and PRs
+
+I like the way it looks, can't wait to see how it runs though
+
+
+
+#### Creating the separated responsibilities implementation agent files
+
+Some first draft has been made, but it needs to be reworked until it has well organized, well co-ordinated, and well broken down substeps.
+
+
+
+#### The repsonsibility files are made now
+
+They appear to be in an order where even if any of their steps are exploded into sub-steps, the order in which they occur won't radically change, so these can be turned into task list files now, and then the task list files can be exploded into sub-steps as needed.
+
+
+#### Checking if more scaffolding or help needs to be done
+
+The manager says that the division of the remaining work between the agents will take care of everything else, and no additional scaffolding or mocks or anything needs to be made by the manager.
+
+I'm now turning the responsibility files into task list files that will be broken into smaller steps until simple enough to implement easily.
+
+Once I have these files ready, I'm planning to switch to using GPT-5 mini
+
+
+
+
+#### Opening the new implementation-agent workspaces
+
+Inside of the manager workspace I'm creating /implementation-agents/1,2,3/
+
+I will clone the repo in each one, set up their .agent-info file
+
+And it should be fun to see what happens next
 
 
 
@@ -580,27 +615,32 @@ The manager can perhaps then check off that file to show the requirement is read
 
 
 
-- I want to set up issue templates, PR templates before the implementation agents start their building
+#### I still want to hook up and test supabase auth and image storage as early on as possible so I know it's working while I build
 
 
--- create a file that explains implemetnation instructions:
-
-    make a gh issue that addresses what the next step of the agent responsibility to implement (or bug issue they're going to tackle) is,
-    create a new branch prefixed with {agentname}/ that includes that issue number in the branch name to work on it (agent suggests the branch name so dev can copy and paste, or else agent can run terminal command to create branch)
-    to start working on it, think of the edge cases according to edge case guide
-    write unit tests that cover edge cases
-    implement feature/function/handler/etc so that tests pass
-    when developer is doing a commit, agent suggests a commit message subject with reference ID (developer can write extra information in body or edit subject line)
-    when implementation agent is able to check off the substeps of this step as complete and tests are passing, both automated and any relevant manual test, then do pull request that links to the issue and closes it
-    see issue template and pr template files
-
-
+#### My edge case checklist is quite large so I want to remember to tone it down if it gets excessively in the way of development
 
 
 
 ``` Temporary notes
 
 I have a few priorities to juggle at the same time:
+
+
+
+A thing I need to watch out for:
+
+Verify .env.example
+
+Compare keys with spec-final.md §12–13 and openapi.yaml (Supabase, OpenAI settings, feature flags).
+
+Cross-check against Supabase dashboard and Vercel project to make sure the variable names match exactly.
+
+Run npm run lint && npm run build locally after copying .env.example to .env with placeholder values; Nitro should warn if any required variable is missing.
+
+
+
+
 
 
 

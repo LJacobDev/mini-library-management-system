@@ -12,7 +12,7 @@ This is so that both the user and the LLMs involved can read this file in order 
 
 ## Project summary
 
-Mini Library Management System coordinated via multi-agent workflow. The application is now a Nuxt 4.2 full-stack project (Vue 3 Composition API on the client, Nitro server routes in-repo) backed by Supabase for Postgres + Auth. All backend logic (server routes, Supabase SQL, OpenAI prompts) must live in the repository. `docs/dev/spec/spec-final.md` (locked 2025-11-10) is the implementation source of truth and captures the shared AI chat surface, streaming contract, and reservation expiry policy.
+Mini Library Management System coordinated via multi-agent workflow. The application is now a Nuxt 4.2 full-stack project (Vue 3 Composition API on the client, Nitro server routes in-repo) backed by Supabase for Postgres + Auth. All backend logic (server routes, Supabase SQL, OpenAI prompts) must live in the repository. `docs/dev/spec/spec-final.md` (locked 2025-11-10) is the implementation source of truth and captures the shared AI chat surface, streaming contract, and reservation expiry policy. Responsibility/context files for Agents 1–3 now include refined sequencing for admin CRUD, circulation idempotency, routing/middleware setup, npm-aligned CI tasks, and observability hand-offs.
 
 High-level goals:
 
@@ -135,8 +135,8 @@ Coordination rules:
 - [x] Capture thin client data layer contract in `spec-3.md` (section 7) covering adapter surface, shared schemas, error envelope, retries, and testing guidance.
 - [x] Resolve remaining open questions (loan history retention: keep indefinitely; scaffolding assets created and tracked as living docs).
 - [x] Finalise `docs/dev/spec.md` — `spec-final.md` locked with AI streaming UX, shared chat panel, reservation expiry, and design tokens.
-- [ ] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists.
-- [ ] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements.
+- [x] Create `/agents/agent{1,2,3}-responsibility.md` with step-by-step checklists (refined 2025-11-11 for admin CRUD, circulation idempotency, middleware, npm workflows, and observability).
+- [x] Create `/agents/agent{1,2,3}-context.md` starter files referencing the latest schema and AI requirements; continue updating them as backend/API work begins.
 - [ ] Draft the API adapter interface and provide mock implementations (including streaming simulators) for Agent 2 now that the spec is locked.
 - [ ] Capture styling patterns in a forthcoming `docs/dev/styling-playbook.md` once enough Tailwind v4 component examples exist; link it from the hybrid styling guide.
 - [ ] Document preferred usage patterns for `@nuxt/ui`, `@nuxt/icon`, and `@nuxt/image` so implementation agents consistently leverage installed modules.
@@ -158,4 +158,5 @@ Use this section for manager-runner logs, brief findings, and short lived notes 
 - 2025-11-10: Client data layer contract (spec backlog 8.2) documented in `spec-3.md` — thin adapter preserved for testing benefits with shared Zod models, unified error envelope, retry helper, and mock factory guidance.
 - 2025-11-10 (evening): `spec-4.md` and its duplicate and successor, `spec-final.md` locked with unified AI chat panel, streaming contract, and 72-hour reservation expiry; palette updated to civic blue/evergreen/warm accent and checklist migrated accordingly (flagged retention + scaffolding TODOs now resolved below).
 - 2025-11-10 (night): Resolved retention policy (keep loans indefinitely for demo) and landed scaffolding assets (`.env.example`, `docs/api/openapi.yaml`, `docs/tests/test-plan.md`, `tests/unit/README.md`, `docs/ux/wireframes.md`).
+- 2025-11-11: Drafted `agent-1/2/3-{responsibility,context}.md` files and completed refinement pass aligning tasks with admin CRUD, circulation idempotency, routing/middleware, npm-first tooling, and observability requirements. Conducted dependency/order sanity check with user to confirm sub-step expansion won’t force reordering; ready for implementation hand-off.
 

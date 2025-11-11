@@ -210,7 +210,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
   2. Implement minimal code to pass.
   3. Refactor with safety (lint/type check).
 - **Test stack**: `vitest` for unit/integration, `@nuxt/test-utils` for component + server route tests. Future E2E via Playwright once MVP stable.
-- **CI gates**: `pnpm lint`, `pnpm typecheck`, `pnpm test`, optional `pnpm test:e2e -- --reporter=line` (skippable initially).
+- **CI gates**: `npm run lint`, `npm run typecheck`, `npm run test`, optional `npm run test:e2e -- --reporter=line` (skippable initially).
 - **Coverage goals**: 80% lines on core server routes and composables.
 
 ## 11. Deployment & Operations
@@ -225,7 +225,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 
 - Supabase SQL file (`docs/data/schema.sql`) is canonical; migrations generated from it and committed.
 - Seed script (to be implemented) inserts demo users (member, librarian, admin) and media items.
-- On first boot, run `pnpm db:reset` (script to push schema + seed). Implementation agent to create this script when database tooling added.
+- On first boot, run `npm run db:reset` (script to push schema + seed). Implementation agent to create this script when database tooling added.
 
 ## 13. Future-facing Hooks (documented, not MVP)
 
