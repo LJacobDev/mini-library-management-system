@@ -475,6 +475,13 @@ For each topic considered, if it's important but I decide not to include it for 
 Agent might ask a question about a ux consideration backlog question but it comes as four sections with 2 bullet points each.  It looks efficient to address it all at once but I worry that it's dilluting context or potential quality of the results, so I might like to have it ask me fewer details at a time to keep it focused.
 
 
+#### Review the data schema to check for errors or mistakes
+
+Double check everything before making any hard details for the agents to build out
+
+By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
+
+This has been done in backlog questions 8.1 but I have yet to test run it and check how it will work.  I would not be surprised if it needs more help getting things right.
 
 
 
@@ -485,6 +492,13 @@ Agent might ask a question about a ux consideration backlog question but it come
 Might save iterative versions along the way for reference or as checkpoints.
 
 
+While working on the 'backlog of spec questions' I was really wanting to see if I could start just building some things while continuing to talk about spec questions, but the agent suggested finishing up to backlog item 11 before starting any implementation.
+
+
+
+
+
+
 #### make sure to do /docs/api/openapi.yaml and make HTTP contracts for the API, Schema once spec is done
 
 
@@ -492,13 +506,6 @@ Might save iterative versions along the way for reference or as checkpoints.
 #### make sure to do test guide files and possibly test-plan files once spec is done
 
 
-#### Review the data schema to check for errors or mistakes
-
-Double check everything before making any hard details for the agents to build out
-
-By just having an llm check it, these things were identified but I know that this might be partly flawed statements, I want to check closer still.
-
-This has been done in backlog questions 8.1 but I have yet to test run it and check how it will work.  I would not be surprised if it needs more help getting things right.
 
 
 

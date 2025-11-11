@@ -207,7 +207,40 @@ Every route implements:
 
 These tokens bias toward a welcoming, well-lit municipal aesthetic and are intentionally easy to revisit after the MVP lands.
 
-## 9. Accessibility & UX Guardrails
+## 9. Server API Responsibilities & Contracts
+
+### 9.1 Execution context
+
+- Nitro server routes own all MVP workflows: catalog CRUD, circulation (checkout, renew, return, overrides), reservation queue, and member self-service endpoints.
+- Librarian/admin mutations execute with the Supabase service key on the server, guarded by explicit role checks; member operations pass through the signed-in user session so RLS still enforces ownership.
+- Supabase Edge Functions remain on the roadmap for long-running or scheduled jobs (e.g., overdue reminder batches, nightly reservation sweeps) and are not required for MVP delivery.
+
+### 9.2 Catalog management
+
+- `GET /api/catalog` & `GET /api/catalog/:id` expose search/detail views for guests and authenticated users. Responses include pagination metadata, live availability, and queue summaries. Responses may set short-lived cache headers (`max-age=30`, `stale-while-revalidate=60`) plus `etag` to aid client revalidation.
+- `POST /api/catalog`, `PATCH /api/catalog/:id`, and `DELETE /api/catalog/:id` are restricted to librarians/admins. Writes validate against shared Zod schemas, emit audit log events (`media_created`, `media_updated`, `media_archived`), and execute inside a Supabase transaction when side effects (storage sync, audit insert) are present.
+- Creation enforces uniqueness on `(title, creator)` (optionally `external_id`) and returns `409_conflict` when a duplicate is attempted. `PATCH`/`DELETE` require an `If-Match` header carrying the last `updated_at` value; conflicts surface as `409_precondition_failed`.
+
+### 9.3 Circulation (loans)
+
+- `POST /api/loans` creates loan records. Payload includes a client-generated `loanRequestId` for idempotency, optional librarian `memberId`, and optional override `dueAt`. On success the response returns the canonical `LoanRecord` with computed `dueAt` and `loanNumber`.
+- `PATCH /api/loans/:id/renew` and `PATCH /api/loans/:id/return` support renewals and returns. Members may renew their own loans unless a reservation is queued; librarians can pass `force: true` (with justification) when policy allows overrides. Returns automatically reconcile the reservation queue, locking the next reservation inside the same transaction so hand-off data is returned in the payload (`handoff.reservationId`, `handoff.memberId`).
+- `POST /api/loans/:id/override` lets librarians/admins set custom due dates, mark items lost/damaged, or waive fines. All circulation mutations require request IDs stored in `loan_events` for deduplicated retries and emit audit codes (`loan_created`, `loan_renewed`, `loan_returned`, `loan_override_*`).
+- Business-rule conflicts bubble up as typed errors: `member_limit_reached`, `already_checked_out`, `reservation_waiting`, `policy_violation`. Lock contention returns `423_locked` prompting exponential backoff retries in the adapter.
+
+### 9.4 Reservation queue
+
+- `POST /api/reservations` queues a hold. Mutex logic prevents duplicate holds per member/media and enforces the active-reservation limit. Reservations track `position`, `status`, and a provisional `expiresAt` (default placeholder: 72 hours; final decision pending backlog item 7.2). Request IDs (`reservationRequestId`) de-duplicate submissions.
+- `PATCH /api/reservations/:id/claim` transitions a reservation to `ready_for_pickup` (or triggers auto-checkout if policy later enables it). `DELETE /api/reservations/:id` cancels a hold and rebalances queue positions inside a serializable transaction. Librarian action `POST /api/reservations/:id/advance` handles no-shows or manual promotions.
+- Queue updates use `SELECT ... FOR UPDATE` to guarantee a consistent ordering; if the queue changed mid-operation the route returns `409_conflict` with `conflictCode: 'queue_modified'` and a recommended retry delay. Return handlers share a utility that locks the next reservation and sets its pickup window in the same transaction as the loan return.
+
+### 9.5 Idempotency & failure envelopes
+
+- Client-provided request identifiers (`loanRequestId`, `renewalRequestId`, `returnRequestId`, `overrideRequestId`, `reservationRequestId`, `cancelRequestId`, `advanceRequestId`) are persisted per entity; repeated submissions return the original response payload with `idempotentReplay: true`.
+- All mutations wrap Supabase calls in transactions so catalog mutations, loan state changes, audit logging, and queue adjustments succeed or fail together. Transient database errors trigger safe retries (up to two attempts with jitter) before surfacing `retryable_error` to the adapter.
+- Error taxonomy aligns with the shared envelope: `validation_failed`, `unauthenticated`, `forbidden`, `not_found`, `conflict` (with rich `conflictCode`), `precondition_failed`, `locked`, and `server_error`. Adapters map these codes to UI behaviours (inline messaging, retry prompts, escalation modals).
+
+## 10. Accessibility & UX Guardrails
 
 - All interactive components have accessible labels and keyboard focus management.
 - Page landmarks (`header`, `main`, `nav`, `footer`) enforced.
@@ -217,7 +250,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - Error states covered: search returning no results (with recovery guidance), reservation conflicts (already on hold), permission denied prompts, network/server failures with retry, and offline fallbacks with cached data where feasible.
 - High-contrast checks run via automated tests (axe-core) once pipeline configured (post-MVP but placeholders added).
 
-## 10. Testing & Quality Strategy
+## 11. Testing & Quality Strategy
 
 - **Edge-case-first**: For each feature, enumerate edge cases using `docs/dev/edge-case-checklist.md` before implementation.
 - **TDD Workflow**:
@@ -228,7 +261,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - **CI gates**: `pnpm lint`, `pnpm typecheck`, `pnpm test`, optional `pnpm test:e2e -- --reporter=line` (skippable initially).
 - **Coverage goals**: 80% lines on core server routes and composables.
 
-## 11. Deployment & Operations
+## 12. Deployment & Operations
 
 - Environments: `local`, `preview` (per PR on Vercel), `production` (Vercel).
 - Supabase projects: separate dev/stage/prod with service role keys stored in Vercel environment variables.
@@ -236,13 +269,13 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - Branch strategy: feature branches → PR → `vue3-spa-spec-building` (integration) → `main` (release). Protected branches require review + green CI.
 - Rollback: Vercel deploy history + Supabase migration tracking. Manual rollback instructions recorded in `docs/dev/plans-ci-cd-vercel-nuxt.md`.
 
-## 12. Seed Data & Bootstrapping
+## 13. Seed Data & Bootstrapping
 
 - Supabase SQL file (`docs/data/schema.sql`) is canonical; migrations generated from it and committed.
 - Seed script (to be implemented) inserts demo users (member, librarian, admin) and media items.
 - On first boot, run `pnpm db:reset` (script to push schema + seed). Implementation agent to create this script when database tooling added.
 
-## 13. Future-facing Hooks (documented, not MVP)
+## 14. Future-facing Hooks (documented, not MVP)
 
 - AI recommendation endpoint stub to be replaced with OpenAI/Supabase AI call.
 - Notification infrastructure (email reminders) tracked in backlog.
@@ -250,7 +283,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 
 ---
 
-## 14. Considerations Backlog (from `spec-preparation-list-essential`)
+## 15. Considerations Backlog (from `spec-preparation-list-essential`)
 
 ### Essential decisions to secure before coding
 
@@ -263,7 +296,7 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 7. [x] **Nuxt UI/Icon/Image usage plan** – Documented component catalogue, icon defaults (aliases + 20px base size via `app.config.ts`), and the mobile-first `cover` preset for `@nuxt/image` (`sizes="100vw sm:60vw md:400px lg:360px"`, lazy loading, blur placeholder). Tailwind tokens stay the shared contract so swapping components or resizing rules is a single-config edit.
 8.1. [x] **Schema.sql quality pass** – Hardened migrations (`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`, new `user_role`/`media_format` enums), tightened `users` constraints, dropped redundant media checkout columns, added timestamp triggers, and enabled RLS with policy stubs so downstream contracts stay in sync.
 8.2. [x] **Client data layer contract** – Locked the thin adapter surface (mirrors server routes), shared Zod/TypeScript models, response envelope, retry strategy, and testing/mocking guidance in section 7.
-9. [ ] **Server API responsibilities** – Assign ownership for catalog CRUD, checkout/check-in, and reservation queue collision handling within Nuxt server routes, escalating to Supabase Edge Functions only when they deliver a clear advantage; capture idempotency expectations and failure modes.
+9. [x] **Server API responsibilities** – Locked in Nuxt server ownership for catalog, circulation, and reservations (section 9), documented idempotency tokens, conflict codes, and when to escalate to future Supabase Edge Functions.
 10. [ ] **Seed data & baseline CI** – Produce seed scripts for demo media, users, and loans; define lint, type-check, unit test, and preview deploy gates plus `.env.example` requirements.
   - As soon as the Supabase bucket is reachable, swap the seed cover placeholders to a real default asset in storage so Nuxt Image previews render something real end-to-end.
 11. [ ] **Operational guardrails** – Document branch protections, rollback checklist, Supabase project separation (dev/stage/prod), runtime config keys, and environment-secret sync process.
@@ -295,3 +328,6 @@ These tokens bias toward a welcoming, well-lit municipal aesthetic and are inten
 - **Extended telemetry & analytics** – BI exports and governance.
 - **Future Nuxt deployment scenarios** – Hybrid rendering, edge deployment, localisation expansion.
 - **Dark mode theme follow-up** – Define and implement a complementary dark palette once the light-mode MVP is validated.
+- **Catalog contract refinements** – Revisit uniqueness rules for special editions/multiple copies, add admin un-archive tooling, tune catalog cache windows, and ensure adapter-generated `If-Match` headers remain ergonomic once real traffic patterns emerge.
+- **Circulation policy refinements** – Reassess default loan/renewal windows per media format, document librarian override audit requirements, design notification hooks (due soon, overdue), and evaluate fee/ledger handling for lost/damaged items once the MVP workflows stabilize.
+- **Reservation policy refinements** – Finalise expiry duration and reminder cadence, decide on auto-checkout behaviour for digital media, and plan the queue auto-advance executor (cron/Edge Function) for no-shows post-MVP.
