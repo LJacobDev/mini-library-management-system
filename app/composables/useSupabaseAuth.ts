@@ -4,6 +4,16 @@ const USER_STATE_KEY = 'supabase-auth-user'
 const LOADING_STATE_KEY = 'supabase-auth-loading'
 const ERROR_STATE_KEY = 'supabase-auth-error'
 
+function isAuthSessionMissingError(authError: AuthError | null) {
+  if (!authError) {
+    return false
+  }
+
+  const nameMatches = authError.name === 'AuthSessionMissingError'
+  const messageMatches = authError.message?.toLowerCase().includes('auth session missing')
+  return nameMatches || messageMatches
+}
+
 export function useSupabaseAuth() {
   const user = useState<User | null>(USER_STATE_KEY, () => null)
   const loading = useState<boolean>(LOADING_STATE_KEY, () => false)
@@ -26,13 +36,16 @@ export function useSupabaseAuth() {
 
   async function refreshSession() {
     const client = useSupabaseBrowserClient()
-    const {
-      data: { user: supabaseUser },
-      error: authError,
-    } = await client.auth.getUser()
+    const { data, error: authError } = await client.auth.getUser()
+
+    if (isAuthSessionMissingError(authError)) {
+      user.value = null
+      error.value = null
+      return
+    }
 
     handleAuthResult(authError)
-    user.value = supabaseUser ?? null
+    user.value = data?.user ?? null
   }
 
   async function signInWithMagicLink(email: string) {
@@ -63,6 +76,11 @@ export function useSupabaseAuth() {
   }
 
   function handleAuthResult(authError: AuthError | null) {
+    if (isAuthSessionMissingError(authError)) {
+      error.value = null
+      return
+    }
+
     if (authError) {
       console.error('Supabase auth error', authError)
       error.value = authError.message

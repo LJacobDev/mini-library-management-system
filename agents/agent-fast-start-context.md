@@ -1,6 +1,6 @@
 # Fast Start Agent Context
 
-_Last updated: 2025-11-11_
+_Last updated: 2025-11-12_
 
 ## Current State Snapshot
 
@@ -62,3 +62,8 @@ _Last updated: 2025-11-11_
 _Append brief, dated notes here as you make changes so we keep a concise history for fast onboarding._
 
 Keep using this file as the quick context hand-off for agents joining the fast-start track; append notable milestones or shifts as we progress.
+
+### Log
+
+- 2025-11-12 — `AuthPanel` now binds to the reactive Supabase auth state so logging out updates the UI and surfaces success/error feedback inline.
+- 2025-11-12 — `useSupabaseAuth` now ignores Supabase `AuthSessionMissingError` so signed-out refreshes stay clean without logging false auth errors.

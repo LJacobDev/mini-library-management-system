@@ -1,13 +1,13 @@
 <template>
   <div class="rounded-3xl bg-slate-900/70 p-6 text-slate-100 shadow-lg">
     <h2 class="mb-4 text-sm font-semibold uppercase tracking-[0.4em] text-cyan-300/80">
-      {{user.id ? 'Welcome!' : 'Please Sign In'}}
+      {{ isAuthenticated ? 'Welcome!' : 'Please Sign In' }}
     </h2>
 
-    <div v-if="user" class="space-y-4">
+    <div v-if="isAuthenticated" class="space-y-4">
       <p class="text-sm text-cyan-100">
         Signed in as
-        <span class="font-semibold text-white">{{ user.email }}</span>
+        <span class="font-semibold text-white">{{ userEmail }}</span>
       </p>
 
       <button
@@ -47,8 +47,8 @@
         {{ feedback }}
       </p>
 
-      <p v-if="error" class="text-sm text-red-300">
-        {{ error }}
+      <p v-if="errorMessage" class="text-sm text-red-300">
+        {{ errorMessage }}
       </p>
     </form>
   </div>
@@ -58,18 +58,38 @@
 const email = ref('')
 const feedback = ref('')
 
-const { user, loading, error, signInWithMagicLink, signOut } = useSupabaseAuth()
+const {
+  user,
+  loading,
+  error,
+  signInWithMagicLink,
+  signOut,
+} = useSupabaseAuth()
+
+const isAuthenticated = computed(() => Boolean(user.value))
+const userEmail = computed(() => user.value?.email ?? '')
+const errorMessage = computed(() => error.value)
 
 const handleSignIn = async () => {
   feedback.value = ''
-  const success = await signInWithMagicLink(email.value.trim())
+  const trimmedEmail = email.value.trim()
+  if (!trimmedEmail) {
+    feedback.value = 'Please enter your email address.'
+    return
+  }
+
+  const success = await signInWithMagicLink(trimmedEmail)
   if (success) {
     feedback.value = 'Check your inbox for the magic link to finish signing in.'
+    email.value = ''
   }
 }
 
 const handleSignOut = async () => {
   feedback.value = ''
   await signOut()
+  if (!errorMessage.value) {
+    feedback.value = 'Signed out successfully.'
+  }
 }
 </script>
