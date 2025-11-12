@@ -1,6 +1,6 @@
 # Fast Start Plan — Minimum Working Prototype (Concise Edition)
 
-_Last updated: 2025-11-11_
+_Last updated: 2025-11-12_
 
 This streamlined playbook blends every decision we have so far—speed-first delivery, instant Supabase/OpenAI handshakes, and Nuxt UI acceleration—into a single path you can follow to boot a working Nuxt 4 + Tailwind v4 prototype in under half a day. Treat Nuxt UI components as helpers: use them when they shorten work, fall back to raw Tailwind markup the moment they fight you.
 
@@ -165,6 +165,7 @@ config/
 - **Data contracts**: Interfaces from sections above match Supabase tables, easing replacement of mock services.
 - **Service layer**: composables call `useFetch` on internal API routes so swapping to direct Supabase client or RLS-safe endpoints is localized.
 - **Auth prep**: `useMockSession` mirrors Supabase session/profile shape; once Supabase auth is ready, replace the composable and update layouts.
+- **Magic-link UX**: `app/plugins/supabase-auth.client.ts` parses the Supabase hash during module load (before Vue Router boots) and strips it while calling `setSession`, eliminating `#access_token` selector warnings on redirects.
 - **Env hygiene**: define `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY` in `.env`, reference via `runtimeConfig`.
 
 ## 8. Open Questions / TODOs

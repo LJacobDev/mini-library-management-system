@@ -71,8 +71,8 @@ export function useSupabaseAuth() {
   const loading = useState<boolean>(LOADING_STATE_KEY, () => false)
   const error = useState<string | null>(ERROR_STATE_KEY, () => null)
 
-  onMounted(async () => {
-    await refreshSession()
+  onMounted(() => {
+    void refreshSession()
 
     const client = useSupabaseBrowserClient()
     const {
