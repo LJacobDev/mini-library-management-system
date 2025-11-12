@@ -1,6 +1,10 @@
 <template>
-  <div class="min-h-screen bg-slate-950 p-10 text-slate-100">
+  <NuxtApp>
+    <NuxtLoadingIndicator color="var(--color-primary-500)" :height="2" />
     <NuxtRouteAnnouncer />
-    <NuxtPage />
-  </div>
+
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+  </NuxtApp>
 </template>

@@ -26,7 +26,8 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Add server side supabase session verification and add auth verification checks to protected api endpoints
   - [x] Move the status checking main page to a /status route and clear the main route for item 1 scaffold shell
 
-1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
+1. [x] **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
+  -[ ] **Fix odd most outstanding layout issues**
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.
 3. **Install mock session/state**: add `useMockSession`, role toggle in default layout, seed mock catalog/loans in `server/db/mockData.ts`.
 4. **Member dashboard (CSR)**: `/account/loans` under dashboard layout, `UTable` + `Toast`, data from `/api/loans` mock route.
@@ -38,6 +39,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
 10. **Interactive polish (M2)**: connect renew actions (`/api/loans/:id/renew`), add validations, optimistic updates, toasts.
 11. **SQLite fallback (M4, optional once Supabase live)**: wire `server/db/sqlite.ts`, `/api/debug/sqlite-check.get`, button on debug page.
 12. **Docs sync (M5)**: update this file, `spec-fast-start.md`, and `llm-training-cutoff-updates.md`; stash screenshots/walkthrough notes.
+13. **Clean repo**: Organize / clean files that have been accumulating from the start so that things that are there are only things that need to be there or are left as archives to help explain history
 
 ## 3. Minimum Feature Surface (with Nuxt UI assists)
 
