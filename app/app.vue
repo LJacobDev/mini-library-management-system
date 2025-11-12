@@ -5,7 +5,8 @@
       <h1 class="text-4xl font-extrabold tracking-tight text-cyan-200">
         Mini Library Management System
       </h1>
-      <TailwindStatus />
+      <!-- <TailwindStatus /> -->
+      <OpenAIStatus />
     </div>
   </div>
 </template>
