@@ -18,14 +18,15 @@
 import LoadingMessage from "./LoadingMessage.vue";
 
 const props = defineProps<{
-  loadingMessage?: string
+  loadingMessage?: string,
+  serviceUrl: string,
 }>()
 
 const backendMessage = ref("");
 
 onMounted(async () => {
   try {
-    const response = await $fetch<{ message?: string }>("/api/ai/recommend");
+    const response = await $fetch<{ message?: string }>(props.serviceUrl);
     backendMessage.value = response?.message ?? JSON.stringify(response);
   } catch (error) {
     console.error("Failed to fetch backend message", error);

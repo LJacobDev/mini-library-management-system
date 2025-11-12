@@ -18,7 +18,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
 0. **Verify toolchain + first backend round-trip**
   - [x] Run `npm install`, then `npm run dev` to ensure the project boots.
   - [x] Update `app.vue` to fetch from `/api/ai/recommend` (temporarily mocked) on mount and render the JSON message in a simple `<div>`.
-  - Implement `/api/ai/recommend.get.ts` (temporary) returning `{ message: 'hello from the backend' }`; confirm the frontend displays it.
+  - [x] Implement `/api/ai/recommend.get.ts` (temporary) returning `{ message: 'hello from the backend' }`; confirm the frontend displays it.
   - Replace the handler with a streaming OpenAI proxy, adapting the `.temp` FastAPI example: stream completion chunks as SSE.
   - Update `app.vue` to consume the SSE stream and append text as it arrives.
   - Create `/api/catalog.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
