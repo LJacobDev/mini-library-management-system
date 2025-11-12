@@ -4,6 +4,11 @@ const USER_STATE_KEY = 'supabase-auth-user'
 const LOADING_STATE_KEY = 'supabase-auth-loading'
 const ERROR_STATE_KEY = 'supabase-auth-error'
 
+type SupabaseHashTokens = {
+  accessToken: string
+  refreshToken: string
+}
+
 function isAuthSessionMissingError(authError: AuthError | null) {
   if (!authError) {
     return false
@@ -14,36 +19,50 @@ function isAuthSessionMissingError(authError: AuthError | null) {
   return nameMatches || messageMatches
 }
 
-async function absorbAuthHash(client: SupabaseClient) {
+export function extractSupabaseHashTokens(): SupabaseHashTokens | null {
   if (!import.meta.client) {
-    return
+    return null
   }
 
   const rawHash = window.location.hash ?? ''
   if (!rawHash || !rawHash.includes('access_token=')) {
-    return
+    return null
   }
 
   const params = new URLSearchParams(rawHash.replace(/^#/, ''))
   const accessToken = params.get('access_token')
   const refreshToken = params.get('refresh_token')
 
-  try {
-    if (accessToken && refreshToken) {
-      const { error: sessionError } = await client.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      })
+  const cleanUrl = `${window.location.pathname}${window.location.search}`
+  window.history.replaceState({}, document.title, cleanUrl)
 
-      if (sessionError) {
-        console.error('Supabase auth setSession error', sessionError)
-      }
+  if (accessToken && refreshToken) {
+    return {
+      accessToken,
+      refreshToken,
+    }
+  }
+
+  return null
+}
+
+export async function absorbSupabaseAuthHash(client: SupabaseClient) {
+  const tokens = extractSupabaseHashTokens()
+  if (!tokens) {
+    return
+  }
+
+  try {
+    const { error: sessionError } = await client.auth.setSession({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+    })
+
+    if (sessionError) {
+      console.error('Supabase auth setSession error', sessionError)
     }
   } catch (hashError) {
     console.error('Supabase auth hash handling failed', hashError)
-  } finally {
-    const cleanUrl = `${window.location.pathname}${window.location.search}`
-    window.history.replaceState({}, document.title, cleanUrl)
   }
 }
 
@@ -69,7 +88,7 @@ export function useSupabaseAuth() {
 
   async function refreshSession() {
     const client = useSupabaseBrowserClient()
-    await absorbAuthHash(client)
+  await absorbSupabaseAuthHash(client)
     let data: { user: User | null } | undefined
     let authError: AuthError | null = null
 

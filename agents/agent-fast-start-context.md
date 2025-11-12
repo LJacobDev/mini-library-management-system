@@ -69,3 +69,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — `useSupabaseAuth` now ignores Supabase `AuthSessionMissingError` so signed-out refreshes stay clean without logging false auth errors.
 - 2025-11-12 — Added `auth.global` middleware plus `/login` and `/account/loans` pages; routes tagged with `requiresAuth` now redirect unauthenticated users to the login flow with redirect preservation.
 - 2025-11-12 — `useSupabaseAuth` now absorbs Supabase magic-link hashes (`#access_token=...`) by calling `setSession` with the tokens, removing the hash and keeping the router quiet.
+- 2025-11-12 — Added `app/middleware/supabase-hash.global.ts` and updated the `supabase-auth` client plugin to strip hashes during module evaluation so magic-link redirects load without Vue Router warnings.
