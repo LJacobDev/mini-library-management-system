@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MockMediaStatus } from "~/composables/useCatalogMock";
+
 definePageMeta({
   layout: "dashboard",
   requiresAuth: true
@@ -13,7 +15,7 @@ const breadcrumbs = [
   { label: "Catalog", to: "/catalog" }
 ];
 
-import type { MockMediaStatus } from "~/composables/useCatalogMock";
+
 
 const { items } = useCatalogMock({ take: 18 });
 
