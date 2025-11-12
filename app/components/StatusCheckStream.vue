@@ -8,8 +8,20 @@
       <p class="text-xs uppercase tracking-[0.6em] text-cyan-200/80">
         <slot>Checking Status</slot>
       </p>
-      <p v-if="incomingMessage">{{ incomingMessage }}</p>
-      <LoadingMessage v-else >{{ props.loadingMessage }}</LoadingMessage>
+      <template v-if="errorMessage">
+        <p class="text-sm text-rose-300/90">{{ errorMessage }}</p>
+      </template>
+      <template v-else>
+        <p v-if="streamMessage" class="text-sm text-cyan-100/90">
+          {{ streamMessage }}
+        </p>
+        <LoadingMessage v-else-if="showLoading">
+          {{ props.loadingMessage }}
+        </LoadingMessage>
+        <p v-else class="text-sm text-cyan-100/70">
+          Awaiting response…
+        </p>
+      </template>
     </div>
   </div>
 </template>
@@ -22,15 +34,11 @@ const props = defineProps<{
   serviceUrl: string,
 }>()
 
-const incomingMessage = ref("");
+const { message, error, isLoading } = useAiStream(() => props.serviceUrl);
 
-onMounted(async () => {
-  try {
-    const response = await $fetch<{ message?: string }>(props.serviceUrl);
-    incomingMessage.value = response?.message ?? JSON.stringify(response);
-  } catch (error) {
-    console.error("Failed to fetch backend message", error);
-    incomingMessage.value = "Failed to fetch backend message.";
-  }
-});
+const streamMessage = computed(() => message.value.trim());
+
+const showLoading = computed(() => isLoading.value && streamMessage.value.length === 0);
+
+const errorMessage = computed(() => (!isLoading.value ? error.value : null));
 </script>
