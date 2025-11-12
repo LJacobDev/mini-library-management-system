@@ -24,7 +24,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Create `/api/check/supabase.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
   - [x] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
   - [x] Add server side supabase session verification and add auth verification checks to protected api endpoints
-  - [ ] Move the status checking main page to a /status route and clear the main route for item 1 scaffold shell
+  - [x] Move the status checking main page to a /status route and clear the main route for item 1 scaffold shell
 
 1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.

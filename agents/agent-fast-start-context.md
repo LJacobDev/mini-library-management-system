@@ -6,7 +6,7 @@ _Last updated: 2025-11-12_
 
 - **Framework & styling**: Nuxt 4.2 app with Tailwind CSS v4 and Nuxt UI components; base shell (`app.vue`) renders the mini LMS hero plus backend health cards.
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` npm client and an SSE bridge. Front end consumes the stream via `useAiStream` and the `StatusCheckStream` component.
-- **Database integration**: `/api/check/supabase` connects to the live `mlms-demo` Supabase project, querying table `test-check` (row `id = 1`) with a cached server-side client (`supabaseServiceClient`).
+- **Database integration**: `/api/check/supabase` connects to the live `mlms-demo` Supabase project using the cached service client; full schema/seed/RLS scripts have been applied so tables now contain our demo catalog, loans, reservations, desk logs, and telemetry data.
 - **Docs & plans**: `docs/dev/spec-fast-start.md`, `spec-fast-start-2.md`, and `spec-fast-start-3.md` contain the fast-track roadmap; Section 10/11 outline the execution plan and Nuxt UI overlays.
 
 ### Live deployment
@@ -33,20 +33,22 @@ _Last updated: 2025-11-12_
 
 7. Removed SQLite fallback from active plan — Supabase is the canonical data source now.
 
+8. Ran repo-owned `schema.sql`, `seed.sql`, and `rls-policies.sql` against Supabase so the database now mirrors documentation and enforces locked-down role management policies.
+
 ## Upcoming Objectives
 
-- **Catalog endpoint**: Build `/api/catalog` backed by Supabase (or mock fallback) and surface results in a simple UI grid (`StatusCheckStream` currently targets health checks only).
-- **Supabase auth prototype**: Introduce Supabase client-side auth flow so the demo can gate access (per fast-start checklist).
-- **Dashboard routes**: Scaffold `/catalog`, `/account/loans`, `/desk/checkout`, `/admin/media` using Nuxt UI primitives and data composables.
-- **Debug screen polish**: Add `/debug/data` page buttons for OpenAI/Supabase pings and the forthcoming SQLite check.
-- **Docs update cadence**: Continue appending to `spec-fast-start-3.md` and log Nuxt/Tailwind/Supabase deltas in `docs/dev/llm-training-cutoff-updates.md`.
+- **Catalog endpoint**: Build `/api/catalog` backed by Supabase and render a live inventory grid (replace seed mocks with real data fetches).
+- **Member dashboards**: Hydrate `/account/loans` with the seeded loans/reservations, adding Supabase composables for authenticated fetches.
+- **Desk/admin tooling**: Start `/desk/checkout` and `/admin/media` pages using Nuxt UI + Tailwind, wiring to Supabase mutations guarded by `requireSupabaseSession`.
+- **Debug utilities**: Extend `/status` or a `/debug/data` view with buttons hitting the new tables so we can quickly sanity-check the seeded dataset.
+- **Docs maintenance**: Continue updates in `spec-fast-start-3.md` and capture Nuxt/Tailwind/Supabase deltas in `docs/dev/llm-training-cutoff-updates.md`.
 
 ### Prioritized next steps (short list)
 
-1. Wire Supabase client-side auth (publishable key in runtime/public, server-side secret remains protected). This lets us demo protected flows and user-specific data.
-2. Implement `/api/catalog` backed by Supabase and show a minimal catalog page so stakeholders can browse live rows.
-3. Add basic error UI and retry/backoff behavior for OpenAI SSE and Supabase queries to reduce flakiness during demos.
-4. Add a small CI smoke test that hits `/api/check/openai` and `/api/check/supabase` after deploy to verify integrations.
+1. Implement `/api/catalog` + front-end grid wired to Supabase, leveraging freshly seeded media rows.
+2. Upgrade `/account/loans` to call a real Supabase API route returning member loans/reservations, respecting RLS.
+3. Add surface-level management actions (checkout, reservation advance) for staff pages, ensuring `requireSupabaseSession` + role checks wrap each mutation.
+4. Add a small CI smoke test that hits `/api/check/openai`, `/api/check/supabase`, and `/api/catalog` after deploy to verify integrations.
 
 ### Security considerations
 
@@ -85,3 +87,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Observed browser tab briefly showing `#access_token=...` after magic-link; It has been fixed in nuxt.config.ts head settings
 - 2025-11-12 — Hardened role management: moved `current_user_role()` into `schema.sql`, added guard triggers so only admins (or service role) can modify `users`/`profiles` roles, and cleaned `schema.sql` sample data in favor of `seed.sql`.
 - 2025-11-12 — `schema.sql` now uses `CREATE TABLE IF NOT EXISTS` across catalog tables; `rls-policies.sql` tightened so non-admin updates must preserve their role assignments.
+- 2025-11-12 — Replaced enum `CREATE TYPE IF NOT EXISTS` with DO-block guards so Supabase reruns no longer error on type creation.
+- 2025-11-12 — Executed `schema.sql`, `seed.sql`, and `rls-policies.sql` in Supabase; database now populated with demo data and RLS enforcing admin-only role changes end-to-end.

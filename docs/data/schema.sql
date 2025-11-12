@@ -3,17 +3,57 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- =============================
---  ENUMS
--- =============================
+-- Supabase (Postgres 15) does not support CREATE TYPE IF NOT EXISTS, so we guard with
+-- anonymous DO blocks that check pg_type first for idempotency.
 
-CREATE TYPE IF NOT EXISTS media_type AS ENUM ('book','video','audio','other');
-CREATE TYPE IF NOT EXISTS media_format AS ENUM ('print','ebook','audiobook','dvd','blu-ray');
-CREATE TYPE IF NOT EXISTS user_role AS ENUM ('member','librarian','admin');
-CREATE TYPE IF NOT EXISTS reservation_status AS ENUM ('pending','waiting','ready_for_pickup','claimed','cancelled','expired','fulfilled');
-CREATE TYPE IF NOT EXISTS loan_event_type AS ENUM ('created','renewed','returned','overdue_marked','override_due_date','override_lost','override_damaged','note_added');
-CREATE TYPE IF NOT EXISTS desk_transaction_type AS ENUM ('checkout','checkin','renewal','override','reservation_claim','fine_payment','note');
-CREATE TYPE IF NOT EXISTS log_level AS ENUM ('debug','info','warn','error');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_type') THEN
+    CREATE TYPE media_type AS ENUM ('book','video','audio','other');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_format') THEN
+    CREATE TYPE media_format AS ENUM ('print','ebook','audiobook','dvd','blu-ray');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('member','librarian','admin');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reservation_status') THEN
+    CREATE TYPE reservation_status AS ENUM ('pending','waiting','ready_for_pickup','claimed','cancelled','expired','fulfilled');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'loan_event_type') THEN
+    CREATE TYPE loan_event_type AS ENUM ('created','renewed','returned','overdue_marked','override_due_date','override_lost','override_damaged','note_added');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'desk_transaction_type') THEN
+    CREATE TYPE desk_transaction_type AS ENUM ('checkout','checkin','renewal','override','reservation_claim','fine_payment','note');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'log_level') THEN
+    CREATE TYPE log_level AS ENUM ('debug','info','warn','error');
+  END IF;
+END $$;
 
 -- =============================
 --  USERS (minimal reference table)
