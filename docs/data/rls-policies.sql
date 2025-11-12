@@ -3,23 +3,7 @@
 -- Run AFTER schema.sql and seed.sql. Execute with the Supabase SQL editor (service role).
 
 -- ====================================================================
--- Helper function: determine the current user's library role.
--- Uses a SECURITY DEFINER wrapper so it can read the "users" table even
--- when RLS is enabled. search_path is locked to public to avoid hijacking.
--- ====================================================================
-create or replace function public.current_user_role()
-returns user_role
-language sql
-security definer
-set search_path = public
-as $$
-  select role
-  from public.users
-  where id = auth.uid()
-  limit 1;
-$$;
-
-comment on function public.current_user_role() is 'Returns the application role (user_role enum) for the current authenticated user. Null when missing.';
+-- Helper function current_user_role() is created in schema.sql and reused here.
 
 -- ====================================================================
 -- USERS table policies
@@ -40,44 +24,103 @@ create policy "users_select_self_or_staff"
     or current_user_role() in ('librarian','admin')
   );
 
--- Allow users to update their own record and staff to update anyone.
-create policy "users_update_self_or_staff"
+-- Allow users to update their own record (profile preferences, etc.).
+create policy "users_update_self"
   on public.users
   for update
   to authenticated
   using (
-    (
-      (select auth.uid()) is not null
-      and id = (select auth.uid())
-    )
-    or current_user_role() in ('librarian','admin')
+    (select auth.uid()) is not null
+    and id = (select auth.uid())
   )
   with check (
-    (
-      (select auth.uid()) is not null
-      and id = (select auth.uid())
+    (select auth.uid()) is not null
+    and id = (select auth.uid())
+    and (
+      current_user_role() = 'admin'
+      or role = current_user_role()
     )
-    or current_user_role() in ('librarian','admin')
   );
 
--- Inserts into users should only happen via privileged flows (admin tools
--- or backend jobs). Regular members do not create new rows here.
-create policy "users_insert_staff_only"
+-- Admins can update any user row (role changes, account flags, etc.).
+create policy "users_update_admin_any"
+  on public.users
+  for update
+  to authenticated
+  using (current_user_role() = 'admin')
+  with check (current_user_role() = 'admin');
+
+-- Inserts into users are restricted to admins (e.g., scripted onboarding).
+create policy "users_insert_admin_only"
   on public.users
   for insert
   to authenticated
-  with check (current_user_role() in ('librarian','admin'));
+  with check (current_user_role() = 'admin');
 
--- Optional: block deletes to staff only. Adjust if soft-delete strategy changes.
-create policy "users_delete_staff_only"
+-- Deletions/soft-deletes are admin only.
+create policy "users_delete_admin_only"
   on public.users
   for delete
   to authenticated
-  using (current_user_role() in ('librarian','admin'));
+  using (current_user_role() = 'admin');
+
+-- ====================================================================
+-- PROFILES table policies
+-- ====================================================================
+
+create policy "profiles_select_self_or_staff"
+  on public.profiles
+  for select
+  to authenticated
+  using (
+    (select auth.uid()) is not null
+    and (user_id = (select auth.uid()) or current_user_role() in ('librarian','admin'))
+  );
+
+create policy "profiles_insert_self_or_admin"
+  on public.profiles
+  for insert
+  to authenticated
+  with check (
+    (select auth.uid()) is not null
+    and (
+      (user_id = (select auth.uid()) and role = current_user_role())
+      or current_user_role() = 'admin'
+    )
+  );
+
+create policy "profiles_update_self_or_admin"
+  on public.profiles
+  for update
+  to authenticated
+  using (
+    (select auth.uid()) is not null
+    and (user_id = (select auth.uid()) or current_user_role() = 'admin')
+  )
+  with check (
+    (select auth.uid()) is not null
+    and (
+      (user_id = (select auth.uid()) and role = current_user_role())
+      or current_user_role() = 'admin'
+    )
+  );
+
+create policy "profiles_delete_admin_only"
+  on public.profiles
+  for delete
+  to authenticated
+  using (current_user_role() = 'admin');
 
 -- ====================================================================
 -- MEDIA table policies
 -- ====================================================================
+
+-- Allow unauthenticated guests to browse the catalog.
+create policy "media_select_public"
+  on public.media
+  for select
+  to anon
+  using (true);
 
 -- Allow every authenticated session to read catalog records.
 create policy "media_select_all_members"
@@ -120,7 +163,108 @@ create policy "media_loans_write_staff_only"
   with check (current_user_role() in ('librarian','admin'));
 
 -- ====================================================================
--- Future tables (media_holds, desk_transactions, etc.) should follow the
--- same pattern: allow members to view their own records and restrict write
--- access to librarian/admin roles.
+-- MEDIA_RESERVATIONS table policies
 -- ====================================================================
+
+create policy "reservations_select_self_or_staff"
+  on public.media_reservations
+  for select
+  to authenticated
+  using (
+    (
+      (select auth.uid()) is not null
+      and user_id = (select auth.uid())
+    )
+    or current_user_role() in ('librarian','admin')
+  );
+
+create policy "reservations_insert_self_or_staff"
+  on public.media_reservations
+  for insert
+  to authenticated
+  with check (
+    (
+      (select auth.uid()) is not null
+      and user_id = (select auth.uid())
+    )
+    or current_user_role() in ('librarian','admin')
+  );
+
+create policy "reservations_update_staff_only"
+  on public.media_reservations
+  for update
+  to authenticated
+  using (current_user_role() in ('librarian','admin'))
+  with check (current_user_role() in ('librarian','admin'));
+
+create policy "reservations_delete_self_or_staff"
+  on public.media_reservations
+  for delete
+  to authenticated
+  using (
+    (
+      (select auth.uid()) is not null
+      and user_id = (select auth.uid())
+    )
+    or current_user_role() in ('librarian','admin')
+  );
+
+-- ====================================================================
+-- LOAN_EVENTS table policies
+-- ====================================================================
+
+create policy "loan_events_select_member_or_staff"
+  on public.loan_events
+  for select
+  to authenticated
+  using (
+    (
+      (select auth.uid()) is not null
+      and exists (
+        select 1
+        from public.media_loans ml
+        where ml.id = loan_id
+          and ml.user_id = (select auth.uid())
+      )
+    )
+    or current_user_role() in ('librarian','admin')
+  );
+
+create policy "loan_events_insert_staff_only"
+  on public.loan_events
+  for insert
+  to authenticated
+  with check (current_user_role() in ('librarian','admin'));
+
+-- ====================================================================
+-- DESK_TRANSACTIONS table policies
+-- ====================================================================
+
+create policy "desk_transactions_staff_read"
+  on public.desk_transactions
+  for select
+  to authenticated
+  using (current_user_role() in ('librarian','admin'));
+
+create policy "desk_transactions_staff_manage"
+  on public.desk_transactions
+  for all
+  to authenticated
+  using (current_user_role() in ('librarian','admin'))
+  with check (current_user_role() in ('librarian','admin'));
+
+-- ====================================================================
+-- CLIENT_LOGS table policies
+-- ====================================================================
+
+create policy "client_logs_insert_authenticated"
+  on public.client_logs
+  for insert
+  to authenticated
+  with check ((select auth.uid()) is not null);
+
+create policy "client_logs_select_admin_only"
+  on public.client_logs
+  for select
+  to authenticated
+  using (current_user_role() = 'admin');

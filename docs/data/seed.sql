@@ -10,8 +10,24 @@ INSERT INTO users (id, email, role)
 VALUES
   ('10000000-0000-0000-0000-000000000001', 'avery.admin@example.com', 'admin'),
   ('10000000-0000-0000-0000-000000000002', 'liam.librarian@example.com', 'librarian'),
-  ('10000000-0000-0000-0000-000000000003', 'mia.member@example.com', 'member')
+  ('10000000-0000-0000-0000-000000000003', 'mia.member@example.com', 'member'),
+  ('10000000-0000-0000-0000-000000000004', 'nora.member@example.com', 'member')
 ON CONFLICT (id) DO NOTHING;
+
+-- Profile metadata mirrors Supabase auth roles
+INSERT INTO profiles (user_id, display_name, role, timezone, notification_preferences, interests, app_metadata)
+VALUES
+  ('10000000-0000-0000-0000-000000000001', 'Avery Admin', 'admin', 'America/New_York', '{"email": true, "sms": false}', ARRAY['strategy','operations'], '{"title": "Director of Library Services"}'),
+  ('10000000-0000-0000-0000-000000000002', 'Liam Librarian', 'librarian', 'America/Chicago', '{"email": true, "sms": true}', ARRAY['circulation','programming'], '{"desk_location": "Main"}'),
+  ('10000000-0000-0000-0000-000000000003', 'Mia Member', 'member', 'America/Los_Angeles', '{"email": true, "sms": false}', ARRAY['fantasy','wellness'], '{"favorite_format": "audiobook"}'),
+  ('10000000-0000-0000-0000-000000000004', 'Nora Member', 'member', 'America/Denver', '{"email": true, "sms": false}', ARRAY['documentary','makerspace'], '{"favorite_format": "dvd"}')
+ON CONFLICT (user_id) DO UPDATE SET
+  display_name = EXCLUDED.display_name,
+  role = EXCLUDED.role,
+  timezone = EXCLUDED.timezone,
+  notification_preferences = EXCLUDED.notification_preferences,
+  interests = EXCLUDED.interests,
+  app_metadata = EXCLUDED.app_metadata;
 
 -- =============================
 --  MEDIA (40 sample items, 10 per media_type)
@@ -88,6 +104,46 @@ VALUES
   ('60000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', '{"name": "Mia Member"}', now() - interval '35 days', now() - interval '21 days', now() - interval '18 days', '10000000-0000-0000-0000-000000000002', 'Returned on time'),
   ('60000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', '{"name": "Mia Member"}', now() - interval '8 days', now() + interval '6 days', NULL, '10000000-0000-0000-0000-000000000002', 'Equipment kit loan')
 ON CONFLICT (id) DO NOTHING;
+
+-- =============================
+--  MEDIA RESERVATIONS (queue samples)
+-- =============================
+
+INSERT INTO media_reservations (id, media_id, user_id, position, status, request_id, requested_at, ready_at, expires_at, processed_by)
+VALUES
+  ('70000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', 0, 'ready_for_pickup', '71000000-0000-0000-0000-000000000001', now() - interval '2 days', now() - interval '2 hours', now() + interval '70 hours', '10000000-0000-0000-0000-000000000002'),
+  ('70000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000004', 1, 'waiting', '71000000-0000-0000-0000-000000000002', now() - interval '1 day', NULL, NULL, NULL),
+  ('70000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000003', 0, 'pending', '71000000-0000-0000-0000-000000000003', now() - interval '3 hours', NULL, NULL, NULL)
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================
+--  LOAN EVENTS (idempotent audit trail)
+-- =============================
+
+INSERT INTO loan_events (id, loan_id, event_type, request_id, event_at, actor_id, notes, payload)
+VALUES
+  ('72000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001', 'created', '73000000-0000-0000-0000-000000000001', now() - interval '4 days', '10000000-0000-0000-0000-000000000002', 'Checkout initiated at desk', jsonb_build_object('due_date', now() + interval '10 days')),
+  ('72000000-0000-0000-0000-000000000002', '60000000-0000-0000-0000-000000000003', 'returned', '73000000-0000-0000-0000-000000000002', now() - interval '18 days', '10000000-0000-0000-0000-000000000002', 'Item returned in good condition', jsonb_build_object('condition_note', 'sleeve cleaned'))
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================
+--  DESK TRANSACTIONS (circulation desk history)
+-- =============================
+
+INSERT INTO desk_transactions (id, transaction_type, loan_id, media_id, member_id, staff_id, request_id, note)
+VALUES
+  ('74000000-0000-0000-0000-000000000001', 'checkout', '60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', '75000000-0000-0000-0000-000000000001', 'Checkout processed with 14-day loan'),
+  ('74000000-0000-0000-0000-000000000002', 'checkin', '60000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', '75000000-0000-0000-0000-000000000002', 'Check-in completed; audio discs inspected')
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================
+--  CLIENT LOGS (sample client telemetry)
+-- =============================
+
+INSERT INTO client_logs (user_id, route, level, message, context)
+VALUES
+  ('10000000-0000-0000-0000-000000000003', '/account/loans', 'info', 'Hydrated member loan dashboard', '{"loanCount": 3}')
+ON CONFLICT DO NOTHING;
 
 -- =============================
 --  OPTIONAL: FUTURE TABLE PLACEHOLDERS
