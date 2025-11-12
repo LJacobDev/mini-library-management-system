@@ -21,7 +21,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Implement `/api/check/openai.get.ts` (temporary) returning `{ message: 'hello from the backend' }`; confirm the frontend displays it.
   - [x] Replace the handler with a streaming OpenAI proxy, adapting the `.temp` FastAPI example: stream completion chunks as SSE.
   - [x] Update `StatusCheckStream.vue` to consume the SSE stream and append text as it arrives.
-  - [ ] Create `/api/catalog.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
+  - [ ] Create `/api/check/supabase.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
   - [ ] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
 
 1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.

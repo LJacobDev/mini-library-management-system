@@ -50,3 +50,10 @@ for more information please check /docs/dev/ for any docs about tailwind or nuxt
 This project aims to leverage nuxt ui components wherever they're helpful, but any new components made by agents here are to prefer using tailwindcss wherever it facilitates rapid UI development toward having a prototype that also looks excellent.  However when it is more helpful to use Vue 3 Single File Components `<style>` blocks, use them instead (for things like animations or other things they help facilitate where TailwindCSS is not as helpful)
 
 For further information about considerations, the text at docs/dev/tailwindcss-and-style-block-hybrid-approach.md
+
+
+# Context tracking, notes, and a history of our actions
+
+your context trackingfile is /agents/agent-fast-start-context.md
+
+Occasionally, or also when asked, write / update in that whatever notes you can use to help yourself track the goals and understanding and challenges and next steps of this project, and then a section that that is decidated to making more concise date/time stamped entries about actions we've taken so it can be a historical progress record
