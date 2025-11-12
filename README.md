@@ -2,9 +2,12 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-### This project is being revised with a new [fast start approach](docs/dev/spec-fast-start-3.md)
+
+### This project's development plan has been revised with a new [fast start approach](docs/dev/spec-fast-start-3.md)
+
 
 ### See its [live deployment state](https://mini-library-management-system.vercel.app/)
+
 
 ## Everything Below Here is the Final State of the Initial Documentation-First TDD Approach Before Switching To Fast Start Approach
 
