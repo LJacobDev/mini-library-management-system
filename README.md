@@ -2,7 +2,7 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-### This project is being revised with a new [fast start approach in another branch](https://github.com/LJacobDev/mini-library-management-system/blob/manager/fast-restart-test/docs/dev/spec-fast-start-2.md)
+### This project is being revised with a new [fast start approach](https://github.com/LJacobDev/mini-library-management-system/blob/manager/fast-restart-test/docs/dev/spec-fast-start-2.md)
 
 ### See its [live deployment state](https://mini-library-management-system.vercel.app/)   (might be auth guarded by vercel auth still, live view coming soon)
 
