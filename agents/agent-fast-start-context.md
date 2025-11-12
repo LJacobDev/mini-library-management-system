@@ -67,3 +67,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 
 - 2025-11-12 — `AuthPanel` now binds to the reactive Supabase auth state so logging out updates the UI and surfaces success/error feedback inline.
 - 2025-11-12 — `useSupabaseAuth` now ignores Supabase `AuthSessionMissingError` so signed-out refreshes stay clean without logging false auth errors.
+- 2025-11-12 — Added `auth.global` middleware plus `/login` and `/account/loans` pages; routes tagged with `requiresAuth` now redirect unauthenticated users to the login flow with redirect preservation.
