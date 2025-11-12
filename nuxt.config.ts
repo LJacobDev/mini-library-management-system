@@ -12,4 +12,11 @@ export default defineNuxtConfig({
   ui: {
     prefix: "Nuxt",
   },
+
+  runtimeConfig: {
+    server: {
+      openaiApiKey: process.env.OPENAI_API_KEY,
+    },
+    public: {},
+  },
 });

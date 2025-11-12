@@ -1,6 +1,7 @@
 # Project-specific
 /implementation-agents/ 
 .agent-info
+/.temp/
 
 # Nuxt dev/build outputs
 .output

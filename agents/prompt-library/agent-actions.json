@@ -46,6 +46,15 @@
         "action" : "begin-writing-task-files",
         "role" : "manager",
         "prompt" : "I have created the agent-*-tasks.md initial file states manually by duplicating the responsibility files.  From there, I will ask you to go through each task file and modify its contents as needed to help it become an excellent guide for the implementation agents to follow to complete our project, and add [ ] checkboxes as needed, and begin to break them into sub-steps that can be completed very easily.\n\nYou as the manager will be able to look at each implementation agent's context file and task completion file and read and write to them through either whenever helpful to communicate whatever things there are that need to be shared between the agents to inform about project wide changes or about what one needs to know from another for their role to continue working"
+    },
+    {
+        "action" : "fast-start",
+        "role" : "any",
+        "prompt" : "If I were to ask you, would you be able to create a file at /docs/dev/spec-fast-start.md and use it as a working file that will be added to as we plan out how to make a rough very quick outline app that has a working front end and back end, even if it's simply something that runs on localhost and has a hello screen and it can click a button to get a sqlite query from a nuxt back end, but where it uses the knowledge of spec-final.md to make the shapes of these basic simple things able to later be easily swapped in for the future plan?  "
+    },
+    {
+        "action" : "fast-start",
+        "role" : "any",
+        "prompt" : "while we are working on this plan, I'd like you to make only additional text at the bottom of the #file:spec-fast-start.md file, so that we can use it as a way of collecting thoughts that help us with our goal, and it can serve as a history of the thinking.  Later on we might lock the file or rework it into something like a shorter mixture of the decisions but for now just add to it."    
     }
 ]
- 

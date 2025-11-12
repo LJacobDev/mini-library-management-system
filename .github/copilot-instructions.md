@@ -1,48 +1,47 @@
 # Goals
 
-We are building a 'library management system' as a part of a technical assessment designed to test not just the quality of the developer's output but their ability to use agentic coding tools to speed up development while maintaining high quality code and product.
+We are building a 'library management system' as a part of a technical assessment designed to test not just the quality of the developer's output but their ability to use agentic coding tools to speed up development as fast as possible
+
+It is important that we break ground immediately and build the front end, as ui first, using time-saving mocks for things like the back end API and database can be a sqlite file
+
+ignore guidelines about test driven development for now - our goal is to get something working as fast as possible, so focus on building the front end ui first using nuxt 4, tailwindcss v4, and vue 3 components to get something working quickly but helping me manually test it to at least check that our work is functional.
+
+when the ui is in a first draft simple version, we can then pivot to building out the back end by connecting it to nuxt api routes which will themselves call supabase for a postgres db, and the front end initially won't need auth to work but we'll be later on adding supabase auth to the front end.
+
+and then create a back end for the ui
+
 
 The developer is expected to implement the core features of the library management system as well as some bonus features that demonstrate creativity and technical skill.
 
-Refer to /docs/dev/requirements.md for the full list of features and requirements.
-
 Refer to /docs/dev/dev-process.md for the developer's notes on their thinking and process from start to finish on this work.
 
-Building high quality software is a priority but so is speed of development, so aim to balance these two goals optimally.
+Your role the is pre-spec ground breaking agent, helping me the developer to set up a minimum front and and backend and supabase and openai connection.  
+
+Our job is to build the front end ui as fast as possible using nuxt 4, tailwindcss v4, and vue 3 components to get something working in less than a day that can then be used to build out a fuller app that is speced in /docs/dev/spec/spec-final.md.
+
+Speed of development is paramount in this, so use the /docs/dev/spec/spec-final.md as a loose reference for what a future version of this app will be about, and BUT DO NOT FOLLOW THE OPENAPI DOCUMENTS OR THE SPEC GUIDE'S REQUIREMENTS WHILE WE DEVELOP THIS APP NOW - build the front end as fast as possible using mocks where needed to get something working quickly.
 
 
-# Workflow Instructions
+## How to communicate with dev about this
 
-This workflow is intended to be done in a multi agent way.  To determine which agent you are, please refer to the file /.agent-info in which you'll receive role-specific instructions on how to contribute to this project.
-
-If any step that you're being prompted to do appears to be complex enough that it would be easier to break into smaller steps, suggest this before continuing
-
-If there is any uncertainty about an important consideration, or about what to do next, ask for clarification before proceeding.
-
-If you're doing something that you're not confident about, tell me that you have a low confidence in your ability to complete the task and ask for help so that I can do it.
+As a default, in order to reduce reading fatigue for the developer, please keep your messages as few words as possible to convey the needed information, and then if the dev asks for more explanation, provide it in follow up messages.  Keep the follow up messages concise as well so that fast information iteration can occur.  If dev asks you to be thorough or detailed, then please use as much detail as needed to convey complete information especially when writing docs like .md files.
 
 
-# The application is being build using Nuxt
+## How to handle agent training cutoff date causing issues with not knowing about nuxt 4, tailwindcss v4, supabase latest best practices, openai latest best practices
 
-Please refer to https://nuxt.com/docs as the most valid source of current truth about Nuxt and anything relating to building with it, configuring it, testing, and when we're troubleshooting and debugging.
+It is likely that your training data cutoff is from back when nuxt 3 was the latest version of nuxt, so before every design or implementation suggestion you make, please check https://nuxt.com/docs as the source of truth about how to do things in nuxt 4.  This is very important to avoid nuxt 3 vs nuxt 4 confusion.  
+
+This also applies to tailwindcss v4 which has some differences from tailwindcss v3 so please check https://tailwindcss.com/docs/ for the most current information about tailwindcss v4 before making any suggestions or implementations involving tailwindcss.  
+
+Also please check https://supabase.com/docs to make sure that any supabase code or design you suggest is aligned with the most current supabase best practices.  
+
+Also check https://openai.com/docs/ for anything involving openai api usage.
 
 
-# Edge cases and Test Driven Development (TDD) Approach
-
-This project is to be done in a way that prioritizes Test Driven Development (TDD) where all new development starts by thinking of what applicable edge cases are possible for any feature/function/endpoint/handler being built, and then writing tests to cover those edge cases before writing the actual feature code.
-
-Please see /docs/dev/edge-case-first-checklist.md for the full edge-case-first checklist that should be used to guide test generation and feature implementation.
+Any new changes noticed about the current versions that is different than what we expected needs to be written into a running collection of /docs/dev/llm-training-cutoff-updates.md so that all agents working on this project can refer to it and be aligned on what the most current best practices are for the various tech stack pieces being used here.
 
 
-## Nuxt 4 project awareness
-
-- before every design, implementation, troubleshoot or debug action taken relating to nuxt code, know that your training is mostly on nuxt 3, and we need to check https://nuxt.com/docs as the source of truth for what to do
-
-- The active application targets Nuxt 4. Some patterns differ from Nuxt 3 (directory layout under `app/`, data fetching defaults, TypeScript contexts, Nitro behavior). Always assume Nuxt 4 behaviors unless documentation or code explicitly states otherwise.
-- Before proposing implementation details, troubleshooting ideas, or refactors, open the current Nuxt documentation to confirm any APIs, defaults, or module compatibility. This reduces drift from Nuxt 3-era assumptions.
-- Keep `~/` mapped to `/app` and `@/` to the project root in both `nuxt.config.ts` and `tsconfig.json`; update context notes if this changes so implementation agents stay aligned.
-
-for more information please check /docs/dev/nuxt-4-vs-nuxt-3-llm-awareness.md
+for more information please check /docs/dev/ for any docs about tailwind or nuxt
 
 
 
@@ -52,9 +51,9 @@ This project aims to leverage nuxt ui components wherever they're helpful, but a
 
 For further information about considerations, the text at docs/dev/tailwindcss-and-style-block-hybrid-approach.md
 
-MOST IMPORTANT NOTE ABOUT TAILWIND.  There seem to be lots of times where LLMs are speaking about it in a v3 sense - so any time tailwind classes or especially configs that use tailwind.config.ts, refer to the tailwindcss docs for truth about v4 which is what we're using: https://tailwindcss.com/docs/
 
+# Context tracking, notes, and a history of our actions
 
-# Supabase considerations
+your context trackingfile is /agents/agent-fast-start-context.md
 
-Since most other tech stack choices are benefiting from having docs checked directly, I want you to build your Supabase code and designs and plans only after checking https://supabase.com/docs to make sure of whether there is new information that changes how it has to be done.  This appears to have been helpful with Nuxt and Tailwind so far.
+Occasionally, or also when asked, write / update in that whatever notes you can use to help yourself track the goals and understanding and challenges and next steps of this project, and then a section that that is decidated to making more concise date/time stamped entries about actions we've taken so it can be a historical progress record
