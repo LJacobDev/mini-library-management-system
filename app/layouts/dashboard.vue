@@ -84,9 +84,9 @@ const navigationItems = computed(() =>
           :items="navigationItems"
           :tooltip="sidebarCollapsed"
           :ui="{
-            root: 'flex-1 flex flex-col gap-3 px-2 py-2 text-sm',
-            list: 'flex flex-col gap-1',
-            link: 'rounded-lg px-3 py-2 text-slate-300 hover:bg-slate-800/80 transition',
+            root: 'flex-1 flex w-full flex-col items-start gap-3 px-2 py-2 text-sm',
+            list: 'flex w-full flex-col gap-1',
+            link: 'w-full justify-start rounded-lg px-3 py-2 text-left text-slate-300 hover:bg-slate-800/80 transition',
             linkLabel: 'truncate font-medium',
             linkLeadingIcon: 'size-5',
             label: 'px-3 text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500'

@@ -90,3 +90,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Replaced enum `CREATE TYPE IF NOT EXISTS` with DO-block guards so Supabase reruns no longer error on type creation.
 - 2025-11-12 — Executed `schema.sql`, `seed.sql`, and `rls-policies.sql` in Supabase; database now populated with demo data and RLS enforcing admin-only role changes end-to-end.
 - 2025-11-12 — Introduced Nuxt UI dashboard shell: `app/app.vue` now wraps pages with `NuxtApp`/`NuxtLayout`, added `layouts/default.vue`, and scaffolded `layouts/dashboard.vue` with navbar, sidebar, and toolbar ready for the catalog view.
+- 2025-11-12 — Added guarded `/pages/catalog.vue` targeting the dashboard layout with placeholder header/section until the mock media grid lands.
+- 2025-11-12 — Added `useCatalogMock` composable with seeded demo titles and wired `/pages/catalog.vue` to render a Nuxt UI card grid.

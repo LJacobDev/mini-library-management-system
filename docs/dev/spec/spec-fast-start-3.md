@@ -26,7 +26,8 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Add server side supabase session verification and add auth verification checks to protected api endpoints
   - [x] Move the status checking main page to a /status route and clear the main route for item 1 scaffold shell
 
-1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
+1. [x] **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
+  -[ ] **Fix odd most outstanding layout issues**
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.
 3. **Install mock session/state**: add `useMockSession`, role toggle in default layout, seed mock catalog/loans in `server/db/mockData.ts`.
 4. **Member dashboard (CSR)**: `/account/loans` under dashboard layout, `UTable` + `Toast`, data from `/api/loans` mock route.

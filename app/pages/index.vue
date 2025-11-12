@@ -6,3 +6,9 @@
     <!-- <AuthPanel /> -->
   </div>
 </template>
+
+<script setup>
+definePageMeta({ ssr: true })
+// temporary redirect to /catalog while main page is not yet built
+navigateTo('/catalog')
+</script>
