@@ -71,3 +71,6 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — `useSupabaseAuth` now absorbs Supabase magic-link hashes (`#access_token=...`) by calling `setSession` with the tokens, removing the hash and keeping the router quiet.
 - 2025-11-12 — Refined Supabase auth bootstrap: `supabase-auth` client plugin now strips hashes during module evaluation (route middleware removed as redundant) so magic-link redirects load cleanly.
 - 2025-11-12 — Adjusted `useSupabaseAuth` lifecycle hooks to register `onBeforeUnmount` without awaiting inside `onMounted`, eliminating Vue’s "no active component" warning.
+- 2025-11-12 — Added `server/utils/requireSupabaseSession.ts` to centralize server-side Supabase session validation (HTTP 401 when tokens missing/invalid).
+- 2025-11-12 — Added `/api/debug/auth-check` to exercise `requireSupabaseSession` manually (401 when signed out, JSON user payload when signed in).
+- 2025-11-12 — Synced Supabase access tokens into a client cookie so server APIs can validate sessions via `requireSupabaseSession` without custom headers.

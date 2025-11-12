@@ -1,4 +1,4 @@
-import type { AuthError, SupabaseClient, User } from '@supabase/supabase-js'
+import type { AuthError, Session, SupabaseClient, User } from '@supabase/supabase-js'
 
 const USER_STATE_KEY = 'supabase-auth-user'
 const LOADING_STATE_KEY = 'supabase-auth-loading'
@@ -53,13 +53,18 @@ export async function absorbSupabaseAuthHash(client: SupabaseClient) {
   }
 
   try {
-    const { error: sessionError } = await client.auth.setSession({
+    const {
+      data: { session },
+      error: sessionError,
+    } = await client.auth.setSession({
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
     })
 
     if (sessionError) {
       console.error('Supabase auth setSession error', sessionError)
+    } else {
+      syncSupabaseAccessCookie(session)
     }
   } catch (hashError) {
     console.error('Supabase auth hash handling failed', hashError)
@@ -88,7 +93,16 @@ export function useSupabaseAuth() {
 
   async function refreshSession() {
     const client = useSupabaseBrowserClient()
-  await absorbSupabaseAuthHash(client)
+    await absorbSupabaseAuthHash(client)
+    const {
+      data: sessionData,
+      error: sessionError,
+    } = await client.auth.getSession()
+
+    if (!sessionError) {
+      syncSupabaseAccessCookie(sessionData.session ?? null)
+    }
+
     let data: { user: User | null } | undefined
     let authError: AuthError | null = null
 
@@ -136,6 +150,7 @@ export function useSupabaseAuth() {
     handleAuthResult(authError)
     if (!authError) {
       user.value = null
+      clearSupabaseAccessCookie()
     }
   }
 
@@ -161,4 +176,26 @@ export function useSupabaseAuth() {
     signInWithMagicLink,
     signOut,
   }
+}
+
+function syncSupabaseAccessCookie(session: Session | null) {
+  if (!import.meta.client) {
+    return
+  }
+
+  if (!session?.access_token) {
+    clearSupabaseAccessCookie()
+    return
+  }
+
+  const maxAge = session.expires_at ? Math.max(session.expires_at - Math.floor(Date.now() / 1000), 0) : 60 * 60
+  document.cookie = `sb-access-token=${encodeURIComponent(session.access_token)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`
+}
+
+function clearSupabaseAccessCookie() {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.cookie = 'sb-access-token=; Path=/; Max-Age=0; SameSite=Lax'
 }
