@@ -3,13 +3,57 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- =============================
---  ENUMS
--- =============================
+-- Supabase (Postgres 15) does not support CREATE TYPE IF NOT EXISTS, so we guard with
+-- anonymous DO blocks that check pg_type first for idempotency.
 
-CREATE TYPE IF NOT EXISTS media_type AS ENUM ('book','video','audio','other');
-CREATE TYPE IF NOT EXISTS media_format AS ENUM ('print','ebook','audiobook','dvd','blu-ray');
-CREATE TYPE IF NOT EXISTS user_role AS ENUM ('member','librarian','admin');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_type') THEN
+    CREATE TYPE media_type AS ENUM ('book','video','audio','other');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_format') THEN
+    CREATE TYPE media_format AS ENUM ('print','ebook','audiobook','dvd','blu-ray');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('member','librarian','admin');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reservation_status') THEN
+    CREATE TYPE reservation_status AS ENUM ('pending','waiting','ready_for_pickup','claimed','cancelled','expired','fulfilled');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'loan_event_type') THEN
+    CREATE TYPE loan_event_type AS ENUM ('created','renewed','returned','overdue_marked','override_due_date','override_lost','override_damaged','note_added');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'desk_transaction_type') THEN
+    CREATE TYPE desk_transaction_type AS ENUM ('checkout','checkin','renewal','override','reservation_claim','fine_payment','note');
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'log_level') THEN
+    CREATE TYPE log_level AS ENUM ('debug','info','warn','error');
+  END IF;
+END $$;
 
 -- =============================
 --  USERS (minimal reference table)
@@ -27,10 +71,58 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =============================
+--  PROFILES (extended user metadata)
+-- =============================
+
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  display_name text,
+  avatar_url text,
+  timezone text,
+  notification_preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
+  interests text[] NOT NULL DEFAULT '{}',
+  role user_role NOT NULL DEFAULT 'member',
+  app_metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles (role);
+CREATE INDEX IF NOT EXISTS idx_profiles_display_name_lower ON profiles (lower(display_name));
+
+-- =============================
+--  ROLE HELPERS
+-- =============================
+
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS user_role
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  select coalesce(
+    (
+      select p.role
+      from public.profiles p
+      where p.user_id = auth.uid()
+      limit 1
+    ),
+    (
+      select u.role
+      from public.users u
+      where u.id = auth.uid()
+      limit 1
+    )
+  );
+$$;
+
+COMMENT ON FUNCTION public.current_user_role() IS 'Returns the application role (user_role enum) for the current authenticated user. Null when missing.';
+
+-- =============================
 --  MEDIA (one row per physical/digital copy)
 -- =============================
 
-CREATE TABLE media (
+CREATE TABLE IF NOT EXISTS media (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   media_type media_type NOT NULL,
   media_format media_format NOT NULL DEFAULT 'print',
@@ -65,7 +157,7 @@ CREATE INDEX IF NOT EXISTS idx_media_fulltext ON media USING gin (
 --  MEDIA LOANS (circulation history)
 -- =============================
 
-CREATE TABLE media_loans (
+CREATE TABLE IF NOT EXISTS media_loans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   media_id uuid REFERENCES media(id) ON DELETE SET NULL,
   user_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -88,6 +180,165 @@ CREATE INDEX IF NOT EXISTS idx_media_loans_due_date_active ON media_loans (due_d
 CREATE INDEX IF NOT EXISTS idx_media_loans_returned_at ON media_loans (returned_at);
 
 -- =============================
+--  MEDIA RESERVATIONS (holds queue)
+-- =============================
+
+CREATE TABLE IF NOT EXISTS media_reservations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  media_id uuid NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  position int NOT NULL CHECK (position >= 0),
+  status reservation_status NOT NULL DEFAULT 'pending',
+  request_id uuid NOT NULL UNIQUE,
+  requested_at timestamptz NOT NULL DEFAULT now(),
+  ready_at timestamptz,
+  expires_at timestamptz,
+  fulfilled_at timestamptz,
+  cancelled_at timestamptz,
+  cancellation_reason text,
+  processed_by uuid REFERENCES users(id) ON DELETE SET NULL,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CHECK (expires_at IS NULL OR expires_at >= requested_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_reservations_media_status ON media_reservations (media_id, status);
+CREATE INDEX IF NOT EXISTS idx_media_reservations_user_status ON media_reservations (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_media_reservations_position ON media_reservations (media_id, position);
+CREATE UNIQUE INDEX IF NOT EXISTS unq_media_reservations_active ON media_reservations (media_id, user_id)
+  WHERE status IN ('pending','waiting','ready_for_pickup');
+
+-- =============================
+--  LOAN EVENTS (idempotency + audit trail)
+-- =============================
+
+CREATE TABLE IF NOT EXISTS loan_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  loan_id uuid NOT NULL REFERENCES media_loans(id) ON DELETE CASCADE,
+  event_type loan_event_type NOT NULL,
+  request_id uuid,
+  event_at timestamptz NOT NULL DEFAULT now(),
+  actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  notes text,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_loan_events_loan_id ON loan_events (loan_id, event_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS unq_loan_events_request ON loan_events (request_id) WHERE request_id IS NOT NULL;
+
+-- =============================
+--  DESK TRANSACTIONS (front-desk activity log)
+-- =============================
+
+CREATE TABLE IF NOT EXISTS desk_transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  transaction_type desk_transaction_type NOT NULL,
+  loan_id uuid REFERENCES media_loans(id) ON DELETE SET NULL,
+  media_id uuid REFERENCES media(id) ON DELETE SET NULL,
+  member_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  staff_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  reservation_id uuid REFERENCES media_reservations(id) ON DELETE SET NULL,
+  request_id uuid,
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  note text,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_desk_transactions_occurred_at ON desk_transactions (occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_desk_transactions_staff ON desk_transactions (staff_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_desk_transactions_member ON desk_transactions (member_id, occurred_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS unq_desk_transactions_request ON desk_transactions (request_id) WHERE request_id IS NOT NULL;
+
+-- =============================
+--  CLIENT LOGS (optional client error ingestion)
+-- =============================
+
+CREATE TABLE IF NOT EXISTS client_logs (
+  id bigserial PRIMARY KEY,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  route text,
+  level log_level NOT NULL DEFAULT 'info',
+  message text NOT NULL,
+  context jsonb NOT NULL DEFAULT '{}'::jsonb,
+  user_agent text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_logs_created_at ON client_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_client_logs_level ON client_logs (level);
+CREATE INDEX IF NOT EXISTS idx_client_logs_user_id ON client_logs (user_id, created_at DESC);
+
+-- =============================
+--  ROLE CHANGE GUARDS
+-- =============================
+
+CREATE OR REPLACE FUNCTION public.guard_role_change_admin()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  actor_role user_role;
+BEGIN
+  actor_role := current_user_role();
+  IF actor_role IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.role IS DISTINCT FROM OLD.role AND actor_role <> 'admin' THEN
+    RAISE EXCEPTION 'Only admin can change roles' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.guard_profile_role_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  actor_role user_role;
+BEGIN
+  actor_role := current_user_role();
+  IF actor_role IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF actor_role <> 'admin' AND NEW.role IS DISTINCT FROM actor_role THEN
+    RAISE EXCEPTION 'Only admin can assign a different role';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_users_role_guard ON public.users;
+CREATE TRIGGER trg_users_role_guard
+BEFORE UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_role_change_admin();
+
+DROP TRIGGER IF EXISTS trg_profiles_role_guard ON public.profiles;
+CREATE TRIGGER trg_profiles_role_guard
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_role_change_admin();
+
+DROP TRIGGER IF EXISTS trg_profiles_role_insert_guard ON public.profiles;
+CREATE TRIGGER trg_profiles_role_insert_guard
+BEFORE INSERT ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.guard_profile_role_insert();
+
+-- =============================
 --  TIMESTAMP TRIGGERS
 -- =============================
 
@@ -104,6 +355,11 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
+CREATE TRIGGER trg_profiles_updated_at
+BEFORE UPDATE ON profiles
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
 CREATE TRIGGER trg_media_updated_at
 BEFORE UPDATE ON media
 FOR EACH ROW
@@ -111,6 +367,16 @@ EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_media_loans_updated_at
 BEFORE UPDATE ON media_loans
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_media_reservations_updated_at
+BEFORE UPDATE ON media_reservations
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_desk_transactions_updated_at
+BEFORE UPDATE ON desk_transactions
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
@@ -122,6 +388,10 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
 -- TODO: CREATE POLICY "Users manage own profile" ON users ...
 
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Profiles visible to owner or staff" ON profiles ...
+
 ALTER TABLE media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media FORCE ROW LEVEL SECURITY;
 -- TODO: CREATE POLICY "Catalog read access" ON media FOR SELECT TO anon, authenticated USING (true);
@@ -132,51 +402,17 @@ ALTER TABLE media_loans FORCE ROW LEVEL SECURITY;
 -- TODO: CREATE POLICY "Members read own loans" ON media_loans FOR SELECT TO authenticated USING ((auth.uid() IS NOT NULL) AND (auth.uid() = user_id));
 -- TODO: CREATE POLICY "Circulation staff manage loans" ON media_loans FOR ALL TO authenticated USING ((auth.jwt() ->> 'role') IN ('librarian','admin'));
 
--- =============================
---  SEED DATA (illustrative sample — safe to adjust)
--- =============================
+ALTER TABLE media_reservations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_reservations FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Members manage own reservations" ON media_reservations ...
 
--- Sample users
-INSERT INTO users (id, email, role)
-VALUES
-  ('11111111-1111-1111-1111-111111111111', 'jane.member@example.com', 'member')
-ON CONFLICT (id) DO NOTHING;
+ALTER TABLE loan_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loan_events FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Staff view loan events" ON loan_events ...
 
-INSERT INTO users (id, email, role)
-VALUES
-  ('22222222-2222-2222-2222-222222222222', 'mark.member@example.com', 'member')
-ON CONFLICT (id) DO NOTHING;
+ALTER TABLE desk_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE desk_transactions FORCE ROW LEVEL SECURITY;
+-- TODO: CREATE POLICY "Staff manage desk transactions" ON desk_transactions ...
 
-INSERT INTO users (id, email, role)
-VALUES
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'libby.librarian@example.com', 'librarian')
-ON CONFLICT (id) DO NOTHING;
-
--- Sample media (two copies of same book + one DVD)
-INSERT INTO media (id, media_type, media_format, title, creator, genre, isbn, subject, description, cover_url, language, pages, published_at, metadata)
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'book', 'print', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'A compelling fiction title.', 'https://example.com/covers/example-book-1.jpg', 'EN', 320, '2019-03-15', '{"tags": ["staff-pick"]}'),
-  ('00000000-0000-0000-0000-000000000002', 'book', 'print', 'The Example Book', 'A. Author', 'Fiction', '978-0-000000-0', 'Modern Fiction', 'Second copy of the same title.', 'https://example.com/covers/example-book-2.jpg', 'EN', 320, '2019-03-15', '{"condition": "gently-used"}'),
-  ('00000000-0000-0000-0000-000000000003', 'video', 'dvd', 'Example Movie', 'D. Director', 'Drama', NULL, 'Cinema', 'Award-winning drama on DVD.', 'https://example.com/covers/example-movie.jpg', 'EN', NULL, '2021-07-01', '{"rating": "PG-13"}')
-ON CONFLICT (id) DO NOTHING;
-
--- Sample loans (one active, one returned late)
-INSERT INTO media_loans (id, media_id, user_id, checked_out_at, due_date, processed_by, note)
-VALUES
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', now() - interval '2 days', now() + interval '12 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Checked out at circulation desk')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO media_loans (id, media_id, user_id, checked_out_at, due_date, returned_at, processed_by, note)
-VALUES
-  ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '22222222-2222-2222-2222-222222222222', now() - interval '40 days', now() - interval '26 days', now() - interval '20 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Returned 6 days late')
-ON CONFLICT (id) DO NOTHING;
-
--- Example SELECT snippets (documentation only, optional to run)
--- List active loans for a user
--- SELECT * FROM media_loans WHERE user_id = '11111111-1111-1111-1111-111111111111' AND returned_at IS NULL ORDER BY due_date;
-
--- Find overdue items
--- SELECT * FROM media_loans WHERE returned_at IS NULL AND due_date < now();
-
--- Late return counts per user
--- SELECT user_id, count(*) AS late_returns FROM media_loans WHERE returned_at IS NOT NULL AND due_date IS NOT NULL AND returned_at > due_date GROUP BY user_id HAVING count(*) >= 1;
+ALTER TABLE client_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_logs FORCE ROW LEVEL SECURITY;

@@ -5,6 +5,12 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
+  app: {
+    head: {
+      title: "Mini Library Management System",
+    },
+  },
+
   modules: ["@nuxt/eslint", "@nuxt/image", "@nuxt/test-utils", "@nuxt/ui"],
 
   css: ["~/assets/css/main.css"],
@@ -17,6 +23,9 @@ export default defineNuxtConfig({
     server: {
       openaiApiKey: process.env.OPENAI_API_KEY,
     },
-    public: {},
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY,
+    },
   },
 });

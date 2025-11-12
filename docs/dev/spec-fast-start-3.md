@@ -1,6 +1,6 @@
 # Fast Start Plan — Minimum Working Prototype (Concise Edition)
 
-_Last updated: 2025-11-11_
+_Last updated: 2025-11-12_
 
 This streamlined playbook blends every decision we have so far—speed-first delivery, instant Supabase/OpenAI handshakes, and Nuxt UI acceleration—into a single path you can follow to boot a working Nuxt 4 + Tailwind v4 prototype in under half a day. Treat Nuxt UI components as helpers: use them when they shorten work, fall back to raw Tailwind markup the moment they fight you.
 
@@ -22,7 +22,9 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Replace the handler with a streaming OpenAI proxy, adapting the `.temp` FastAPI example: stream completion chunks as SSE.
   - [x] Update `StatusCheckStream.vue` to consume the SSE stream and append text as it arrives.
   - [x] Create `/api/check/supabase.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
-  - [ ] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
+  - [x] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
+  - [x] Add server side supabase session verification and add auth verification checks to protected api endpoints
+  - [x] Move the status checking main page to a /status route and clear the main route for item 1 scaffold shell
 
 1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.
@@ -97,6 +99,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - `health/supabase.get.ts`
   - `ai/recommend.post.ts` (SSE), using `event.node.res.write` or `sendStream` helpers.
 - **Supabase handshake**: connect to `mlms-demo` instance ASAP (post-M1). Response contract `{ success: boolean, data?: T, error?: { code: string; message: string } }` matches future Supabase wrappers.
+- **Auth enforcement**: import `requireSupabaseSession` in every mutating Nuxt server route (renewals, checkout, admin CRUD, AI writes) so unauthenticated callers receive a `401` before any Supabase query runs.
 - **OpenAI streaming**: adapt `.temp/api/index.py` logic into Nuxt server route by reading `for await (const chunk of stream)` and writing `data:` frames. Keep streaming minimal yet production-ready.
 - **Runtime toggles**: `runtimeConfig.public.dataSource = 'mock' | 'supabase'`; `runtimeConfig.ai.mock = boolean` to fall back if keys missing.
 
@@ -165,6 +168,7 @@ config/
 - **Data contracts**: Interfaces from sections above match Supabase tables, easing replacement of mock services.
 - **Service layer**: composables call `useFetch` on internal API routes so swapping to direct Supabase client or RLS-safe endpoints is localized.
 - **Auth prep**: `useMockSession` mirrors Supabase session/profile shape; once Supabase auth is ready, replace the composable and update layouts.
+- **Magic-link UX**: `app/plugins/supabase-auth.client.ts` parses the Supabase hash during module load (before Vue Router boots) and strips it while calling `setSession`, eliminating `#access_token` selector warnings on redirects.
 - **Env hygiene**: define `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY` in `.env`, reference via `runtimeConfig`.
 
 ## 8. Open Questions / TODOs
