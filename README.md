@@ -2,6 +2,8 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
+## Current state of the application in progress
+
 ### This project is being revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
 ### See its [live deployment state](https://mini-library-management-system.vercel.app/)
