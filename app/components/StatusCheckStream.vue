@@ -20,7 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import LoadingMessage from './LoadingMessage.vue'
 
 const props = defineProps<{
   loadingMessage?: string

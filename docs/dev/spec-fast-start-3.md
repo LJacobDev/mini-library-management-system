@@ -18,11 +18,11 @@ This streamlined playbook blends every decision we have so far—speed-first del
 0. **Verify toolchain + first backend round-trip**
   - [x] Run `npm install`, then `npm run dev` to ensure the project boots.
   - [x] Update `app.vue` to fetch from `/api/ai/recommend` (temporarily mocked) on mount and render the JSON message in a simple `<div>`.
-  - [x] Implement `/api/ai/recommend.get.ts` (temporary) returning `{ message: 'hello from the backend' }`; confirm the frontend displays it.
-  - Replace the handler with a streaming OpenAI proxy, adapting the `.temp` FastAPI example: stream completion chunks as SSE.
-  - Update `app.vue` to consume the SSE stream and append text as it arrives.
-  - Create `/api/catalog.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
-  - After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
+  - [x] Implement `/api/check/openai.get.ts` (temporary) returning `{ message: 'hello from the backend' }`; confirm the frontend displays it.
+  - [x] Replace the handler with a streaming OpenAI proxy, adapting the `.temp` FastAPI example: stream completion chunks as SSE.
+  - [x] Update `StatusCheckStream.vue` to consume the SSE stream and append text as it arrives.
+  - [ ] Create `/api/catalog.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
+  - [ ] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
 
 1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.
