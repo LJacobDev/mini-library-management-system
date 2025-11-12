@@ -9,14 +9,14 @@ export default defineNuxtConfig({
 
   css: ["~/assets/css/main.css"],
 
-  runtimeConfig: {
-    openai: {
-      apiKey: process.env.OPENAI_API_KEY,
-    },
-    public: {},
-  },
-
   ui: {
     prefix: "Nuxt",
+  },
+
+  runtimeConfig: {
+    server: {
+      openaiApiKey: process.env.OPENAI_API_KEY,
+    },
+    public: {},
   },
 });

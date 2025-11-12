@@ -1,36 +1,60 @@
+import { setHeader, setResponseStatus } from 'h3'
+
 import { streamChatCompletion } from '../../utils/openaiClient'
 
 export default defineEventHandler(async (event) => {
-  setHeader(event, 'Content-Type', 'text/event-stream; charset=utf-8')
+  const { req, res } = event.node
+  let isClosed = false
+
+  req.on('close', () => {
+    isClosed = true
+  })
+
+  const stream = await streamChatCompletion({
+    event,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are an observant assistant that confirms backend integrations are online for a small library management system.',
+      },
+      {
+        role: 'user',
+        content:
+          'Confirm in one upbeat sentence that the OpenAI connection is healthy. Avoid markdown or lists.',
+      },
+    ],
+  })
+
+  setResponseStatus(event, 200)
+  setHeader(event, 'Content-Type', 'text/event-stream')
   setHeader(event, 'Cache-Control', 'no-cache, no-transform')
   setHeader(event, 'Connection', 'keep-alive')
+  res.flushHeaders?.()
 
-  const samplePrompt =
-    'You are a friendly library assistant. Provide one short sentence confirming the OpenAI health check is working.'
-
-  const write = (payload: string) => {
-    event.node.res.write(payload)
-    if (typeof (event.node.res as any).flush === 'function') {
-      ;(event.node.res as any).flush()
-    }
+  const writeEvent = (eventName: string, data: unknown) => {
+    res.write(`event: ${eventName}\n`)
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
   }
 
-  try {
-    for await (const chunk of streamChatCompletion({
-      messages: [{ role: 'user', content: samplePrompt }],
-    })) {
-      for (const line of chunk.split(/\r?\n/)) {
-        write(`data: ${line}\n`)
-      }
-      write('\n')
-    }
+  writeEvent('status', { status: 'connected' })
 
-    write('event: done\ndata: [DONE]\n\n')
-  } catch (error: any) {
-    const message =
-      error?.statusMessage || error?.message || 'OpenAI streaming failed'
-    write(`event: error\ndata: ${JSON.stringify(message)}\n\n`)
+  try {
+    for await (const chunk of stream) {
+      if (isClosed) {
+        break
+      }
+      const delta = chunk.choices?.[0]?.delta?.content
+      if (!delta) {
+        continue
+      }
+      writeEvent('token', { delta })
+    }
+    writeEvent('done', { status: 'done' })
+  } catch (error) {
+    console.error('OpenAI streaming error', error)
+    writeEvent('error', { message: 'Failed to stream OpenAI response.' })
   } finally {
-    event.node.res.end()
+    res.end()
   }
 })

@@ -1,110 +1,54 @@
-import { useRuntimeConfig } from '#imports'
-import { createError } from 'h3'
+import OpenAI from 'openai'
+import type { H3Event } from 'h3'
 
-interface StreamChatOptions {
-  messages: Array<{
-    role: 'user' | 'assistant' | 'system'
-    content: string
-  }>
-  model?: string
+type ChatMessage = {
+	role: 'system' | 'user' | 'assistant'
+	content: string
 }
 
-export async function* streamChatCompletion({
-  messages,
-  model = 'gpt-4o-mini',
-}: StreamChatOptions) {
-  const config = useRuntimeConfig()
-  const apiKey = config.openai?.apiKey || config.openaiApiKey
+let cachedClient: OpenAI | null = null
 
-  if (!apiKey) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'OpenAI API key is not configured',
-    })
-  }
+function getClient(event: H3Event): OpenAI {
+	const {
+		server: { openaiApiKey },
+	} = useRuntimeConfig(event)
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: true,
-    }),
-  })
+	if (!openaiApiKey) {
+		throw createError({
+			statusCode: 500,
+			statusMessage: 'OpenAI API key is not configured.',
+		})
+	}
 
-  if (!response.ok || !response.body) {
-    const errorPayload = await response.text().catch(() => '')
-    throw createError({
-      statusCode: response.status || 500,
-      statusMessage: errorPayload || 'Failed to reach OpenAI',
-    })
-  }
+	if (!cachedClient) {
+		cachedClient = new OpenAI({ apiKey: openaiApiKey })
+	}
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8')
-  let buffer = ''
+	return cachedClient
+}
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) {
-      break
-    }
+interface StreamChatParams {
+	event: H3Event
+	messages: ChatMessage[]
+	model?: string
+	temperature?: number
+	maxTokens?: number
+}
 
-    buffer += decoder.decode(value, { stream: true })
-    const segments = buffer.split('\n\n')
-    buffer = segments.pop() ?? ''
+export async function streamChatCompletion({
+	event,
+	messages,
+	model = 'gpt-4o-mini',
+	temperature = 0.2,
+	maxTokens = 200,
+}: StreamChatParams) {
+	const client = getClient(event)
 
-    for (const segment of segments) {
-      const line = segment.trim()
-      if (!line || line === 'data: [DONE]') {
-        continue
-      }
-
-      if (!line.startsWith('data:')) {
-        continue
-      }
-
-      const json = line.replace(/^data:\s*/, '')
-
-      try {
-        const payload = JSON.parse(json)
-        const delta = payload.choices?.[0]?.delta?.content
-        if (typeof delta === 'string' && delta.length > 0) {
-          yield delta
-        }
-      } catch (error) {
-        console.warn('Failed to parse OpenAI stream chunk', error)
-        continue
-      }
-    }
-  }
-
-  if (buffer.trim().length > 0 && buffer.trim() !== 'data: [DONE]') {
-    for (const segment of buffer.split('\n\n')) {
-      const line = segment.trim()
-      if (!line || line === 'data: [DONE]') {
-        continue
-      }
-
-      if (!line.startsWith('data:')) {
-        continue
-      }
-
-      const json = line.replace(/^data:\s*/, '')
-
-      try {
-        const payload = JSON.parse(json)
-        const delta = payload.choices?.[0]?.delta?.content
-        if (typeof delta === 'string' && delta.length > 0) {
-          yield delta
-        }
-      } catch (error) {
-        console.warn('Failed to parse trailing OpenAI chunk', error)
-      }
-    }
-  }
+	return client.chat.completions.create({
+		model,
+		messages,
+		stream: true,
+		temperature,
+		max_tokens: maxTokens,
+	})
 }

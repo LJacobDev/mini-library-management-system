@@ -1,101 +1,130 @@
-import { onBeforeUnmount, ref, watch } from '#imports'
-
-type MaybeGetter<T> = T | (() => T)
+import {
+	computed,
+	onBeforeUnmount,
+	onMounted,
+	ref,
+	toValue,
+	watch,
+	type MaybeRefOrGetter,
+} from '#imports'
+export type StreamStatus =
+	| 'idle'
+	| 'connecting'
+	| 'streaming'
+	| 'completed'
+	| 'error'
 
 interface UseAiStreamOptions {
-  immediate?: boolean
-  restartOnUrlChange?: boolean
+	url: MaybeRefOrGetter<string>
+	autoStart?: boolean
 }
 
-export function useAiStream(
-  endpoint: MaybeGetter<string>,
-  { immediate = true, restartOnUrlChange = true }: UseAiStreamOptions = {}
-) {
-  const message = ref('')
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+interface StreamMessage {
+	delta?: string
+	status?: string
+	message?: string
+}
 
-  let source: EventSource | null = null
+function parseEventData(raw: string): StreamMessage {
+	try {
+		return JSON.parse(raw) as StreamMessage
+	} catch (error) {
+		console.warn('Failed to parse SSE payload', error, raw)
+		return { message: raw }
+	}
+}
 
-  const resolveEndpoint = () => {
-    const value = typeof endpoint === 'function' ? (endpoint as () => string)() : endpoint
-    return value
-  }
+export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
+	const streamText = ref('')
+	const status = ref<StreamStatus>('idle')
+	const errorMessage = ref<string | null>(null)
 
-  const stop = () => {
-    if (source) {
-      source.close()
-      source = null
-    }
-    isLoading.value = false
-  }
+	let source: EventSource | null = null
 
-  const start = () => {
-    if (!import.meta.client) {
-      return
-    }
+	const closeStream = () => {
+		source?.close()
+		source = null
+	}
 
-    const url = resolveEndpoint()
-    if (!url) {
-      return
-    }
+	const start = (targetUrl?: string) => {
+		const resolvedUrl = targetUrl ?? toValue(url)
+		if (!resolvedUrl) {
+			return
+		}
 
-    stop()
-    message.value = ''
-    error.value = null
-    isLoading.value = true
+		closeStream()
+		streamText.value = ''
+		errorMessage.value = null
+		status.value = 'connecting'
 
-    source = new EventSource(url)
+		source = new EventSource(resolvedUrl)
 
-    source.onmessage = (event) => {
-      if (event.data && event.data !== '[DONE]') {
-        message.value += event.data
-      }
-    }
+		source.addEventListener('status', (event) => {
+			const payload = parseEventData((event as MessageEvent).data)
+			if (payload.status) {
+				status.value =
+					payload.status === 'connected' ? 'connecting' : (payload.status as StreamStatus)
+			}
+		})
 
-    source.addEventListener('done', () => {
-      stop()
-    })
+		source.addEventListener('token', (event) => {
+			const payload = parseEventData((event as MessageEvent).data)
+			if (payload.delta) {
+				streamText.value += payload.delta
+				status.value = 'streaming'
+			}
+		})
 
-    source.addEventListener('error', (event) => {
-      const eventWithData = event as MessageEvent
-      if (eventWithData.data) {
-        try {
-          error.value = JSON.parse(eventWithData.data)
-        } catch {
-          error.value = eventWithData.data
-        }
-      } else {
-        error.value = 'Stream reported an error.'
-      }
-      stop()
-    })
+		source.addEventListener('done', () => {
+			status.value = 'completed'
+			closeStream()
+		})
 
-    source.onerror = () => {
-      if (!error.value) {
-        error.value = 'Stream connection failed.'
-      }
-      stop()
-    }
-  }
+		source.addEventListener('error', (event) => {
+			const payload = parseEventData((event as MessageEvent).data)
+			errorMessage.value = payload.message ?? 'Stream failed.'
+			status.value = 'error'
+			closeStream()
+		})
 
-  if (immediate && import.meta.client) {
-    start()
-  }
+		source.onerror = () => {
+			if (status.value !== 'completed') {
+				errorMessage.value = 'Connection lost.'
+				status.value = 'error'
+			}
+			closeStream()
+		}
+	}
 
-  if (restartOnUrlChange && typeof endpoint === 'function') {
-    watch(() => (endpoint as () => string)(), () => {
-      start()
-    })
-  }
+	const stop = () => {
+		closeStream()
+	}
 
-  onBeforeUnmount(stop)
+	if (autoStart) {
+		onMounted(() => start())
+	}
 
-  return {
-    message,
-    isLoading,
-    error,
-    start,
-    stop,
-  }
+	watch(
+		() => toValue(url),
+		(newUrl, oldUrl) => {
+			if (!newUrl || newUrl === oldUrl) {
+				return
+			}
+			if (autoStart) {
+				start(newUrl)
+			}
+		}
+	)
+
+	onBeforeUnmount(() => {
+		closeStream()
+	})
+
+	return {
+		text: computed(() => streamText.value),
+		status: computed(() => status.value),
+		error: computed(() => errorMessage.value),
+		start,
+		stop,
+	}
 }
