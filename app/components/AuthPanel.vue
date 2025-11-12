@@ -1,7 +1,7 @@
 <template>
   <div class="rounded-3xl bg-slate-900/70 p-6 text-slate-100 shadow-lg">
     <h2 class="mb-4 text-sm font-semibold uppercase tracking-[0.4em] text-cyan-300/80">
-      Please Log In To Continue
+      {{user.id ? 'Welcome!' : 'Please Sign In'}}
     </h2>
 
     <div v-if="user" class="space-y-4">

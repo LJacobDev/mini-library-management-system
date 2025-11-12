@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     },
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KE,
+      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY,
     },
   },
 });
