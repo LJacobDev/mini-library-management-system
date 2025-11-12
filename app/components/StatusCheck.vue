@@ -8,7 +8,7 @@
       <p class="text-xs uppercase tracking-[0.6em] text-cyan-200/80">
         <slot>Checking Status</slot>
       </p>
-      <p v-if="backendMessage">{{ backendMessage }}</p>
+      <p v-if="incomingMessage">{{ incomingMessage }}</p>
       <LoadingMessage v-else >{{ props.loadingMessage }}</LoadingMessage>
     </div>
   </div>
@@ -22,15 +22,15 @@ const props = defineProps<{
   serviceUrl: string,
 }>()
 
-const backendMessage = ref("");
+const incomingMessage = ref("");
 
 onMounted(async () => {
   try {
     const response = await $fetch<{ message?: string }>(props.serviceUrl);
-    backendMessage.value = response?.message ?? JSON.stringify(response);
+    incomingMessage.value = response?.message ?? JSON.stringify(response);
   } catch (error) {
     console.error("Failed to fetch backend message", error);
-    backendMessage.value = "Failed to fetch backend message.";
+    incomingMessage.value = "Failed to fetch backend message.";
   }
 });
 </script>
