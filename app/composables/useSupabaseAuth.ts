@@ -1,4 +1,4 @@
-import type { AuthError, User } from '@supabase/supabase-js'
+import type { AuthError, SupabaseClient, User } from '@supabase/supabase-js'
 
 const USER_STATE_KEY = 'supabase-auth-user'
 const LOADING_STATE_KEY = 'supabase-auth-loading'
@@ -12,6 +12,39 @@ function isAuthSessionMissingError(authError: AuthError | null) {
   const nameMatches = authError.name === 'AuthSessionMissingError'
   const messageMatches = authError.message?.toLowerCase().includes('auth session missing')
   return nameMatches || messageMatches
+}
+
+async function absorbAuthHash(client: SupabaseClient) {
+  if (!import.meta.client) {
+    return
+  }
+
+  const rawHash = window.location.hash ?? ''
+  if (!rawHash || !rawHash.includes('access_token=')) {
+    return
+  }
+
+  const params = new URLSearchParams(rawHash.replace(/^#/, ''))
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+
+  try {
+    if (accessToken && refreshToken) {
+      const { error: sessionError } = await client.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+
+      if (sessionError) {
+        console.error('Supabase auth setSession error', sessionError)
+      }
+    }
+  } catch (hashError) {
+    console.error('Supabase auth hash handling failed', hashError)
+  } finally {
+    const cleanUrl = `${window.location.pathname}${window.location.search}`
+    window.history.replaceState({}, document.title, cleanUrl)
+  }
 }
 
 export function useSupabaseAuth() {
@@ -36,7 +69,19 @@ export function useSupabaseAuth() {
 
   async function refreshSession() {
     const client = useSupabaseBrowserClient()
-    const { data, error: authError } = await client.auth.getUser()
+    await absorbAuthHash(client)
+    let data: { user: User | null } | undefined
+    let authError: AuthError | null = null
+
+    try {
+      const response = await client.auth.getUser()
+      data = response.data
+      authError = response.error
+    } catch (err) {
+      console.error('Supabase auth getUser failed', err)
+      authError = err as AuthError
+      data = { user: null }
+    }
 
     if (isAuthSessionMissingError(authError)) {
       user.value = null
