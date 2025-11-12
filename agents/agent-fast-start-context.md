@@ -48,6 +48,11 @@ _Last updated: 2025-11-11_
 3. Add basic error UI and retry/backoff behavior for OpenAI SSE and Supabase queries to reduce flakiness during demos.
 4. Add a small CI smoke test that hits `/api/check/openai` and `/api/check/supabase` after deploy to verify integrations.
 
+### Security considerations
+
+- **Server-side session verification required**: Any Nuxt server route that mutates Supabase must verify the incoming Supabase session/JWT (using the publishable key or Admin API) before executing service-role operations. Client-side guards only hide UI—they do not protect the API. Without verification, malicious callers could hit the endpoint with no auth and still run service-role queries.
+- Plan to add middleware/utilities (`requireUser` helper) that extracts the Supabase session from cookies/Authorization headers, validates it, checks role claims, then proceeds to the mutation logic.
+
 ## Notes for incoming agents
 
 - The codebase uses `h3` server handlers (Nuxt server routes). Helpers live under `server/utils/` (`openaiClient.ts`, `supabaseServiceClient.ts`).

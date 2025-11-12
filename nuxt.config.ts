@@ -17,6 +17,9 @@ export default defineNuxtConfig({
     server: {
       openaiApiKey: process.env.OPENAI_API_KEY,
     },
-    public: {},
+    public: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KE,
+    },
   },
 });

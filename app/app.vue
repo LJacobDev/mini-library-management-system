@@ -25,6 +25,7 @@ import StatusCheckString from './components/StatusCheckString.vue';
         service-url="/api/check/supabase"
         >Checking Supabase Status</StatusCheckString
       >
+      <AuthPanel />
     </div>
   </div>
 </template>
