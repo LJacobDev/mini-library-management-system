@@ -9,6 +9,11 @@ _Last updated: 2025-11-11_
 - **Database integration**: `/api/check/supabase` connects to the live `mlms-demo` Supabase project, querying table `test-check` (row `id = 1`) with a cached server-side client (`supabaseServiceClient`).
 - **Docs & plans**: `docs/dev/spec-fast-start.md`, `spec-fast-start-2.md`, and `spec-fast-start-3.md` contain the fast-track roadmap; Section 10/11 outline the execution plan and Nuxt UI overlays.
 
+### Live deployment
+
+- The app is deployed to Vercel and confirmed working in production.
+- Vercel project has server-only environment variables configured (OpenAI key, Supabase URL & secret) so server routes run in prod using real services.
+
 ## Work Completed So Far (Timeline)
 
 1. Captured fast-start strategy docs (`spec-fast-start.md`, updates through `spec-fast-start-3.md`).
@@ -22,6 +27,12 @@ _Last updated: 2025-11-11_
    - Updated `/api/check/supabase` to fetch live `test-check` data.
 5. Ensured `LoadingMessage` uses slots and other UI tweaks per quick-turn requests.
 
+6. Deployed to Vercel and validated production:
+   - `/api/check/openai` streams successfully in prod.
+   - `/api/check/supabase` returns live data from `mlms-demo`.
+
+7. Removed SQLite fallback from active plan — Supabase is the canonical data source now.
+
 ## Upcoming Objectives
 
 - **Catalog endpoint**: Build `/api/catalog` backed by Supabase (or mock fallback) and surface results in a simple UI grid (`StatusCheckStream` currently targets health checks only).
@@ -29,5 +40,20 @@ _Last updated: 2025-11-11_
 - **Dashboard routes**: Scaffold `/catalog`, `/account/loans`, `/desk/checkout`, `/admin/media` using Nuxt UI primitives and data composables.
 - **Debug screen polish**: Add `/debug/data` page buttons for OpenAI/Supabase pings and the forthcoming SQLite check.
 - **Docs update cadence**: Continue appending to `spec-fast-start-3.md` and log Nuxt/Tailwind/Supabase deltas in `docs/dev/llm-training-cutoff-updates.md`.
+
+### Prioritized next steps (short list)
+
+1. Wire Supabase client-side auth (publishable key in runtime/public, server-side secret remains protected). This lets us demo protected flows and user-specific data.
+2. Implement `/api/catalog` backed by Supabase and show a minimal catalog page so stakeholders can browse live rows.
+3. Add basic error UI and retry/backoff behavior for OpenAI SSE and Supabase queries to reduce flakiness during demos.
+4. Add a small CI smoke test that hits `/api/check/openai` and `/api/check/supabase` after deploy to verify integrations.
+
+## Notes for incoming agents
+
+- The codebase uses `h3` server handlers (Nuxt server routes). Helpers live under `server/utils/` (`openaiClient.ts`, `supabaseServiceClient.ts`).
+- Keep secrets server-only: use `runtimeConfig.server` or environment variables injected by Vercel. Do NOT expose secrets to `runtimeConfig.public`.
+- If you need to iterate quickly on the AI streaming logic, use the `openaiClient` helper. It centralizes SDK usage and streaming logic.
+
+_Append brief, dated notes here as you make changes so we keep a concise history for fast onboarding._
 
 Keep using this file as the quick context hand-off for agents joining the fast-start track; append notable milestones or shifts as we progress.
