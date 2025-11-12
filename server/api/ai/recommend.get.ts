@@ -1,5 +1,5 @@
 export default defineEventHandler(() => {
   return {
-    message: 'hello from the backend',
+    message: 'Hello from the backend!',
   }
 })

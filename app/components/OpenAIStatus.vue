@@ -8,7 +8,7 @@
       <p class="text-xs uppercase tracking-[0.6em] text-cyan-200/80">
         OpenAI Status Check
       </p>
-      <GeneratingResponse />
+      <LoadingMessage>Checking OpenAI API Status</LoadingMessage>
     </div>
   </div>
 </template>
