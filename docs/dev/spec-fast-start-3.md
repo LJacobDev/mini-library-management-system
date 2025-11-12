@@ -23,6 +23,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - [x] Update `StatusCheckStream.vue` to consume the SSE stream and append text as it arrives.
   - [x] Create `/api/check/supabase.get.ts` returning `{ message: 'hello from database' }`; once confirmed, swap to Supabase query against `mlms-demo` (local dev creds) proving row retrieval.
   - [x] After Supabase data works, plan Supabase auth integration on the frontend so the live demo can require sign-in.
+  - [x] Add server side supabase session verification and add auth verification checks to protected api endpoints
 
 1. **Scaffold shell** (`app.vue`, `layouts/default.vue`, `layouts/dashboard.vue`) with `UApp`, `Header`, `Dashboard*` primitives, Tailwind tokens wired.
 2. **Render catalog (SSR)**: build `/`, `/catalog`, `/catalog/[id]` using `PageHeader`, `PageSection`, `UCard`, `UTabs`; fetch mock data via `useCatalogService` + `useFetch`.
@@ -97,6 +98,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
   - `health/supabase.get.ts`
   - `ai/recommend.post.ts` (SSE), using `event.node.res.write` or `sendStream` helpers.
 - **Supabase handshake**: connect to `mlms-demo` instance ASAP (post-M1). Response contract `{ success: boolean, data?: T, error?: { code: string; message: string } }` matches future Supabase wrappers.
+- **Auth enforcement**: import `requireSupabaseSession` in every mutating Nuxt server route (renewals, checkout, admin CRUD, AI writes) so unauthenticated callers receive a `401` before any Supabase query runs.
 - **OpenAI streaming**: adapt `.temp/api/index.py` logic into Nuxt server route by reading `for await (const chunk of stream)` and writing `data:` frames. Keep streaming minimal yet production-ready.
 - **Runtime toggles**: `runtimeConfig.public.dataSource = 'mock' | 'supabase'`; `runtimeConfig.ai.mock = boolean` to fall back if keys missing.
 

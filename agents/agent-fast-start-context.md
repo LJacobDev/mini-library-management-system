@@ -74,3 +74,10 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Added `server/utils/requireSupabaseSession.ts` to centralize server-side Supabase session validation (HTTP 401 when tokens missing/invalid).
 - 2025-11-12 — Added `/api/debug/auth-check` to exercise `requireSupabaseSession` manually (401 when signed out, JSON user payload when signed in).
 - 2025-11-12 — Synced Supabase access tokens into a client cookie so server APIs can validate sessions via `requireSupabaseSession` without custom headers.
+- 2025-11-12 — `/api/account/loans` now requires `requireSupabaseSession`, returning placeholder loan data only for authenticated users.
+- 2025-11-12 — Reminder: any new mutating server route must import `requireSupabaseSession` before touching Supabase (see `spec-fast-start-3.md`).
+- 2025-11-12 — Added `docs/data/seed.sql` seeding roles, 40 media items (10 per type), and sample loans using Supabase storage cover URLs.
+- 2025-11-12 — Drafted `docs/data/rls-policies.sql` with `current_user_role()` helper and scoped member vs staff policies (select policies to authenticated role, writes limited to librarian/admin).
+- 2025-11-12 — Settled seeding plan: run `schema.sql` then forthcoming `seed.sql` with profiles/media/loans seeded against Supabase; fallback cover URLs will point at our own storage bucket.
+- 2025-11-12 — Storage plan: create public Supabase bucket `covers/` (folders per media type) and upload CC0 images for default/fallback covers before finalizing seeds.
+- 2025-11-12 — Observed browser tab briefly showing `#access_token=...` after magic-link; It has been fixed in nuxt.config.ts head settings
