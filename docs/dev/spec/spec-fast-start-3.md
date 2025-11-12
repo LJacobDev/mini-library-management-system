@@ -38,6 +38,7 @@ This streamlined playbook blends every decision we have so far—speed-first del
 10. **Interactive polish (M2)**: connect renew actions (`/api/loans/:id/renew`), add validations, optimistic updates, toasts.
 11. **SQLite fallback (M4, optional once Supabase live)**: wire `server/db/sqlite.ts`, `/api/debug/sqlite-check.get`, button on debug page.
 12. **Docs sync (M5)**: update this file, `spec-fast-start.md`, and `llm-training-cutoff-updates.md`; stash screenshots/walkthrough notes.
+13. **Clean repo**: Organize / clean files that have been accumulating from the start so that things that are there are only things that need to be there or are left as archives to help explain history
 
 ## 3. Minimum Feature Surface (with Nuxt UI assists)
 

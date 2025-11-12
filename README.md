@@ -2,7 +2,7 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-### This project is being revised with a new [fast start approach](docs/dev/spec-fast-start-3.md)
+### This project is being revised with a new [fast start approach](docs/dev/spec/spec-fast-start-3.md)
 
 ### See its [live deployment state](https://mini-library-management-system.vercel.app/)
 
