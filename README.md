@@ -11,6 +11,7 @@ The goal of this project was to use agentic coding workflows to build a high qua
 ### Running locally
 
 npm install
+
 npm run dev
 
 In its current form it's difficult to run with full features locally 
