@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
+import AgentChatPanel from "~/components/AgentChatPanel.vue";
+import MediaDetailModal from "~/components/catalog/MediaDetailModal.vue";
+import type { CatalogItem } from "~/composables/useCatalogData";
 
 definePageMeta({ ssr: true });
 
@@ -48,11 +51,25 @@ const {
   hasMore,
   isInitialLoading,
   isLoadingMore
-} = useCatalogData({ pageSize: 12 });
+} = await useCatalogData({ pageSize: 12 });
 
-const searchTerm = computed({
-  get: () => filters.q ?? "",
-  set: (value: string) => setSearch(value)
+const searchInput = ref(filters.q ?? "");
+const SEARCH_DEBOUNCE_MS = 300;
+const debouncedSearch = useDebouncedRef(searchInput, SEARCH_DEBOUNCE_MS);
+
+watch(
+  () => filters.q ?? "",
+  (value) => {
+    if (value !== searchInput.value) {
+      searchInput.value = value;
+    }
+  }
+);
+
+watch(debouncedSearch, (value) => {
+  if ((filters.q ?? "") !== value) {
+    setSearch(value);
+  }
 });
 
 const activeType = computed({
@@ -61,57 +78,63 @@ const activeType = computed({
 });
 
 const filteredItems = computed(() => items.value ?? []);
+const catalogError = computed(() => error.value ?? null);
+
+const {
+  media: detailMedia,
+  isOpen: isDetailOpen,
+  isLoading: isDetailLoading,
+  error: detailError,
+  openWithMedia,
+  close: closeDetail,
+} = useMediaDetail();
+
+const { user } = useSupabaseAuth();
+const isAuthenticated = computed(() => Boolean(user.value));
+const isReserving = ref(false);
+const reserveFeedback = ref<string | null>(null);
+
+watch(
+  () => detailMedia.value?.id,
+  () => {
+    isReserving.value = false;
+    reserveFeedback.value = null;
+  }
+);
 
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
 }
 
-function mediaTypeLabel(type: string) {
-  return mediaTypeLabelMap[type] ?? type;
+function handleSelect(item: CatalogItem) {
+  openWithMedia(item);
 }
 
-const loadMoreRef = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
+function resetReserveState() {
+  isReserving.value = false;
+  reserveFeedback.value = null;
+}
 
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          loadMore();
-        }
-      });
-    },
-    { rootMargin: "200px" }
-  );
+function closeDetailModal() {
+  resetReserveState();
+  closeDetail();
+}
 
-  if (loadMoreRef.value) {
-    observer.observe(loadMoreRef.value);
+async function requestReserve() {
+  if (!detailMedia.value || !isAuthenticated.value) {
+    return;
   }
-});
 
-watch(
-  loadMoreRef,
-  (el, prev) => {
-    if (!observer) {
-      return;
-    }
-    if (prev) {
-      observer.unobserve(prev);
-    }
-    if (el) {
-      observer.observe(el);
-    }
+  try {
+    isReserving.value = true;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    reserveFeedback.value = `Reservation request queued for “${detailMedia.value.title}”. (stub)`;
+  } finally {
+    isReserving.value = false;
   }
-);
+}
 
-onBeforeUnmount(() => {
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
-});
 </script>
 
 <template>
@@ -146,6 +169,35 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </section>
+
+        <ClientOnly>
+          <section class="border-t border-white/10 bg-slate-900/70">
+            <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-14">
+              <header class="flex flex-col gap-2 text-center text-white sm:text-left">
+                <p class="text-sm uppercase tracking-widest text-primary-300">Personalized picks</p>
+                <h2 class="text-3xl font-semibold">Ask our AI concierge for recommendations</h2>
+                <p class="text-sm text-slate-300">
+                  Signed-in members can request hand-picked titles with real-time streaming suggestions.
+                </p>
+              </header>
+
+              <div v-if="isAuthenticated" class="min-h-[480px]">
+                <AgentChatPanel />
+              </div>
+              <NuxtCard v-else class="border border-white/10 bg-slate-900/80 p-6 text-center text-slate-200">
+                <h3 class="text-lg font-semibold text-white">Sign in to try the concierge</h3>
+                <p class="mt-2 text-sm text-slate-400">
+                  Log in to request personalized recommendations and track your loans.
+                </p>
+                <div class="mt-4 flex justify-center">
+                  <NuxtButton to="/login" color="primary" icon="i-heroicons-arrow-right-circle">
+                    Go to login
+                  </NuxtButton>
+                </div>
+              </NuxtCard>
+            </div>
+          </section>
+        </ClientOnly>
 
     <section class="bg-slate-900/60">
   <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-14 lg:flex-row lg:items-center">
@@ -190,7 +242,7 @@ onBeforeUnmount(() => {
 
           <div class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
             <NuxtInput
-              v-model="searchTerm"
+              v-model="searchInput"
               icon="i-heroicons-magnifying-glass"
               placeholder="Search by title, author, or tag"
               size="md"
@@ -213,73 +265,54 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          <NuxtCard v-for="n in 6" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
-        </div>
-
-        <div v-else-if="error" class="min-h-[200px] rounded-3xl border border-dashed border-red-500/40 bg-red-950/20 p-10 text-center text-sm text-red-200">
-          Unable to load catalog right now. Please try again shortly.
-        </div>
-
-        <div v-else-if="filteredItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          <NuxtCard
-            v-for="item in filteredItems"
-            :key="item.id"
-            class="flex h-full flex-col overflow-hidden border border-white/5 bg-slate-900/70"
-          >
-            <div class="relative">
-              <NuxtImg :src="item.coverUrl || fallbackCover" alt="" class="h-44 w-full object-cover" loading="lazy" />
-            </div>
-
-            <div class="flex flex-1 flex-col gap-3 p-5">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">
-                  {{ mediaTypeLabel(item.mediaType) }}
-                </p>
-                <h4 class="mt-2 text-lg font-semibold text-white">{{ item.title }}</h4>
-                <p class="text-sm text-slate-400">{{ item.author }}</p>
-              </div>
-
-              <div v-if="item.subjects?.length" class="flex flex-wrap gap-2">
-                <NuxtBadge
-                  v-for="subject in item.subjects"
-                  :key="subject"
-                  color="neutral"
-                  variant="outline"
-                  class="text-xs"
-                >
-                  {{ subject }}
-                </NuxtBadge>
-              </div>
-
-              <div class="mt-auto flex items-center justify-between text-xs text-slate-500">
-                <span>Published {{ item.publishedAt }}</span>
-                <NuxtButton size="xs" variant="ghost" color="primary" icon="i-heroicons-eye" label="Details" />
-              </div>
-            </div>
-          </NuxtCard>
-        </div>
-
-        <div v-else class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
-          No matching items yet. Try a different search or filter.
-        </div>
-
-        <div
-          v-if="hasMore"
-          ref="loadMoreRef"
-          class="mt-8 flex flex-col items-center gap-4 text-sm text-slate-400"
-        >
-          <NuxtButton
-            variant="soft"
-            color="primary"
-            :loading="isLoadingMore"
-            @click="loadMore"
-          >
-            Load more titles
-          </NuxtButton>
-          <p v-if="isLoadingMore" class="text-xs text-slate-500">Fetching more from the stacks…</p>
-        </div>
+        <CatalogGrid
+          :items="filteredItems"
+          :is-initial-loading="isInitialLoading"
+          :is-loading-more="isLoadingMore"
+          :has-more="hasMore"
+          :error="catalogError"
+          :fallback-cover="fallbackCover"
+          :media-type-labels="mediaTypeLabelMap"
+          @select="handleSelect"
+          @load-more="loadMore"
+        />
       </div>
     </section>
+
+    <MediaDetailModal
+      :open="isDetailOpen"
+      :media="detailMedia"
+      :loading="isDetailLoading"
+      :error="detailError"
+      @close="closeDetailModal"
+    >
+      <template #actions>
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p v-if="!isAuthenticated" class="text-xs text-slate-400">
+            Sign in to reserve this title online.
+          </p>
+          <div class="flex w-full justify-end gap-2 sm:w-auto">
+            <NuxtButton variant="ghost" color="neutral" :disabled="isDetailLoading" @click="closeDetailModal">
+              Close
+            </NuxtButton>
+            <NuxtButton
+              v-if="isAuthenticated"
+              color="primary"
+              :loading="isReserving"
+              :disabled="isDetailLoading || !detailMedia"
+              @click="requestReserve"
+            >
+              Reserve
+            </NuxtButton>
+            <NuxtButton v-else color="primary" variant="soft" disabled>
+              Reserve
+            </NuxtButton>
+          </div>
+        </div>
+        <p v-if="reserveFeedback" class="text-xs text-primary-300">
+          {{ reserveFeedback }}
+        </p>
+      </template>
+    </MediaDetailModal>
   </main>
 </template>

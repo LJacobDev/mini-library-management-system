@@ -1,14 +1,16 @@
 # Fast Start Agent Context:  **LLM Agents**, read this section and compare it against our newer experiences, and made living edits to it so that it reflects the current state of the application so that we know what we have, and what we need to do
 
-_Last updated: 2025-11-12_
+_Last updated: 2025-11-13_
 
 ## Current State Snapshot
 
-- **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. The authenticated dashboard layout remains in place for staff/member pages.
-- **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Both landing and dashboard catalog views consume it through the shared composable, with loading/error states and responsive card grids.
+- **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. Auth UX refresh is queued: guests keep the current header; authenticated users will gain a profile dropdown + sign-out actions, while staff additionally pick up a sidebar-driven dashboard.
+- **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Landing and dashboard catalog views now share the `CatalogGrid` component fed by `useCatalogData`, keep SSR and hydration in sync, reuse a shared `useDebouncedRef` composable for 300 ms search input debouncing, render via Tailwind responsive grids from the first paint, and elevate card clicks into the shared `MediaDetailModal` for richer item context with freshly added bibliographic metadata (ISBN, language, page counts, runtime).
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
+**AI concierge**: `/api/ai/recommend` now accepts POST prompts, extracts keywords, queries Supabase, and streams role-aware summaries over SSE. `AgentChatPanel` renders the experience on the landing page (members only) and `/debug`, showing live message bubbles and recommendation cards backed by the streaming endpoint. `useAgentChat` handles aborts, retries, and metadata parsing.
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS.
-- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell.
+- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell. Reservation API work is scoped but paused after the working UI stub so we can prioritize staff tooling.
+**Developer tooling**: `/pages/debug/index.vue` (dev-only) now embeds the full `AgentChatPanel` alongside health-check buttons so we can exercise the streaming concierge without leaving the console. Existing cards still cover OpenAI/Supabase checks and admin circulation endpoints.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
 
 ### Live deployment
@@ -39,18 +41,19 @@ _Last updated: 2025-11-12_
 
 ## Upcoming Objectives
 
-- **Catalog UX polish**: Add richer pagination (infinite scroll or numbered pagination controls shared across views), expose total counts, and introduce empty-state education.
-- **Reservation & account flows**: Wire a “Reserve/Sign in” modal stack from the catalog cards, then hydrate `/account/loans` with real Supabase data behind auth.
-- **Staff tooling**: Kick off `/desk/checkout` and `/admin/media` with Supabase mutations guarded by `requireSupabaseSession`, including optimistic UI for checkouts/returns.
-- **Debugging & telemetry**: Expand the debug console with buttons querying the other Supabase tables (reservations, loan events, desk logs) to validate seeds and RLS paths.
-- **Documentation sync**: Keep `spec-fast-start-*` and `docs/dev/llm-training-cutoff-updates.md` aligned with Nuxt/Tailwind/Supabase learnings from today’s work.
+- **Auth-aware headers & routing**: Implement split guest/auth headers, profile dropdown with logout, and role-based redirects (members remain on `/`, staff head to the new `/dashboard`).
+- **Dashboard experience**: Build the `/dashboard` layout with shared header + staff sidebar, default to catalog grid, and surface quick switches for check-out, check-in, and admin catalog management views.
+- **Staff tooling UI**: Wire librarian check-out/check-in screens and admin catalog CRUD panels to the existing Supabase APIs with loading/error feedback so endpoints can be exercised end to end.
+- **Member enhancements**: Add AI recommendation chat on the landing page for authenticated members and prep `/account/loans`/`/account/reservations` once reservation API resumes.
+- **Reservation flow (paused)**: Resume real reservation endpoint + modal confirm dialog after dashboard tooling ships; keep plan documented for quick restart.
+- **Documentation & testing**: Keep `spec-fast-start-*`, `agent-fast-start-context`, and `llm-training-cutoff-updates` in sync; add smoke tests when UI stabilizes.
 
 ### Prioritized next steps (short list)
 
-1. Elevate catalog browsing: add shared pagination helpers (or infinite scroll), ensure filter state syncs to the URL, and capture analytics hooks for future insights.
-2. Build the catalog → reserve flow: surface a modal with call-to-action, route guests to auth, and record holds for signed-in users via a new Supabase API.
-3. Hydrate `/account/loans` with live Supabase data respecting RLS, including status badges and due-date warnings.
-4. Prototype desk/admin actions (checkout, hold approval) using `requireSupabaseSession` and add integration smoke checks for catalog/account APIs post-deploy.
+1. Ship role-aware header/sidebar + routing so member/staff journeys diverge appropriately.
+2. Stand up `/dashboard` with catalog, circulation, and admin views powered by existing APIs.
+3. Polish the member AI concierge UI (styling, history, filters) and wire front-end prompts into dashboard tooling where useful.
+4. Once dashboard is live, resume reservation endpoint + account surfaces before moving to tests/palette refresh.
 
 ### Security considerations
 
@@ -108,3 +111,43 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Updated the brand link behavior to smooth-scroll to the top of `/` when already on the landing page.
 - 2025-11-12 — Normalized catalog media-type filters to Supabase enums (`book`, `video`, `audio`, `other`) and added backend guard so invalid filter values no longer break `/api/catalog`.
 - 2025-11-12 — Added `/api/catalog` pagination metadata, extended `useCatalogData` with infinite scroll accumulation, and converted landing/dashboard catalog views to use intersection-observed load-more triggers with manual button fallback.
+- 2025-11-12 — Introduced `useMediaDetail` composable to manage selected catalog items, modal open state, and future detail fetching hooks.
+- 2025-11-12 — Debounced catalog search inputs (landing + dashboard views at 300 ms with watcher cleanup) to reduce redundant `/api/catalog` requests while typing.
+- 2025-11-12 — Centered `/login` auth panel horizontally by constraining container width on larger screens.
+- 2025-11-12 — Replaced custom `.catalog-grid` CSS with Tailwind utility classes so catalog tiles render multi-column immediately on load.
+- 2025-11-12 — Guarded client-only search debounces and awaited `useCatalogData` to keep SSR/client catalog output aligned, clearing hydration mismatches.
+- 2025-11-12 — Refactored `/pages/catalog.vue` to use the shared `CatalogGrid` with unified filters, summary badge header, and search reset, removing duplicated markup and restoring build health.
+- 2025-11-13 — Extracted shared `useDebouncedRef` composable powering landing and dashboard catalog search inputs, removed redundant inline timeouts, and simplified dashboard filter controls.
+- 2025-11-13 — Decided Media deletion via hard delete; add soft-delete column later if required.
+- 2025-11-13 — Introduced `server/utils/supabaseApi.ts` consolidating role-aware session checks plus Supabase error helpers ahead of admin/loan route work.
+- 2025-11-13 — Added `/api/admin/media` GET handler with admin-only Supabase query, pagination, search, and extended media fields.
+- 2025-11-13 — Added `/api/admin/media` POST handler validating inputs and inserting new catalog rows into Supabase.
+- 2025-11-13 — Added `/api/admin/media/:id` PATCH handler for partial updates with enum validation and normalization.
+- 2025-11-13 — Added `/api/admin/media/:id` DELETE handler performing hard deletes per fast-start decision.
+- 2025-11-13 — Extended `/pages/debug` console with admin media buttons (list/create/update/delete) using sample payload prompts.
+- 2025-11-13 — Added `/api/loans` GET handler for librarian/admin filtered loan listings with pagination and status derivation.
+- 2025-11-13 — Added `/api/loans` POST handler for librarian/admin checkouts with conflict guard and metadata capture.
+- 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
+- 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
+- 2025-11-13 — Added `/api/loans/:id/renew` POST handler allowing staff or the borrowing member when no reservations block the item.
+- 2025-11-13 — Wired catalog pages to the new `MediaDetailModal`; adjusted the modal component to follow Nuxt UI’s `v-model:open`/slot conventions so card clicks should surface the detail overlay for future enrichment.
+- 2025-11-13 — Extended `/pages/debug` console with loan controls (list/checkout/return/renew) for rapid circulation testing.
+- 2025-11-13 — Wired catalog pages to the new `MediaDetailModal`; adjusted the modal component to follow Nuxt UI’s `v-model:open`/slot conventions so card clicks should surface the detail overlay for future enrichment.
+- 2025-11-13 — Filled in `MediaDetailModal` UI with cover art, summary, metadata, and availability sections that only render populated fields, ready for the upcoming Reserve action wiring.
+- 2025-11-13 — Updated Supabase error normalization to translate common PostgREST auth and permission failures into correct 4xx status codes so unauthorized renew attempts no longer surface generic 500s.
+- 2025-11-13 — Implemented `/api/ai/recommend` with Supabase-backed picks plus optional OpenAI summary, wired a matching debug console button, and fixed the button loading indicator to track by label.
+- 2025-11-13 — Authored `docs/dev/improvements/media-embeddings.md` outlining the chat-vs-embedding recommendation paths and updated `/api/ai/recommend` to apply role-specific system prompts for member, librarian, and admin summaries.
+- 2025-11-13 — Rebuilt `/api/ai/recommend` as a POST endpoint: prompt validation, keyword extraction (LLM + fallback), Supabase query, and role-aware summary response; updated debug console button and API notes accordingly.
+- 2025-11-13 — Completed manual QA of the new `MediaDetailModal` on landing and dashboard catalog pages; verified auth-aware Reserve stub flow, success messaging reset, and slot-based action layout ahead of real API wiring.
+- 2025-11-13 — Expanded `/api/catalog` select + mapper to include ISBN, language, page counts, and duration minutes so the detail modal renders richer metadata without extra fetches.
+- 2025-11-13 — `/api/ai/recommend` now streams summaries via SSE, sending metadata before tokens so the upcoming chat UI can light up immediately while debug tooling stays compatible.
+- 2025-11-13 — Scaffolded `AgentChatPanel` with Nuxt UI chat primitives and preview placeholders ahead of wiring to the streaming endpoint.
+- 2025-11-13 — Hooked `AgentChatPanel` to `useAgentChat`, enabling real prompt submission, streaming status, and retry handling while keeping placeholder recommendations for empty states.
+- 2025-11-13 — Enriched chat recommendation rail with skeleton loaders, empty-state guidance, and richer metadata badges ahead of page integration.
+- 2025-11-13 — Mounted `AgentChatPanel` on the landing page for signed-in members and within the `/debug` console for rapid streaming verification.
+- 2025-11-13 — Updated agent chat fetch + debug console to send event-stream headers/bodies so POST prompts stream correctly and bubble meaningful errors when auth or payload is missing.
+- 2025-11-13 — Converted `AgentChatPanel` to the configured `Nuxt*` component prefix, simplified the message layout, and confirmed end-to-end streaming works in `/` and `/debug` with live metadata cards; remaining work is visual polish/historical transcript.
+- 2025-11-13 — Added a dev-only "View as" selector to `AppHeader` so impersonation UX can be exercised once the `/api/debug/impersonate` endpoint lands; controls currently POST and reload when the backend arrives, failing quietly during development until the API is ready.
+- 2025-11-13 — Implemented `/api/debug/impersonate` to toggle a dev-only cookie that overrides roles, updated `getSupabaseContext` to honor the cookie (while tracking actual vs impersonated role), and wired the header selector to persist/read the override so staff tooling can be demoed without switching accounts.
+- 2025-11-13 — Surfaced impersonation status in `AppHeader`: the "View as" control now shows a "Viewing as" pill plus the real role label whenever the dev cookie is active, giving instant visual confirmation of the effective vs actual role.
+- 2025-11-13 — Paused follow-up work to propagate impersonation state across dashboard components; keep the idea bookmarked but focus next on higher-impact UI polish and staff tooling.

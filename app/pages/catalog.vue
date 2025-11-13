@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
+import MediaDetailModal from "~/components/catalog/MediaDetailModal.vue";
+import type { CatalogItem } from "~/composables/useCatalogData";
 
 definePageMeta({
   layout: "dashboard",
@@ -7,40 +9,16 @@ definePageMeta({
 });
 
 useHead({
-  title: "Catalog • Mini Library Management System"
+  title: "Catalog • Library Console"
 });
 
 const breadcrumbs = [
-  { label: "Home", to: "/status" },
+  { label: "Workspace", to: "/status" },
   { label: "Catalog", to: "/catalog" }
 ];
 
 const fallbackCover =
   "https://images.unsplash.com/photo-1526313199968-70e399ffe791?auto=format&fit=crop&w=512&q=80";
-
-const {
-  items,
-  error,
-  filters,
-  setSearch,
-  setMediaType,
-  setPage,
-  loadMore,
-  hasMore,
-  isInitialLoading,
-  isLoadingMore,
-  total
-} = useCatalogData();
-
-const searchTerm = computed({
-  get: () => filters.q ?? "",
-  set: (value: string) => setSearch(value)
-});
-
-const activeType = computed({
-  get: () => filters.type ?? "",
-  set: (value: string) => setMediaType(value || undefined)
-});
 
 const mediaTypeFilters = [
   { label: "All", value: "" },
@@ -50,13 +28,6 @@ const mediaTypeFilters = [
   { label: "Other", value: "other" }
 ];
 
-const displayItems = computed(() => items.value ?? []);
-
-function selectType(value: string) {
-  activeType.value = value;
-  setPage(1);
-}
-
 const mediaTypeLabelMap: Record<string, string> = {
   book: "Book",
   video: "Video",
@@ -64,190 +35,220 @@ const mediaTypeLabelMap: Record<string, string> = {
   other: "Other"
 };
 
-function mediaTypeLabel(type: string) {
-  return mediaTypeLabelMap[type] ?? type;
-}
+const {
+  items,
+  total,
+  error,
+  filters,
+  setSearch,
+  setMediaType,
+  setPage,
+  loadMore,
+  hasMore,
+  isInitialLoading,
+  isLoadingMore
+} = await useCatalogData();
 
-const loadMoreRef = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
+const catalogItems = computed(() => items.value ?? []);
+const catalogError = computed(() => error.value ?? null);
+const visibleCount = computed(() => catalogItems.value.length);
+const totalCount = computed(() => total.value ?? 0);
 
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          loadMore();
-        }
-      });
-    },
-    { rootMargin: "200px" }
-  );
-
-  if (loadMoreRef.value) {
-    observer.observe(loadMoreRef.value);
-  }
-});
+const searchInput = ref(filters.q ?? "");
+const SEARCH_DEBOUNCE_MS = 300;
+const debouncedSearch = useDebouncedRef(searchInput, SEARCH_DEBOUNCE_MS);
 
 watch(
-  loadMoreRef,
-  (el, prev) => {
-    if (!observer) {
-      return;
-    }
-    if (prev) {
-      observer.unobserve(prev);
-    }
-    if (el) {
-      observer.observe(el);
+  () => filters.q ?? "",
+  (value) => {
+    if (value !== searchInput.value) {
+      searchInput.value = value;
     }
   }
 );
 
-onBeforeUnmount(() => {
-  if (observer) {
-    observer.disconnect();
-    observer = null;
+watch(debouncedSearch, (value) => {
+  if ((filters.q ?? "") !== value) {
+    setSearch(value);
   }
 });
+
+const activeType = computed({
+  get: () => filters.type ?? "",
+  set: (value: string) => setMediaType(value || undefined)
+});
+
+const hasActiveFilters = computed(() => Boolean((filters.q ?? "").length || (filters.type ?? "")));
+
+const {
+  media: detailMedia,
+  isOpen: isDetailOpen,
+  isLoading: isDetailLoading,
+  error: detailError,
+  openWithMedia,
+  close: closeDetail,
+} = useMediaDetail();
+
+const { user } = useSupabaseAuth();
+const isAuthenticated = computed(() => Boolean(user.value));
+const isReserving = ref(false);
+const reserveFeedback = ref<string | null>(null);
+
+watch(
+  () => detailMedia.value?.id,
+  () => {
+    isReserving.value = false;
+    reserveFeedback.value = null;
+  }
+);
+
+function selectType(value: string) {
+  activeType.value = value;
+  setPage(1);
+}
+
+function handleSelect(item: CatalogItem) {
+  openWithMedia(item);
+}
+
+function resetReserveState() {
+  isReserving.value = false;
+  reserveFeedback.value = null;
+}
+
+function closeDetailModal() {
+  resetReserveState();
+  closeDetail();
+}
+
+async function requestReserve() {
+  if (!detailMedia.value || !isAuthenticated.value) {
+    return;
+  }
+
+  try {
+    isReserving.value = true;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    reserveFeedback.value = `Reservation request queued for “${detailMedia.value.title}”. (stub)`;
+  } finally {
+    isReserving.value = false;
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-6">
-    <NuxtPageHeader
-      title="Catalog"
-      description="Browse and manage the library's collection. Filters, search, and detailed media cards will live here."
-      :breadcrumbs="breadcrumbs"
-    />
+  <div class="space-y-8">
+    <NuxtPageHeader>
+      <template #title>Catalog</template>
+      <template #description>
+        Search the collection, review availability, and keep metadata current for every title in the system.
+      </template>
+      <template #breadcrumb>
+        <NuxtBreadcrumb :items="breadcrumbs" />
+      </template>
+    </NuxtPageHeader>
 
     <NuxtPageSection>
-      <template #header>
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="space-y-1">
-            <h3 class="text-base font-semibold text-slate-200">Collection preview</h3>
-            <p class="text-xs text-slate-500">Search and filter the live Supabase catalog.</p>
-          </div>
+      <template #title>Browse collection</template>
+      <template #description>
+        Use quick filters or search to find materials. Select an item to open its detail drawer.
+      </template>
+
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <NuxtInput
+          v-model="searchInput"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Search by title, author, or tag"
+          size="md"
+          class="w-full lg:w-96"
+        />
+
+        <div class="flex flex-wrap items-center gap-2">
           <NuxtButton
+            v-for="filter in mediaTypeFilters"
+            :key="filter.value"
+            :variant="activeType === filter.value ? 'soft' : 'ghost'"
             color="primary"
-            variant="soft"
-            icon="i-heroicons-arrow-down-tray"
-            label="Export list"
-          />
+            size="sm"
+            class="capitalize"
+            @click="selectType(filter.value)"
+          >
+            {{ filter.label }}
+          </NuxtButton>
+
         </div>
-        <div class="mt-4 flex flex-wrap items-center gap-4">
-          <NuxtInput
-            v-model="searchTerm"
-            icon="i-heroicons-magnifying-glass"
-            placeholder="Search title, creator, or subject"
-            size="md"
-            class="w-full sm:w-72"
-          />
-          <div class="flex flex-wrap items-center gap-2">
+      </div>
+
+      <CatalogGrid
+        class="mt-6"
+        :items="catalogItems"
+        :is-initial-loading="isInitialLoading"
+        :is-loading-more="isLoadingMore"
+        :has-more="hasMore"
+        :error="catalogError"
+        :fallback-cover="fallbackCover"
+        :media-type-labels="mediaTypeLabelMap"
+        @select="handleSelect"
+        @load-more="loadMore"
+      >
+        <template #header>
+          <div class="rounded-xl border border-white/5 bg-slate-900/60 p-4 text-sm text-slate-300">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                Showing
+                <span class="font-semibold text-slate-100">{{ visibleCount }}</span>
+                of
+                <span class="font-semibold text-slate-100">{{ totalCount }}</span>
+                catalog entries
+              </p>
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <NuxtBadge v-if="hasActiveFilters" variant="soft" color="primary" class="uppercase tracking-wide">
+                  Filters active
+                </NuxtBadge>
+                <NuxtBadge v-else variant="soft" color="neutral" class="uppercase tracking-wide">
+                  All media types
+                </NuxtBadge>
+              </div>
+            </div>
+          </div>
+        </template>
+      </CatalogGrid>
+    </NuxtPageSection>
+
+    <MediaDetailModal
+      :open="isDetailOpen"
+      :media="detailMedia"
+      :loading="isDetailLoading"
+      :error="detailError"
+      @close="closeDetailModal"
+    >
+      <template #actions>
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p v-if="!isAuthenticated" class="text-xs text-slate-400">
+            Sign in to reserve this title online.
+          </p>
+          <div class="flex w-full justify-end gap-2 sm:w-auto">
+            <NuxtButton variant="ghost" color="neutral" :disabled="isDetailLoading" @click="closeDetailModal">
+              Close
+            </NuxtButton>
             <NuxtButton
-              v-for="filter in mediaTypeFilters"
-              :key="filter.value"
-              :variant="activeType === filter.value ? 'soft' : 'ghost'"
+              v-if="isAuthenticated"
               color="primary"
-              size="sm"
-              class="capitalize"
-              @click="selectType(filter.value)"
+              :loading="isReserving"
+              :disabled="isDetailLoading || !detailMedia"
+              @click="requestReserve"
             >
-              {{ filter.label }}
+              Reserve
+            </NuxtButton>
+            <NuxtButton v-else color="primary" variant="soft" disabled>
+              Reserve
             </NuxtButton>
           </div>
         </div>
+        <p v-if="reserveFeedback" class="text-xs text-primary-300">
+          {{ reserveFeedback }}
+        </p>
       </template>
-
-      <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        <NuxtCard v-for="n in 9" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
-      </div>
-
-      <div
-        v-else-if="error"
-        class="grid min-h-80 place-content-center rounded-2xl border border-dashed border-red-500/40 bg-red-950/20 p-12 text-center text-sm text-red-200"
-      >
-        Unable to load the catalog right now. Please refresh or check the Supabase connection.
-      </div>
-
-      <div v-else-if="displayItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        <NuxtCard
-          v-for="item in displayItems"
-          :key="item.id"
-          class="flex flex-col overflow-hidden border border-white/5 bg-slate-900/60"
-        >
-          <div class="relative">
-            <NuxtImg
-              :src="item.coverUrl || fallbackCover"
-              alt=""
-              class="h-44 w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-
-          <div class="flex flex-1 flex-col gap-4 p-5">
-            <div>
-              <p class="text-xs uppercase tracking-wide text-slate-400">
-                {{ mediaTypeLabel(item.mediaType) }}
-              </p>
-              <h4 class="mt-2 text-lg font-semibold text-slate-100">{{ item.title }}</h4>
-              <p class="text-sm text-slate-400">{{ item.author }}</p>
-            </div>
-
-            <div v-if="item.subjects?.length" class="flex flex-wrap gap-2">
-              <NuxtBadge
-                v-for="subject in item.subjects"
-                :key="subject"
-                color="neutral"
-                variant="outline"
-                class="text-xs"
-              >
-                {{ subject }}
-              </NuxtBadge>
-            </div>
-
-            <div class="mt-auto flex items-center justify-between text-xs text-slate-500">
-              <span>Published {{ item.publishedAt }}</span>
-              <NuxtButton
-                size="xs"
-                variant="ghost"
-                color="primary"
-                icon="i-heroicons-eye"
-                label="Details"
-              />
-            </div>
-          </div>
-        </NuxtCard>
-      </div>
-
-      <div
-        v-else
-        class="grid min-h-80 place-content-center rounded-2xl border border-dashed border-slate-700/70 bg-slate-900/40 p-12 text-center text-sm text-slate-400"
-      >
-        No titles match the current filters. Try adjusting search or media type.
-      </div>
-
-      <div
-        v-if="hasMore"
-        ref="loadMoreRef"
-        class="mt-8 flex flex-col items-center gap-3 text-xs text-slate-500"
-      >
-        <NuxtButton
-          size="sm"
-          variant="soft"
-          color="primary"
-          :loading="isLoadingMore"
-          @click="loadMore"
-        >
-          Load more titles
-        </NuxtButton>
-        <span v-if="isLoadingMore">Syncing the next shelf…</span>
-      </div>
-
-      <template #footer>
-        <div class="flex flex-col gap-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <span>Showing {{ displayItems.length }} of {{ total }} titles</span>
-          <span v-if="!hasMore" class="text-slate-500">End of catalog results</span>
-        </div>
-      </template>
-    </NuxtPageSection>
+    </MediaDetailModal>
   </div>
 </template>

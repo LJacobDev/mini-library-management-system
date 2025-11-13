@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import type { H3Event } from 'h3'
+import { createError, type H3Event } from 'h3'
 
 type ChatMessage = {
 	role: 'system' | 'user' | 'assistant'
@@ -35,6 +35,10 @@ interface StreamChatParams {
 	maxTokens?: number
 }
 
+interface ChatCompletionParams extends StreamChatParams {
+	responseFormat?: Parameters<OpenAI['chat']['completions']['create']>[0]['response_format']
+}
+
 export async function streamChatCompletion({
 	event,
 	messages,
@@ -50,5 +54,24 @@ export async function streamChatCompletion({
 		stream: true,
 		temperature,
 		max_tokens: maxTokens,
+	})
+}
+
+export async function chatCompletion({
+	event,
+	messages,
+	model = 'gpt-4o-mini',
+	temperature = 0.2,
+	maxTokens = 400,
+	responseFormat,
+}: ChatCompletionParams) {
+	const client = getClient(event)
+
+	return client.chat.completions.create({
+		model,
+		messages,
+		temperature,
+		max_tokens: maxTokens,
+		response_format: responseFormat,
 	})
 }

@@ -3,7 +3,7 @@ import type { H3Event } from 'h3'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { getSupabaseServiceClient } from './supabaseServiceClient'
 
-interface SupabaseSessionResult {
+export interface SupabaseSessionResult {
   supabase: SupabaseClient
   user: User
   accessToken: string

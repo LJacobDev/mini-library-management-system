@@ -14,7 +14,7 @@ interface CatalogFilters {
   pageSize?: number
 }
 
-interface CatalogItem {
+export interface CatalogItem {
   id: string
   title: string
   author: string
@@ -42,7 +42,7 @@ const DEFAULT_FILTERS: Required<Pick<CatalogFilters, 'page' | 'pageSize'>> = {
   pageSize: 24,
 }
 
-export function useCatalogData(initialFilters: CatalogFilters = {}) {
+export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   const filters = reactive<CatalogFilters & typeof DEFAULT_FILTERS>({
     ...DEFAULT_FILTERS,
     ...initialFilters,
@@ -61,8 +61,7 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
       `${queryParams.value.q ?? ''}:${queryParams.value.type ?? ''}`
   )
 
-  const itemsStore = ref<CatalogItem[]>([])
-  const { data, pending, error, refresh } = useAsyncData<CatalogResponse>(
+  const { data, pending, error, refresh } = await useAsyncData<CatalogResponse>(
     cacheKey,
     () =>
       $fetch<CatalogResponse>('/api/catalog', {
@@ -71,6 +70,26 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     {
       watch: [queryParams],
     }
+  )
+
+  const itemsStore = ref<CatalogItem[]>(data.value?.items ? [...data.value.items] : [])
+
+  watch(
+    () => data.value,
+    (payload) => {
+      if (!payload) {
+        return
+      }
+
+      if (payload.page <= 1) {
+        itemsStore.value = [...payload.items]
+      } else {
+        const existing = new Set(itemsStore.value.map((item) => item.id))
+        const merged = payload.items.filter((item) => !existing.has(item.id))
+        itemsStore.value = [...itemsStore.value, ...merged]
+      }
+    },
+    { immediate: true }
   )
 
   watch(
