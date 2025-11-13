@@ -29,14 +29,16 @@ Minimum viable implementation:
 2. Use Supabase `from('media_items')` CRUD calls.
 3. Return full updated row to caller.
 
-## Librarian — Circulation Actions
+## Circulation Actions
+
+Auth guard lives on `/api/loans/*` handlers; middleware enforces librarian/admin roles for mutating requests.
 
 | Route | Method | Purpose | Auth | Payload | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `/api/librarian/loans` | GET | View open loans + filters | `librarian` | query: `memberId?`, `status?` | join `profiles` for member names |
-| `/api/librarian/loans` | POST | Checkout item to member | `librarian` | body: `{ memberId, copyId, dueAt? }` | create loan, mark copy `status='checked_out'` |
-| `/api/librarian/loans/:loanId/return` | POST | Check-in item | `librarian` | body: `{ condition?, notes? }` | complete loan, mark copy available |
-| `/api/librarian/loans/:loanId/renew` | POST | Extend due date | `librarian` | body: `{ dueAt }` | ensure copy still checked out |
+| `/api/loans` | GET | View open loans + filters | `librarian+` | query: `memberId?`, `status?` | join `profiles` for member names |
+| `/api/loans` | POST | Checkout item to member | `librarian+` | body: `{ memberId, copyId, dueAt? }` | conditional update: `UPDATE media_copies SET status='checked_out' WHERE id=:copyId AND status='available' RETURNING` |
+| `/api/loans/:loanId/return` | POST | Check-in item | `librarian+` | body: `{ condition?, notes? }` | complete loan, mark copy available |
+| `/api/loans/:loanId/renew` | POST | Extend due date | `librarian+` | body: `{ dueAt }` | ensure copy still checked out |
 
 Minimum viable implementation:
 1. Enforce status transitions (no double checkout, etc.).
