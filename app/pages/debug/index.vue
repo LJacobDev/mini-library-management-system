@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { createError } from "h3";
+
+type SessionState =
+  | { status: "loading" }
+  | { status: "guest" }
+  | { status: "authenticated"; role: string | null; email: string | null };
 
 const devOnlyGuard = defineNuxtRouteMiddleware(() => {
   if (import.meta.dev) {
@@ -54,6 +59,54 @@ const endpoints: DebugEndpoint[] = [
     description: "Uses current mock composable for quick comparison.",
     method: "LOCAL",
     path: "mock"
+  },
+  {
+    label: "AI: recommend sample",
+    description: "POST /api/ai/recommend with a prompt payload (requires member session)",
+    method: "POST",
+    path: "/api/ai/recommend",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {
+          body: {
+            prompt: "I love space adventures with found families.",
+            filters: { mediaType: "book", limit: 4 }
+          }
+        };
+      }
+
+      const promptText = window.prompt(
+        "Describe the books or media you want recommendations for",
+        "Epic sci-fi with strong female leads"
+      );
+      if (!promptText || !promptText.trim().length) {
+        throw new Error("Recommendation cancelled: prompt text required.");
+      }
+
+      const mediaType = window.prompt(
+        "Media type filter (book, video, audio, other, optional)",
+        ""
+      );
+      const limit = window.prompt("How many recommendations? (1-12)", "6");
+
+      const filters: Record<string, unknown> = {};
+      if (mediaType && mediaType.trim().length) {
+        filters.mediaType = mediaType.trim().toLowerCase();
+      }
+      if (limit && limit.trim().length) {
+        const parsed = Number.parseInt(limit, 10);
+        if (!Number.isNaN(parsed)) {
+          filters.limit = parsed;
+        }
+      }
+
+      return {
+        body: {
+          prompt: promptText.trim(),
+          filters: Object.keys(filters).length ? filters : undefined
+        }
+      };
+    }
   },
   {
     label: "Admin: list media",
@@ -137,11 +190,120 @@ const endpoints: DebugEndpoint[] = [
         path: `/api/admin/media/${id}`,
       };
     },
+  },
+  {
+    label: "Loans: list",
+    description: "GET /api/loans?page=1 (requires librarian/admin session)",
+    method: "GET",
+    path: "/api/loans",
+    prepare: () => ({ path: "/api/loans?page=1" }),
+  },
+  {
+    label: "Loans: checkout",
+    description: "POST /api/loans to checkout media to a member",
+    method: "POST",
+    path: "/api/loans",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      const memberId = window.prompt("Member ID (UUID)", "");
+      const mediaId = window.prompt("Media ID (UUID)", "");
+      const dueDate = window.prompt("Due date (ISO, optional)", "");
+      const note = window.prompt("Checkout note (optional)", "");
+
+      if (!memberId || !mediaId) {
+        throw new Error("Checkout cancelled: member and media IDs required.");
+      }
+
+      return {
+        body: {
+          memberId: memberId.trim(),
+          mediaId: mediaId.trim(),
+          dueDate: dueDate && dueDate.trim().length ? dueDate.trim() : undefined,
+          note: note && note.trim().length ? note.trim() : undefined,
+        },
+      };
+    },
+  },
+  {
+    label: "Loans: return",
+    description: "POST /api/loans/:id/return with optional condition note",
+    method: "POST",
+    path: "/api/loans/:id/return",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      const loanId = window.prompt("Loan ID", "");
+      if (!loanId) {
+        throw new Error("Return cancelled: loan ID required.");
+      }
+
+      const condition = window.prompt("Condition notes (optional)", "");
+      const notes = window.prompt("General notes (optional)", "");
+
+      return {
+        path: `/api/loans/${loanId.trim()}/return`,
+        body: {
+          condition: condition && condition.trim().length ? condition.trim() : undefined,
+          notes: notes && notes.trim().length ? notes.trim() : undefined,
+        },
+      };
+    },
+  },
+  {
+    label: "Loans: renew",
+    description: "POST /api/loans/:id/renew (member or staff, requires no reservations)",
+    method: "POST",
+    path: "/api/loans/:id/renew",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      const loanId = window.prompt("Loan ID", "");
+      if (!loanId) {
+        throw new Error("Renew cancelled: loan ID required.");
+      }
+
+      const dueDate = window.prompt("New due date (ISO)", "");
+      if (!dueDate || !dueDate.trim().length) {
+        throw new Error("Renew cancelled: due date required.");
+      }
+
+      const note = window.prompt("Renewal note (optional)", "");
+
+      return {
+        path: `/api/loans/${loanId.trim()}/renew`,
+        body: {
+          dueDate: dueDate.trim(),
+          note: note && note.trim().length ? note.trim() : undefined,
+        },
+      };
+    },
   }
 ];
 
 const result = ref<string>("Press a button to run a check.");
 const loadingKey = ref<string | null>(null);
+const sessionState = ref<SessionState>({ status: "loading" });
+
+const sessionLabel = computed(() => {
+  if (sessionState.value.status === "loading") {
+    return "Loading session…";
+  }
+
+  if (sessionState.value.status === "guest") {
+    return "Signed out";
+  }
+
+  const { role, email } = sessionState.value;
+  const roleLabel = typeof role === "string" && role.length ? role.toUpperCase() : "UNKNOWN ROLE";
+  return `${roleLabel} — ${email ?? "unknown email"}`;
+});
 
 async function runEndpoint(endpoint: DebugEndpoint) {
   let activePath = endpoint.path;
@@ -166,7 +328,7 @@ async function runEndpoint(endpoint: DebugEndpoint) {
     }
   }
 
-  loadingKey.value = `${endpoint.label}-${activePath}`;
+  loadingKey.value = endpoint.label;
 
   if (method === "LOCAL") {
     const { items } = useCatalogMock({ take: 3 });
@@ -208,6 +370,35 @@ async function runEndpoint(endpoint: DebugEndpoint) {
     loadingKey.value = null;
   }
 }
+
+async function fetchSessionState() {
+  try {
+    const data = await $fetch<{ role?: string | null; email?: string | null } | null>("/api/debug/auth-check");
+    if (!data) {
+      sessionState.value = { status: "guest" };
+      return;
+    }
+
+    sessionState.value = {
+      status: "authenticated",
+      role: data.role ?? null,
+      email: data.email ?? null,
+    };
+  } catch (error) {
+    const statusCode = typeof error === "object" && error !== null ? (error as { statusCode?: number }).statusCode : undefined;
+    if (statusCode === 401) {
+      sessionState.value = { status: "guest" };
+      return;
+    }
+
+    console.error("Failed to load debug session state", error);
+    sessionState.value = { status: "guest" };
+  }
+}
+
+onMounted(() => {
+  fetchSessionState();
+});
 
 function parseSSEPayload(payload: string) {
   const blocks = payload
@@ -265,12 +456,36 @@ function parseSSEPayload(payload: string) {
 <template>
   <main class="bg-slate-950 text-slate-100">
     <section class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-16">
-      <header class="space-y-3">
-        <p class="text-sm uppercase tracking-widest text-primary-300">Developer Console</p>
-        <h1 class="text-3xl font-bold text-white">Debug controls</h1>
+      <header class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="text-sm uppercase tracking-widest text-primary-300">Developer Console</p>
+            <h1 class="text-3xl font-bold text-white">Debug controls</h1>
+          </div>
+          <NuxtCard class="border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-medium text-slate-200">
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex h-2.5 w-2.5 rounded-full"
+                :class="{
+                  'bg-amber-400 animate-pulse': sessionState.status === 'loading',
+                  'bg-emerald-400': sessionState.status === 'authenticated',
+                  'bg-slate-500': sessionState.status !== 'authenticated'
+                }"
+              />
+              <span>{{ sessionLabel }}</span>
+            </div>
+          </NuxtCard>
+        </div>
         <p class="text-sm text-slate-400">
           Quick buttons for hitting Nuxt server endpoints while we wire Supabase-backed catalog + circulation routes.
         </p>
+        <button
+          class="text-xs font-medium uppercase tracking-wide text-primary-300 underline-offset-4 hover:underline"
+          type="button"
+          @click="fetchSessionState"
+        >
+          Refresh session
+        </button>
       </header>
 
       <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
@@ -293,7 +508,7 @@ function parseSSEPayload(payload: string) {
               <NuxtButton
                 size="sm"
                 color="primary"
-                :loading="loadingKey === endpoint.path"
+                :loading="loadingKey === endpoint.label"
                 :disabled="loadingKey !== null"
                 @click="runEndpoint(endpoint)"
               >

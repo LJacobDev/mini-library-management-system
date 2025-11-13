@@ -45,16 +45,18 @@ Minimum viable implementation:
 2. Wrap Supabase updates in transaction-like sequence (await sequential calls).
 3. Respond with updated loan record.
 
-## AI Recommendations (Placeholder)
+## AI Recommendations (First-pass)
 
 | Route | Method | Purpose | Auth | Payload | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `/api/recommendations/suggest` | POST | Provide mock recommendations | `member` or higher | body: `{ memberId, seedMediaIds? }` | call internal helper for now |
+| `/api/ai/recommend` | POST | LLM keyword extraction + Supabase search + LLM summary | `member` or higher | body: `{ prompt, filters? }` | Performs two OpenAI calls (keywords → summary); returns `{ items, keywords, summary }` |
 
 Minimum viable implementation:
-1. Validate member session (`member`+).
-2. Return canned list: `[{ mediaId, title, reason }]`.
-3. Later swap helper to call OpenAI + Supabase embeddings.
+1. Validate member session (`member`+), sanitize prompt (trim, length cap, profanity guard TBD).
+2. Call OpenAI (or swappable provider) to extract 3-6 keywords; fall back to local reducer if parsing fails.
+3. Query Supabase `media` with those keywords and optional filters; cap results for the downstream LLM.
+4. Call OpenAI again to craft a role-aware summary tailored to the user (`member`, `librarian`, `admin`).
+5. Return items, keyword diagnostics, and summary text to the front end (no SSE yet).
 
 ## Debug Console Hooks
 
@@ -67,7 +69,7 @@ Minimum viable implementation:
 
 ## Next Steps Checklist
 
-- [ ] Implement handlers under `server/api/admin/media/*.ts`, `server/api/librarian/loans/*.ts`, `server/api/recommendations/suggest.post.ts`.
+- [x] Implement handlers under `server/api/admin/media/*.ts`, `server/api/librarian/loans/*.ts`, `/server/api/ai/recommend.get.ts`.
 - [ ] Add shared helper for Supabase error normalization.
 - [ ] Extend responses to align with eventual OpenAPI spec.
 - [ ] Build the `/debug` console panels + canned payload buttons described above.

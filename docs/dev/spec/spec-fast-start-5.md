@@ -39,15 +39,15 @@ This successor merges the structure of `spec-fast-start-3.md` with the public-fi
    - [x] Add search bar and filter chips tied to Supabase `ilike`/`eq` filters.
 
 4. **Media detail modal & auth-aware actions** (Phase A.4)
-   - [ ] Open `UDialog`/`USlideover` on card click showing metadata, availability, related reservations/loans summary.
-   - [ ] Guests see disabled `Reserve` prompting the auth modal; authenticated members see active `Reserve`/`Borrow` buttons (stub responses for now).
+   - [x] Open `UDialog`/`USlideover` on card click showing metadata, availability, related reservations/loans summary.
+   - [x] Guests see disabled `Reserve` prompting the auth modal; authenticated members see active `Reserve`/`Borrow` buttons (stub responses for now).
 
 5. **Palette refresh & light-mode QA** (Phase A.5)
    - [ ] Shift Nuxt UI/Tailwind tokens toward a warmer civic palette for light mode while preserving dark mode.
    - [ ] Add light/dark toggle surface and document contrast checks; log findings in `llm-training-cutoff-updates.md`.
 
 6. **Debug controls & health checks** (Phase A.6 → Phase B entry point)
-   - [ ] Create `/debug/controls` with buttons exercising catalog CRUD, circulation, and AI endpoints using canned payloads; show structured responses.
+   - [x] Create `/debug` console with buttons exercising catalog CRUD, circulation, and AI endpoints using canned payloads; show structured responses.
    - [ ] Ensure actions behave both authenticated (200) and unauthenticated (401) for quick verification.
 
 7. **Core circulation & admin endpoints** (Phase B)
