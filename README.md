@@ -6,7 +6,7 @@ Submitted by Lee Jacob (LJacobDev)
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
-It was first worked on with a spec-building approach that laid out detailed plans, schemas, contracts that ballooned in complexity.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Then, the original specs and OpenAPI files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
+The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, contracts, etc that began to balloon in complexity and got in the way of building a working app.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Then, the original specs and OpenAPI files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
 
 ### Current state of the application
 
