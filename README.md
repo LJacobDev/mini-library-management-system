@@ -34,7 +34,7 @@ There is also a dev-mode /debug page with a control panel for testing endpoints.
 Complete, regarding minimum objectives:
 - Add, edit, delete books (extened to videos, audiobooks, other)
 - Check in and check out books (performed via librarian role through /dashboard)
-- Search, filter books/media by title, author, descroption, type
+- Search, filter books/media by title, author, description, type
 
 Extra features added:
 - Multi user, multi role sign in (library member, librarian desk, admin)
