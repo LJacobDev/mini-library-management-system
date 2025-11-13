@@ -99,3 +99,7 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Scaffolded `/pages/debug/index.vue` as a developer console with Nuxt UI cards hitting OpenAI/Supabase health checks and the catalog mock for rapid integration testing, now gated to dev-only builds.
 - 2025-11-12 — Added Supabase-backed `/api/catalog` route with pagination, search, and media-type filters, returning normalized media summaries for the upcoming UI swap.
 - 2025-11-12 — Clarified that `docs/dev/llm-training-cutoff-updates.md` is reserved for true post-cutoff ecosystem changes; kept catalog notes within this context log instead.
+- 2025-11-12 — Added `AppHeader` to the default layout with brand link returning to `/` and login CTA routing to the guest flow.
+- 2025-11-12 — Set /login to redirect to / when user is signed in, using server side checking so there is no flash of the unwanted screen before the redirect.
+- 2025-11-12 — Vertically centered `/login` contents, added a guest-only middleware that issues a server-side redirect when Supabase cookies are present, and ensured client-side watchers replace history for signed-in users.
+- 2025-11-12 — Updated the brand link behavior to smooth-scroll to the top of `/` when already on the landing page.

@@ -8,6 +8,7 @@
       <NuxtLink
         to="/"
         class="flex items-center gap-2 text-lg font-semibold tracking-tight text-white"
+        @click="handleHomeClick"
       >
         <span
           class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/90 text-slate-950"
@@ -31,5 +32,14 @@
 </template>
 
 <script setup lang="ts">
-defineEmits<{ (event: "open-auth"): void }>();
+const route = useRoute();
+
+function handleHomeClick(event: MouseEvent) {
+  if (route.path !== "/") {
+    return;
+  }
+
+  event.preventDefault();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 </script>

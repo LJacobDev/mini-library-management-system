@@ -1,26 +1,19 @@
 <script setup lang="ts">
-const guestOnly = defineNuxtRouteMiddleware(() => {
-  const { user } = useSupabaseAuth()
-  if (user.value) {
-    return navigateTo('/')
-  }
-})
-
-definePageMeta({
-  middleware: [guestOnly]
-})
-
 const { user } = useSupabaseAuth()
 
 if (import.meta.client) {
+  if (user.value) {
+    navigateTo('/', { replace: true })
+  }
+
   watch(
     () => user.value,
     (current) => {
       if (current) {
-        navigateTo('/')
+        navigateTo('/', { replace: true })
       }
     },
-    { immediate: true }
+    { immediate: false }
   )
 }
 </script>

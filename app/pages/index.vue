@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import type { MockMediaStatus } from "~/composables/useCatalogMock";
+import { computed } from "vue";
 
 definePageMeta({ ssr: true });
 
@@ -20,41 +19,42 @@ const heroImage =
 const interiorImage =
   "https://sxuxezmcmkgcltkaprmk.supabase.co/storage/v1/object/public/covers/site-images/library-interior-resized-galen-crout-zHgyrDmhGVo-unsplash.png";
 
+const fallbackCover =
+  "https://images.unsplash.com/photo-1526313199968-70e399ffe791?auto=format&fit=crop&w=512&q=80";
+
 const mediaTypeFilters = [
-  { label: "All", value: "all" },
+  { label: "All", value: "" },
   { label: "Books", value: "book" },
   { label: "Magazines", value: "magazine" },
   { label: "DVDs", value: "dvd" },
   { label: "Audiobooks", value: "audiobook" }
 ];
 
-const { items } = useCatalogMock({ take: 12 });
+const {
+  items,
+  pending,
+  error,
+  filters,
+  setSearch,
+  setMediaType,
+  setPage
+} = useCatalogData({ pageSize: 12 });
 
-const searchTerm = ref("");
-const activeType = ref<string>("all");
-
-const statusMeta: Record<MockMediaStatus, { label: string; color: "success" | "warning" | "info" }> = {
-  available: { label: "Available", color: "success" },
-  checked_out: { label: "Checked out", color: "warning" },
-  reserved: { label: "Reserved", color: "info" }
-};
-
-const filteredItems = computed(() => {
-  const term = searchTerm.value.trim().toLowerCase();
-  return items.value.filter((item) => {
-    const matchesType = activeType.value === "all" || item.mediaType === activeType.value;
-    const matchesTerm =
-      !term ||
-      [item.title, item.author, item.tags.join(" ")]
-        .join(" ")
-        .toLowerCase()
-        .includes(term);
-    return matchesType && matchesTerm;
-  });
+const searchTerm = computed({
+  get: () => filters.q ?? "",
+  set: (value: string) => setSearch(value)
 });
+
+const activeType = computed({
+  get: () => filters.type ?? "",
+  set: (value: string) => setMediaType(value || undefined)
+});
+
+const filteredItems = computed(() => items.value ?? []);
 
 function selectType(value: string) {
   activeType.value = value;
+  setPage(1);
 }
 </script>
 
@@ -157,37 +157,42 @@ function selectType(value: string) {
           </div>
         </div>
 
-        <div v-if="filteredItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div v-if="pending" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <NuxtCard v-for="n in 6" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
+        </div>
+
+        <div v-else-if="error" class="min-h-[200px] rounded-3xl border border-dashed border-red-500/40 bg-red-950/20 p-10 text-center text-sm text-red-200">
+          Unable to load catalog right now. Please try again shortly.
+        </div>
+
+        <div v-else-if="filteredItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <NuxtCard
             v-for="item in filteredItems"
             :key="item.id"
             class="flex h-full flex-col overflow-hidden border border-white/5 bg-slate-900/70"
           >
             <div class="relative">
-              <NuxtImg :src="item.coverUrl" alt="" class="h-44 w-full object-cover" loading="lazy" />
-              <NuxtBadge :color="statusMeta[item.status].color" variant="solid" class="absolute left-3 top-3">
-                {{ statusMeta[item.status].label }}
-              </NuxtBadge>
+              <NuxtImg :src="item.coverUrl || fallbackCover" alt="" class="h-44 w-full object-cover" loading="lazy" />
             </div>
 
             <div class="flex flex-1 flex-col gap-3 p-5">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">
-                  {{ item.mediaType }} • {{ item.callNumber }}
+                  {{ item.mediaType }}
                 </p>
                 <h4 class="mt-2 text-lg font-semibold text-white">{{ item.title }}</h4>
                 <p class="text-sm text-slate-400">{{ item.author }}</p>
               </div>
 
-              <div class="flex flex-wrap gap-2">
+              <div v-if="item.subjects?.length" class="flex flex-wrap gap-2">
                 <NuxtBadge
-                  v-for="tag in item.tags"
-                  :key="tag"
+                  v-for="subject in item.subjects"
+                  :key="subject"
                   color="neutral"
                   variant="outline"
                   class="text-xs"
                 >
-                  {{ tag }}
+                  {{ subject }}
                 </NuxtBadge>
               </div>
 
@@ -199,10 +204,7 @@ function selectType(value: string) {
           </NuxtCard>
         </div>
 
-        <div
-          v-else
-          class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400"
-        >
+        <div v-else class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
           No matching items yet. Try a different search or filter.
         </div>
       </div>
