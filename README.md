@@ -16,9 +16,9 @@ npm install
 npm run dev
 ```
 
-In its current form it's difficult to run with full features locally 
+**In its current form it's difficult to run with full features locally**
 
-The env keys needed for database and ai integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions)
+The env keys needed for database and AI integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions)
 
 When in dev mode, the app header will show a control to allow changing session role to view site as member, librarian, admin.  There is also a dev-mode /debug page with a control panel for testing endpoints.
 
