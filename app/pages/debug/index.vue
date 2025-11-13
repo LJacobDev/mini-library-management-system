@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import AgentChatPanel from "~/components/AgentChatPanel.vue";
 import { createError } from "h3";
 
 type SessionState =
@@ -342,8 +343,11 @@ async function runEndpoint(endpoint: DebugEndpoint) {
       const response = await fetch(activePath, {
         method,
         headers: {
-          Accept: "text/event-stream"
-        }
+          Accept: "text/event-stream",
+          "Content-Type": "application/json"
+        },
+        body: method === "GET" || !body ? undefined : JSON.stringify(body),
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -487,6 +491,22 @@ function parseSSEPayload(payload: string) {
           Refresh session
         </button>
       </header>
+
+      <ClientOnly>
+        <NuxtCard class="border border-white/10 bg-slate-900/70 p-6">
+          <template #header>
+            <div class="flex items-center justify-between gap-2 text-white">
+              <div>
+                <p class="text-xs uppercase tracking-widest text-primary-300">Live stream</p>
+                <h2 class="text-lg font-semibold">AI recommendation console</h2>
+              </div>
+              <NuxtBadge color="primary" variant="soft">Streaming SSE</NuxtBadge>
+            </div>
+          </template>
+
+          <AgentChatPanel />
+        </NuxtCard>
+      </ClientOnly>
 
       <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
         <div class="flex w-full max-w-xs flex-col gap-2">

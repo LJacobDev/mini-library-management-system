@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import AgentChatPanel from "~/components/AgentChatPanel.vue";
 import MediaDetailModal from "~/components/catalog/MediaDetailModal.vue";
 import type { CatalogItem } from "~/composables/useCatalogData";
 
@@ -168,6 +169,35 @@ async function requestReserve() {
         </div>
       </div>
     </section>
+
+        <ClientOnly>
+          <section class="border-t border-white/10 bg-slate-900/70">
+            <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-14">
+              <header class="flex flex-col gap-2 text-center text-white sm:text-left">
+                <p class="text-sm uppercase tracking-widest text-primary-300">Personalized picks</p>
+                <h2 class="text-3xl font-semibold">Ask our AI concierge for recommendations</h2>
+                <p class="text-sm text-slate-300">
+                  Signed-in members can request hand-picked titles with real-time streaming suggestions.
+                </p>
+              </header>
+
+              <div v-if="isAuthenticated" class="min-h-[480px]">
+                <AgentChatPanel />
+              </div>
+              <NuxtCard v-else class="border border-white/10 bg-slate-900/80 p-6 text-center text-slate-200">
+                <h3 class="text-lg font-semibold text-white">Sign in to try the concierge</h3>
+                <p class="mt-2 text-sm text-slate-400">
+                  Log in to request personalized recommendations and track your loans.
+                </p>
+                <div class="mt-4 flex justify-center">
+                  <NuxtButton to="/login" color="primary" icon="i-heroicons-arrow-right-circle">
+                    Go to login
+                  </NuxtButton>
+                </div>
+              </NuxtCard>
+            </div>
+          </section>
+        </ClientOnly>
 
     <section class="bg-slate-900/60">
   <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-14 lg:flex-row lg:items-center">

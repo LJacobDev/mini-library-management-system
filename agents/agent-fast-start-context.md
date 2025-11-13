@@ -139,3 +139,8 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Completed manual QA of the new `MediaDetailModal` on landing and dashboard catalog pages; verified auth-aware Reserve stub flow, success messaging reset, and slot-based action layout ahead of real API wiring.
 - 2025-11-13 — Expanded `/api/catalog` select + mapper to include ISBN, language, page counts, and duration minutes so the detail modal renders richer metadata without extra fetches.
 - 2025-11-13 — `/api/ai/recommend` now streams summaries via SSE, sending metadata before tokens so the upcoming chat UI can light up immediately while debug tooling stays compatible.
+- 2025-11-13 — Scaffolded `AgentChatPanel` with Nuxt UI chat primitives and preview placeholders ahead of wiring to the streaming endpoint.
+- 2025-11-13 — Hooked `AgentChatPanel` to `useAgentChat`, enabling real prompt submission, streaming status, and retry handling while keeping placeholder recommendations for empty states.
+- 2025-11-13 — Enriched chat recommendation rail with skeleton loaders, empty-state guidance, and richer metadata badges ahead of page integration.
+- 2025-11-13 — Mounted `AgentChatPanel` on the landing page for signed-in members and within the `/debug` console for rapid streaming verification.
+- 2025-11-13 — Updated agent chat fetch + debug console to send event-stream headers/bodies so POST prompts stream correctly and bubble meaningful errors when auth or payload is missing.
