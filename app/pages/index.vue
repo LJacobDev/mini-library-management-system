@@ -25,10 +25,17 @@ const fallbackCover =
 const mediaTypeFilters = [
   { label: "All", value: "" },
   { label: "Books", value: "book" },
-  { label: "Magazines", value: "magazine" },
-  { label: "DVDs", value: "dvd" },
-  { label: "Audiobooks", value: "audiobook" }
+  { label: "Video", value: "video" },
+  { label: "Audio", value: "audio" },
+  { label: "Other", value: "other" }
 ];
+
+const mediaTypeLabelMap: Record<string, string> = {
+  book: "Book",
+  video: "Video",
+  audio: "Audio",
+  other: "Other"
+};
 
 const {
   items,
@@ -55,6 +62,10 @@ const filteredItems = computed(() => items.value ?? []);
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
+}
+
+function mediaTypeLabel(type: string) {
+  return mediaTypeLabelMap[type] ?? type;
 }
 </script>
 
@@ -178,7 +189,7 @@ function selectType(value: string) {
             <div class="flex flex-1 flex-col gap-3 p-5">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">
-                  {{ item.mediaType }}
+                  {{ mediaTypeLabel(item.mediaType) }}
                 </p>
                 <h4 class="mt-2 text-lg font-semibold text-white">{{ item.title }}</h4>
                 <p class="text-sm text-slate-400">{{ item.author }}</p>

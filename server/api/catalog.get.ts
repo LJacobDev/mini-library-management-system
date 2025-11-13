@@ -3,6 +3,7 @@ import { getSupabaseServiceClient } from '../utils/supabaseServiceClient'
 
 const DEFAULT_PAGE_SIZE = 24
 const MAX_PAGE_SIZE = 60
+const ALLOWED_MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
 
 function parsePositiveInteger(value: unknown, fallback: number) {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -25,7 +26,8 @@ export default defineEventHandler(async (event) => {
   const requestedPageSize = parsePositiveInteger(query.pageSize, DEFAULT_PAGE_SIZE)
   const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE)
   const search = typeof query.q === 'string' ? query.q.trim() : ''
-  const type = typeof query.type === 'string' ? query.type.trim().toLowerCase() : ''
+  const rawType = typeof query.type === 'string' ? query.type.trim().toLowerCase() : ''
+  const type = ALLOWED_MEDIA_TYPES.has(rawType) ? rawType : ''
 
   const supabase = getSupabaseServiceClient()
   let builder = supabase

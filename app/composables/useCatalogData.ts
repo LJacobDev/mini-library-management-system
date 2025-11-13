@@ -1,8 +1,15 @@
 import { computed, reactive } from 'vue'
 
+const MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
+export type MediaType = (typeof MEDIA_TYPES)[number]
+
+function isMediaType(value: string | null | undefined): value is MediaType {
+  return value ? (MEDIA_TYPES as readonly string[]).includes(value) : false
+}
+
 interface CatalogFilters {
   q?: string
-  type?: string
+  type?: MediaType
   page?: number
   pageSize?: number
 }
@@ -11,7 +18,7 @@ interface CatalogItem {
   id: string
   title: string
   author: string
-  mediaType: string
+  mediaType: MediaType
   mediaFormat?: string
   coverUrl?: string | null
   subjects?: string[]
@@ -97,7 +104,8 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
   }
 
   function setMediaType(type: string | null | undefined) {
-    filters.type = type?.trim() || undefined
+    const normalized = type?.trim().toLowerCase() || undefined
+    filters.type = normalized && isMediaType(normalized) ? normalized : undefined
     filters.page = 1
   }
 
