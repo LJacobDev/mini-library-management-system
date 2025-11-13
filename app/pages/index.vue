@@ -68,15 +68,12 @@ function selectType(value: string) {
             Great City Community Library
           </h1>
           <p class="max-w-xl text-lg text-slate-300">
-            Discover books, magazines, films, and more—curated for every reader in our city. Explore the
-            catalog, place holds, and keep up with the latest arrivals.
+            Discover books, magazines, films, and more—curated for every member. Explore the
+            catalog, place holds, and keep up with the latest arrivals - all online!
           </p>
           <div class="flex flex-col items-center gap-4 sm:flex-row">
             <NuxtButton to="#catalog" color="primary" size="lg" icon="i-heroicons-magnifying-glass">
               Browse catalog
-            </NuxtButton>
-            <NuxtButton to="/login" variant="ghost" color="neutral" size="lg">
-              Sign in to reserve
             </NuxtButton>
           </div>
         </div>
@@ -107,10 +104,9 @@ function selectType(value: string) {
           </div>
         </div>
         <div class="flex-1 space-y-4 text-center lg:text-left">
-          <h2 class="text-3xl font-semibold text-white">See all that we have to offer</h2>
+          <h2 class="text-3xl font-semibold text-white">Come visit us - there's so much to do here!</h2>
           <p class="text-slate-300">
-            Cozy reading nooks, community events, expert staff picks, and a digital collection at your
-            fingertips. Start with our newest arrivals below and keep exploring.
+            Cozy reading nooks, community events, expert staff help, learning workshops and more.
           </p>
         </div>
       </div>
