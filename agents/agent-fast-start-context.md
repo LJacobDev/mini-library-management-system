@@ -1,13 +1,15 @@
-# Fast Start Agent Context
+# Fast Start Agent Context:  **LLM Agents**, read this section and compare it against our newer experiences, and made living edits to it so that it reflects the current state of the application so that we know what we have, and what we need to do
 
 _Last updated: 2025-11-12_
 
 ## Current State Snapshot
 
-- **Framework & styling**: Nuxt 4.2 app with Tailwind CSS v4 and Nuxt UI components; base shell (`app.vue`) renders the mini LMS hero plus backend health cards.
-- **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` npm client and an SSE bridge. Front end consumes the stream via `useAiStream` and the `StatusCheckStream` component.
-- **Database integration**: `/api/check/supabase` connects to the live `mlms-demo` Supabase project using the cached service client; full schema/seed/RLS scripts have been applied so tables now contain our demo catalog, loans, reservations, desk logs, and telemetry data.
-- **Docs & plans**: `docs/dev/spec-fast-start.md`, `spec-fast-start-2.md`, and `spec-fast-start-3.md` contain the fast-track roadmap; Section 10/11 outline the execution plan and Nuxt UI overlays.
+- **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. The authenticated dashboard layout remains in place for staff/member pages.
+- **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Both landing and dashboard catalog views consume it through the shared composable, with loading/error states and responsive card grids.
+- **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
+- **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS.
+- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell.
+- **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
 
 ### Live deployment
 
@@ -37,18 +39,18 @@ _Last updated: 2025-11-12_
 
 ## Upcoming Objectives
 
-- **Catalog endpoint**: Build `/api/catalog` backed by Supabase and render a live inventory grid (replace seed mocks with real data fetches).
-- **Member dashboards**: Hydrate `/account/loans` with the seeded loans/reservations, adding Supabase composables for authenticated fetches.
-- **Desk/admin tooling**: Start `/desk/checkout` and `/admin/media` pages using Nuxt UI + Tailwind, wiring to Supabase mutations guarded by `requireSupabaseSession`.
-- **Debug utilities**: Extend `/status` or a `/debug/data` view with buttons hitting the new tables so we can quickly sanity-check the seeded dataset.
-- **Docs maintenance**: Continue updates in `spec-fast-start-3.md` and capture Nuxt/Tailwind/Supabase deltas in `docs/dev/llm-training-cutoff-updates.md`.
+- **Catalog UX polish**: Add richer pagination (infinite scroll or numbered pagination controls shared across views), expose total counts, and introduce empty-state education.
+- **Reservation & account flows**: Wire a “Reserve/Sign in” modal stack from the catalog cards, then hydrate `/account/loans` with real Supabase data behind auth.
+- **Staff tooling**: Kick off `/desk/checkout` and `/admin/media` with Supabase mutations guarded by `requireSupabaseSession`, including optimistic UI for checkouts/returns.
+- **Debugging & telemetry**: Expand the debug console with buttons querying the other Supabase tables (reservations, loan events, desk logs) to validate seeds and RLS paths.
+- **Documentation sync**: Keep `spec-fast-start-*` and `docs/dev/llm-training-cutoff-updates.md` aligned with Nuxt/Tailwind/Supabase learnings from today’s work.
 
 ### Prioritized next steps (short list)
 
-1. Implement `/api/catalog` + front-end grid wired to Supabase, leveraging freshly seeded media rows.
-2. Upgrade `/account/loans` to call a real Supabase API route returning member loans/reservations, respecting RLS.
-3. Add surface-level management actions (checkout, reservation advance) for staff pages, ensuring `requireSupabaseSession` + role checks wrap each mutation.
-4. Add a small CI smoke test that hits `/api/check/openai`, `/api/check/supabase`, and `/api/catalog` after deploy to verify integrations.
+1. Elevate catalog browsing: add shared pagination helpers (or infinite scroll), ensure filter state syncs to the URL, and capture analytics hooks for future insights.
+2. Build the catalog → reserve flow: surface a modal with call-to-action, route guests to auth, and record holds for signed-in users via a new Supabase API.
+3. Hydrate `/account/loans` with live Supabase data respecting RLS, including status badges and due-date warnings.
+4. Prototype desk/admin actions (checkout, hold approval) using `requireSupabaseSession` and add integration smoke checks for catalog/account APIs post-deploy.
 
 ### Security considerations
 
@@ -65,7 +67,8 @@ _Append brief, dated notes here as you make changes so we keep a concise history
 
 Keep using this file as the quick context hand-off for agents joining the fast-start track; append notable milestones or shifts as we progress.
 
-### Log
+
+# Log:  **LLM Agents**, do not delete any existing data in this section, but make regular additions to the bottom of this section with new notes about things done and decisions made, and a brief mention of what is intended to be done next 
 
 - 2025-11-12 — `AuthPanel` now binds to the reactive Supabase auth state so logging out updates the UI and surfaces success/error feedback inline.
 - 2025-11-12 — `useSupabaseAuth` now ignores Supabase `AuthSessionMissingError` so signed-out refreshes stay clean without logging false auth errors.
@@ -93,3 +96,15 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Added guarded `/pages/catalog.vue` targeting the dashboard layout with placeholder header/section until the mock media grid lands.
 - 2025-11-12 — Added `useCatalogMock` composable with seeded demo titles and wired `/pages/catalog.vue` to render a Nuxt UI card grid.
 - 2025-11-12 — Authored `docs/dev/spec/spec-fast-start-4.md` to pivot focus toward a public-first catalog experience, Supabase-backed data, and a debug control panel plan.
+- 2025-11-12 — Noted in `docs/dev/spec/spec-fast-start-5.md` that we must archive the current dark palette and schedule a cheerful light-mode palette proposal; remember to spin up the design task soon.
+- 2025-11-12 — Rebuilt `/pages/index.vue` into the public landing hero with Supabase-hosted imagery, welcome copy, and catalog preview cards hooked to `useCatalogMock` pending live data.
+- 2025-11-12 — Refined landing welcome section with branch address, phone, and hours to match refreshed marketing copy.
+- 2025-11-12 — Scaffolded `/pages/debug/index.vue` as a developer console with Nuxt UI cards hitting OpenAI/Supabase health checks and the catalog mock for rapid integration testing, now gated to dev-only builds.
+- 2025-11-12 — Added Supabase-backed `/api/catalog` route with pagination, search, and media-type filters, returning normalized media summaries for the upcoming UI swap.
+- 2025-11-12 — Clarified that `docs/dev/llm-training-cutoff-updates.md` is reserved for true post-cutoff ecosystem changes; kept catalog notes within this context log instead.
+- 2025-11-12 — Added `AppHeader` to the default layout with brand link returning to `/` and login CTA routing to the guest flow.
+- 2025-11-12 — Set /login to redirect to / when user is signed in, using server side checking so there is no flash of the unwanted screen before the redirect.
+- 2025-11-12 — Vertically centered `/login` contents, added a guest-only middleware that issues a server-side redirect when Supabase cookies are present, and ensured client-side watchers replace history for signed-in users.
+- 2025-11-12 — Updated the brand link behavior to smooth-scroll to the top of `/` when already on the landing page.
+- 2025-11-12 — Normalized catalog media-type filters to Supabase enums (`book`, `video`, `audio`, `other`) and added backend guard so invalid filter values no longer break `/api/catalog`.
+- 2025-11-12 — Added `/api/catalog` pagination metadata, extended `useCatalogData` with infinite scroll accumulation, and converted landing/dashboard catalog views to use intersection-observed load-more triggers with manual button fallback.
