@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+
 definePageMeta({
   layout: "dashboard",
   requiresAuth: true
@@ -18,14 +20,16 @@ const fallbackCover =
 
 const {
   items,
-  pending,
   error,
   filters,
   setSearch,
   setMediaType,
   setPage,
-  page,
-  totalPages
+  loadMore,
+  hasMore,
+  isInitialLoading,
+  isLoadingMore,
+  total
 } = useCatalogData();
 
 const searchTerm = computed({
@@ -63,6 +67,48 @@ const mediaTypeLabelMap: Record<string, string> = {
 function mediaTypeLabel(type: string) {
   return mediaTypeLabelMap[type] ?? type;
 }
+
+const loadMoreRef = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          loadMore();
+        }
+      });
+    },
+    { rootMargin: "200px" }
+  );
+
+  if (loadMoreRef.value) {
+    observer.observe(loadMoreRef.value);
+  }
+});
+
+watch(
+  loadMoreRef,
+  (el, prev) => {
+    if (!observer) {
+      return;
+    }
+    if (prev) {
+      observer.unobserve(prev);
+    }
+    if (el) {
+      observer.observe(el);
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+});
 </script>
 
 <template>
@@ -111,7 +157,7 @@ function mediaTypeLabel(type: string) {
         </div>
       </template>
 
-      <div v-if="pending" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         <NuxtCard v-for="n in 9" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
       </div>
 
@@ -179,27 +225,27 @@ function mediaTypeLabel(type: string) {
         No titles match the current filters. Try adjusting search or media type.
       </div>
 
+      <div
+        v-if="hasMore"
+        ref="loadMoreRef"
+        class="mt-8 flex flex-col items-center gap-3 text-xs text-slate-500"
+      >
+        <NuxtButton
+          size="sm"
+          variant="soft"
+          color="primary"
+          :loading="isLoadingMore"
+          @click="loadMore"
+        >
+          Load more titles
+        </NuxtButton>
+        <span v-if="isLoadingMore">Syncing the next shelf…</span>
+      </div>
+
       <template #footer>
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-2 text-xs text-slate-400">
-            <span>Page {{ page }} of {{ totalPages }}</span>
-          </div>
-          <div class="flex gap-2">
-            <NuxtButton
-              size="sm"
-              variant="ghost"
-              icon="i-heroicons-chevron-left"
-              :disabled="page <= 1"
-              @click="setPage(page - 1)"
-            />
-            <NuxtButton
-              size="sm"
-              variant="ghost"
-              icon="i-heroicons-chevron-right"
-              :disabled="page >= totalPages"
-              @click="setPage(page + 1)"
-            />
-          </div>
+        <div class="flex flex-col gap-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>Showing {{ displayItems.length }} of {{ total }} titles</span>
+          <span v-if="!hasMore" class="text-slate-500">End of catalog results</span>
         </div>
       </template>
     </NuxtPageSection>

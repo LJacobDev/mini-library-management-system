@@ -77,10 +77,18 @@ export default defineEventHandler(async (event) => {
     metadata: item.metadata ?? {},
   }))
 
+  const total = count ?? items.length
+  const hasMore = total > page * pageSize
+  const nextPage = hasMore ? page + 1 : null
+  const nextCursor = hasMore ? items.at(-1)?.id ?? null : null
+
   return {
     page,
     pageSize,
-    total: count ?? items.length,
+    total,
+    hasMore,
+    nextPage,
+    nextCursor,
     items,
   }
 })

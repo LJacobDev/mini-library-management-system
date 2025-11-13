@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 definePageMeta({ ssr: true });
 
@@ -39,12 +39,15 @@ const mediaTypeLabelMap: Record<string, string> = {
 
 const {
   items,
-  pending,
   error,
   filters,
   setSearch,
   setMediaType,
-  setPage
+  setPage,
+  loadMore,
+  hasMore,
+  isInitialLoading,
+  isLoadingMore
 } = useCatalogData({ pageSize: 12 });
 
 const searchTerm = computed({
@@ -67,6 +70,48 @@ function selectType(value: string) {
 function mediaTypeLabel(type: string) {
   return mediaTypeLabelMap[type] ?? type;
 }
+
+const loadMoreRef = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          loadMore();
+        }
+      });
+    },
+    { rootMargin: "200px" }
+  );
+
+  if (loadMoreRef.value) {
+    observer.observe(loadMoreRef.value);
+  }
+});
+
+watch(
+  loadMoreRef,
+  (el, prev) => {
+    if (!observer) {
+      return;
+    }
+    if (prev) {
+      observer.unobserve(prev);
+    }
+    if (el) {
+      observer.observe(el);
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+});
 </script>
 
 <template>
@@ -168,7 +213,7 @@ function mediaTypeLabel(type: string) {
           </div>
         </div>
 
-        <div v-if="pending" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           <NuxtCard v-for="n in 6" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
         </div>
 
@@ -217,6 +262,22 @@ function mediaTypeLabel(type: string) {
 
         <div v-else class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
           No matching items yet. Try a different search or filter.
+        </div>
+
+        <div
+          v-if="hasMore"
+          ref="loadMoreRef"
+          class="mt-8 flex flex-col items-center gap-4 text-sm text-slate-400"
+        >
+          <NuxtButton
+            variant="soft"
+            color="primary"
+            :loading="isLoadingMore"
+            @click="loadMore"
+          >
+            Load more titles
+          </NuxtButton>
+          <p v-if="isLoadingMore" class="text-xs text-slate-500">Fetching more from the stacks…</p>
         </div>
       </div>
     </section>

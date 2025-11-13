@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 const MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
@@ -32,6 +32,9 @@ interface CatalogResponse {
   page: number
   pageSize: number
   total: number
+  hasMore: boolean
+  nextPage: number | null
+  nextCursor: string | null
 }
 
 const DEFAULT_FILTERS: Required<Pick<CatalogFilters, 'page' | 'pageSize'>> = {
@@ -58,6 +61,7 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
       `${queryParams.value.q ?? ''}:${queryParams.value.type ?? ''}`
   )
 
+  const itemsStore = ref<CatalogItem[]>([])
   const { data, pending, error, refresh } = useAsyncData<CatalogResponse>(
     cacheKey,
     () =>
@@ -69,11 +73,42 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     }
   )
 
-  const items = computed(() => data.value?.items ?? [])
+  watch(
+    () => data.value,
+    (payload) => {
+      if (!payload) {
+        return
+      }
+
+      if (payload.page <= 1) {
+        itemsStore.value = [...payload.items]
+      } else {
+        const existing = new Set(itemsStore.value.map((item) => item.id))
+        const merged = payload.items.filter((item) => !existing.has(item.id))
+        itemsStore.value = [...itemsStore.value, ...merged]
+      }
+    },
+    { immediate: true }
+  )
+
+  const items = computed(() => itemsStore.value)
   const page = computed(() => data.value?.page ?? filters.page)
   const pageSize = computed(() => data.value?.pageSize ?? filters.pageSize)
   const total = computed(() => data.value?.total ?? 0)
   const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
+  const hasMore = computed(() => data.value?.hasMore ?? false)
+  const nextPage = computed(() => data.value?.nextPage)
+  const isInitialLoading = computed(
+    () => pending.value && (filters.page ?? DEFAULT_FILTERS.page) <= 1 && itemsStore.value.length === 0
+  )
+
+  const isLoadingMore = ref(false)
+
+  watch(pending, (value) => {
+    if (!value) {
+      isLoadingMore.value = false
+    }
+  })
 
   watch(
     () => [filters.page, totalPages.value],
@@ -95,18 +130,21 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     if (next !== filters.pageSize) {
       filters.pageSize = next
       filters.page = 1
+      itemsStore.value = []
     }
   }
 
   function setSearch(query: string) {
     filters.q = query?.trim() || undefined
     filters.page = 1
+    itemsStore.value = []
   }
 
   function setMediaType(type: string | null | undefined) {
     const normalized = type?.trim().toLowerCase() || undefined
     filters.type = normalized && isMediaType(normalized) ? normalized : undefined
     filters.page = 1
+    itemsStore.value = []
   }
 
   function resetFilters() {
@@ -114,6 +152,18 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     filters.pageSize = DEFAULT_FILTERS.pageSize
     filters.q = undefined
     filters.type = undefined
+    itemsStore.value = []
+  }
+
+  function loadMore() {
+    if (isLoadingMore.value || pending.value || !hasMore.value) {
+      return
+    }
+
+    isLoadingMore.value = true
+    const candidate = (filters.page ?? DEFAULT_FILTERS.page) + 1
+    const capped = nextPage.value && candidate > nextPage.value ? nextPage.value : candidate
+    setPage(capped ?? candidate)
   }
 
   return {
@@ -122,8 +172,12 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     pageSize,
     total,
     totalPages,
+    hasMore,
+    nextPage,
     data,
     pending,
+    isInitialLoading,
+    isLoadingMore,
     error,
     refresh,
     filters,
@@ -132,5 +186,6 @@ export function useCatalogData(initialFilters: CatalogFilters = {}) {
     setSearch,
     setMediaType,
     resetFilters,
+    loadMore,
   }
 }

@@ -107,3 +107,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Vertically centered `/login` contents, added a guest-only middleware that issues a server-side redirect when Supabase cookies are present, and ensured client-side watchers replace history for signed-in users.
 - 2025-11-12 — Updated the brand link behavior to smooth-scroll to the top of `/` when already on the landing page.
 - 2025-11-12 — Normalized catalog media-type filters to Supabase enums (`book`, `video`, `audio`, `other`) and added backend guard so invalid filter values no longer break `/api/catalog`.
+- 2025-11-12 — Added `/api/catalog` pagination metadata, extended `useCatalogData` with infinite scroll accumulation, and converted landing/dashboard catalog views to use intersection-observed load-more triggers with manual button fallback.
