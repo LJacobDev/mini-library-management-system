@@ -6,10 +6,7 @@ Submitted by Lee Jacob (LJacobDev)
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
-It was first built with a spec-building approach that laid out serveral files and plans that ballooned in complexity.
-These files remain in the repo as guidelines while the build process was reworked into something that connected simple
-parts quickly in order to achieve a working product faster.  Then, the original specs and OpenAPI files can be gradually
-completed or reconciled / cleaned up with any new change in direction taken.
+It was first worked on with a spec-building approach that laid out detailed plans, schemas, contracts that ballooned in complexity.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Then, the original specs and OpenAPI files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
 
 ### Current state of the application
 
@@ -26,12 +23,14 @@ Extra features added:
 Manual testing completed along the way to ensure core functions are working
 
 Still requires / working on:
-- UI, UX, Code, Documentation / README clean up
+- UI, UX, polish
+- Code refactoring, removing obsolete routes endpoints
+- Documentation / README clean up and presentation
 - Unit Tests planned, but not added yet in order to complete build faster
 
 Additional features planned / considered:
 - Allow members to put a reservation / hold on available media
-- Allow members to renew their existing loans if no upcoming revervations are in queue for it
+- Allow members to renew their existing loans online if no upcoming revervations are in queue for it
 
 Documentation / files of interest:
 - [agent-fast-start-context.md](agents/agent-fast-start-context.md) is a living document where the agent keeps working notes and a history of all actions taken
