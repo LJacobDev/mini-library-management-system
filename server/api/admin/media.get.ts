@@ -1,4 +1,5 @@
 import { createError, getQuery } from 'h3'
+import { mapMediaRow, type MediaRow } from '../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../utils/supabaseApi'
 
 const DEFAULT_PAGE_SIZE = 20
@@ -79,24 +80,6 @@ export default defineEventHandler(async (event) => {
     pageSize,
     total,
     totalPages,
-    items: data.map((item) => ({
-      id: item.id,
-      title: item.title,
-      author: item.creator,
-      mediaType: item.media_type,
-      mediaFormat: item.media_format,
-      isbn: item.isbn,
-      genre: item.genre,
-      subject: item.subject,
-      description: item.description,
-      coverUrl: item.cover_url,
-      language: item.language,
-      pages: item.pages,
-      durationSeconds: item.duration_seconds,
-      publishedAt: item.published_at,
-      metadata: item.metadata ?? {},
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-    })),
+    items: (data as MediaRow[]).map((item) => mapMediaRow(item)),
   }
 })
