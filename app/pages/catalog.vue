@@ -54,6 +54,7 @@ const totalCount = computed(() => total.value ?? 0);
 
 const searchInput = ref(filters.q ?? "");
 const SEARCH_DEBOUNCE_MS = 300;
+const debouncedSearch = useDebouncedRef(searchInput, SEARCH_DEBOUNCE_MS);
 
 watch(
   () => filters.q ?? "",
@@ -64,16 +65,11 @@ watch(
   }
 );
 
-watch(
-  searchInput,
-  (value, _previous, onCleanup) => {
-    const timeout = setTimeout(() => {
-      setSearch(value);
-    }, SEARCH_DEBOUNCE_MS);
-
-    onCleanup(() => clearTimeout(timeout));
+watch(debouncedSearch, (value) => {
+  if ((filters.q ?? "") !== value) {
+    setSearch(value);
   }
-);
+});
 
 const activeType = computed({
   get: () => filters.type ?? "",
@@ -85,12 +81,6 @@ const hasActiveFilters = computed(() => Boolean((filters.q ?? "").length || (fil
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
-}
-
-function clearFilters() {
-  searchInput.value = "";
-  setSearch("");
-  selectType("");
 }
 </script>
 
@@ -134,16 +124,6 @@ function clearFilters() {
             {{ filter.label }}
           </NuxtButton>
 
-          <NuxtButton
-            v-if="hasActiveFilters"
-            variant="ghost"
-            color="neutral"
-            size="sm"
-            icon="i-heroicons-x-mark"
-            @click="clearFilters"
-          >
-            Clear
-          </NuxtButton>
         </div>
       </div>
 
