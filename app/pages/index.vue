@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import MediaDetailModal from "~/components/catalog/MediaDetailModal.vue";
+import type { CatalogItem } from "~/composables/useCatalogData";
 
 definePageMeta({ ssr: true });
 
@@ -77,9 +79,22 @@ const activeType = computed({
 const filteredItems = computed(() => items.value ?? []);
 const catalogError = computed(() => error.value ?? null);
 
+const {
+  media: detailMedia,
+  isOpen: isDetailOpen,
+  isLoading: isDetailLoading,
+  error: detailError,
+  openWithMedia,
+  close: closeDetail,
+} = useMediaDetail();
+
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
+}
+
+function handleSelect(item: CatalogItem) {
+  openWithMedia(item);
 }
 
 </script>
@@ -191,9 +206,18 @@ function selectType(value: string) {
           :error="catalogError"
           :fallback-cover="fallbackCover"
           :media-type-labels="mediaTypeLabelMap"
+          @select="handleSelect"
           @load-more="loadMore"
         />
       </div>
     </section>
+
+    <MediaDetailModal
+      :open="isDetailOpen"
+      :media="detailMedia"
+      :loading="isDetailLoading"
+      :error="detailError"
+      @close="closeDetail"
+    />
   </main>
 </template>
