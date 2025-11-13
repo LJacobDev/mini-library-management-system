@@ -2,7 +2,14 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-## Current state of the application in progress
+## Current state of the application
+
+Complete, regarding minimum objectives of achieving library management functions.
+
+Extra features added include AI generated recommendations for which available books / videos match user's prompt that explains what they'd like.
+
+Requires UI, UX, Code, Documentation / README clean up
+
 
 ### This project is being revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
