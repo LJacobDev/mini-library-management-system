@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import MediaDetailModal from '~/components/catalog/MediaDetailModal.vue'
 import { useAdminMediaData, type AdminMediaItem, type SortField, type SortDirection } from '~/composables/useAdminMediaData'
 import { useDebouncedRef } from '~/composables/useDebouncedRef'
@@ -58,6 +58,94 @@ const {
   loadMore,
   refresh,
 } = await useAdminMediaData()
+
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let loadMoreObserver: IntersectionObserver | null = null
+const isClient = typeof window !== 'undefined'
+
+function stopObserving(target?: Element | null) {
+  if (!loadMoreObserver || !target) {
+    return
+  }
+
+  loadMoreObserver.unobserve(target)
+}
+
+function cleanupObserver() {
+  if (!loadMoreObserver) {
+    return
+  }
+
+  loadMoreObserver.disconnect()
+  loadMoreObserver = null
+}
+
+function ensureObserver() {
+  if (!isClient || loadMoreObserver || typeof window.IntersectionObserver === 'undefined') {
+    return
+  }
+
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          loadMore()
+        }
+      }
+    },
+    { rootMargin: '320px 0px 320px 0px' },
+  )
+}
+
+function observeTarget(target: HTMLElement | null) {
+  if (!isClient || !target) {
+    return
+  }
+
+  ensureObserver()
+  loadMoreObserver?.observe(target)
+}
+
+watch(
+  () => loadMoreSentinel.value,
+  (element, previous) => {
+    if (!isClient) {
+      return
+    }
+
+    if (previous) {
+      stopObserving(previous)
+    }
+
+    if (element && hasMore.value) {
+      observeTarget(element)
+    }
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => hasMore.value,
+  (value) => {
+    if (!isClient) {
+      return
+    }
+
+    if (!value) {
+      cleanupObserver()
+      return
+    }
+
+    if (loadMoreSentinel.value) {
+      observeTarget(loadMoreSentinel.value)
+    }
+  },
+  { flush: 'post' },
+)
+
+onBeforeUnmount(() => {
+  cleanupObserver()
+})
 
 const adminItems = computed(() => items.value ?? [])
 const totalCount = computed(() => total.value ?? 0)
@@ -403,7 +491,7 @@ function retryFetch() {
           No media matches those filters yet. Try adjusting the search or adding a new title.
         </div>
 
-        <div v-if="hasMore" class="flex justify-center">
+        <div v-if="hasMore" ref="loadMoreSentinel" class="flex justify-center">
           <NuxtButton variant="soft" color="primary" :loading="isLoadingMore" @click="loadMore">
             Load more media
           </NuxtButton>
