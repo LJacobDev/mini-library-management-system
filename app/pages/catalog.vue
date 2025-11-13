@@ -89,6 +89,19 @@ const {
   close: closeDetail,
 } = useMediaDetail();
 
+const { user } = useSupabaseAuth();
+const isAuthenticated = computed(() => Boolean(user.value));
+const isReserving = ref(false);
+const reserveFeedback = ref<string | null>(null);
+
+watch(
+  () => detailMedia.value?.id,
+  () => {
+    isReserving.value = false;
+    reserveFeedback.value = null;
+  }
+);
+
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
@@ -96,6 +109,30 @@ function selectType(value: string) {
 
 function handleSelect(item: CatalogItem) {
   openWithMedia(item);
+}
+
+function resetReserveState() {
+  isReserving.value = false;
+  reserveFeedback.value = null;
+}
+
+function closeDetailModal() {
+  resetReserveState();
+  closeDetail();
+}
+
+async function requestReserve() {
+  if (!detailMedia.value || !isAuthenticated.value) {
+    return;
+  }
+
+  try {
+    isReserving.value = true;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    reserveFeedback.value = `Reservation request queued for “${detailMedia.value.title}”. (stub)`;
+  } finally {
+    isReserving.value = false;
+  }
 }
 </script>
 
@@ -183,7 +220,35 @@ function handleSelect(item: CatalogItem) {
       :media="detailMedia"
       :loading="isDetailLoading"
       :error="detailError"
-      @close="closeDetail"
-    />
+      @close="closeDetailModal"
+    >
+      <template #actions>
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p v-if="!isAuthenticated" class="text-xs text-slate-400">
+            Sign in to reserve this title online.
+          </p>
+          <div class="flex w-full justify-end gap-2 sm:w-auto">
+            <NuxtButton variant="ghost" color="neutral" :disabled="isDetailLoading" @click="closeDetailModal">
+              Close
+            </NuxtButton>
+            <NuxtButton
+              v-if="isAuthenticated"
+              color="primary"
+              :loading="isReserving"
+              :disabled="isDetailLoading || !detailMedia"
+              @click="requestReserve"
+            >
+              Reserve
+            </NuxtButton>
+            <NuxtButton v-else color="primary" variant="soft" disabled>
+              Reserve
+            </NuxtButton>
+          </div>
+        </div>
+        <p v-if="reserveFeedback" class="text-xs text-primary-300">
+          {{ reserveFeedback }}
+        </p>
+      </template>
+    </MediaDetailModal>
   </div>
 </template>
