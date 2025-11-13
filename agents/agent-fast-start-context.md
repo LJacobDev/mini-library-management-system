@@ -5,7 +5,7 @@ _Last updated: 2025-11-12_
 ## Current State Snapshot
 
 - **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. The authenticated dashboard layout remains in place for staff/member pages.
-- **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Both landing and dashboard catalog views await the shared `useCatalogData` composable so SSR and hydration stay in sync, use client-only 300 ms debounced search inputs to limit chatter, and render via Tailwind responsive grids from the first paint.
+- **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Landing and dashboard catalog views now share the `CatalogGrid` component fed by `useCatalogData`, keeping SSR and hydration in sync, reusing the 300 ms debounced search inputs, and rendering via Tailwind responsive grids from the first paint.
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS.
 - **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell.
@@ -113,3 +113,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Centered `/login` auth panel horizontally by constraining container width on larger screens.
 - 2025-11-12 — Replaced custom `.catalog-grid` CSS with Tailwind utility classes so catalog tiles render multi-column immediately on load.
 - 2025-11-12 — Guarded client-only search debounces and awaited `useCatalogData` to keep SSR/client catalog output aligned, clearing hydration mismatches.
+- 2025-11-12 — Refactored `/pages/catalog.vue` to use the shared `CatalogGrid` with unified filters, summary badge header, and search reset, removing duplicated markup and restoring build health.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 definePageMeta({ ssr: true });
 
@@ -79,57 +79,13 @@ const activeType = computed({
 });
 
 const filteredItems = computed(() => items.value ?? []);
+const catalogError = computed(() => error.value ?? null);
 
 function selectType(value: string) {
   activeType.value = value;
   setPage(1);
 }
 
-function mediaTypeLabel(type: string) {
-  return mediaTypeLabelMap[type] ?? type;
-}
-
-const loadMoreRef = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
-
-onMounted(() => {
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          loadMore();
-        }
-      });
-    },
-    { rootMargin: "200px" }
-  );
-
-  if (loadMoreRef.value) {
-    observer.observe(loadMoreRef.value);
-  }
-});
-
-watch(
-  loadMoreRef,
-  (el, prev) => {
-    if (!observer) {
-      return;
-    }
-    if (prev) {
-      observer.unobserve(prev);
-    }
-    if (el) {
-      observer.observe(el);
-    }
-  }
-);
-
-onBeforeUnmount(() => {
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
-});
 </script>
 
 <template>
@@ -231,72 +187,16 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="isInitialLoading" class="catalog-grid">
-          <NuxtCard v-for="n in 12" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
-        </div>
-
-        <div v-else-if="error" class="min-h-[200px] rounded-3xl border border-dashed border-red-500/40 bg-red-950/20 p-10 text-center text-sm text-red-200">
-          Unable to load catalog right now. Please try again shortly.
-        </div>
-
-        <div v-else-if="filteredItems.length" class="catalog-grid">
-          <NuxtCard
-            v-for="item in filteredItems"
-            :key="item.id"
-            class="flex h-full flex-col overflow-hidden border border-white/5 bg-slate-900/70"
-          >
-            <div class="relative">
-              <NuxtImg :src="item.coverUrl || fallbackCover" alt="" class="h-44 w-full object-cover" loading="lazy" />
-            </div>
-
-            <div class="flex flex-1 flex-col gap-3 p-5">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">
-                  {{ mediaTypeLabel(item.mediaType) }}
-                </p>
-                <h4 class="mt-2 text-lg font-semibold text-white">{{ item.title }}</h4>
-                <p class="text-sm text-slate-400">{{ item.author }}</p>
-              </div>
-
-              <div v-if="item.subjects?.length" class="flex flex-wrap gap-2">
-                <NuxtBadge
-                  v-for="subject in item.subjects"
-                  :key="subject"
-                  color="neutral"
-                  variant="outline"
-                  class="text-xs"
-                >
-                  {{ subject }}
-                </NuxtBadge>
-              </div>
-
-              <div class="mt-auto flex items-center justify-between text-xs text-slate-500">
-                <span>Published {{ item.publishedAt }}</span>
-                <NuxtButton size="xs" variant="ghost" color="primary" icon="i-heroicons-eye" label="Details" />
-              </div>
-            </div>
-          </NuxtCard>
-        </div>
-
-        <div v-else class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
-          No matching items yet. Try a different search or filter.
-        </div>
-
-        <div
-          v-if="hasMore"
-          ref="loadMoreRef"
-          class="mt-8 flex flex-col items-center gap-4 text-sm text-slate-400"
-        >
-          <NuxtButton
-            variant="soft"
-            color="primary"
-            :loading="isLoadingMore"
-            @click="loadMore"
-          >
-            Load more titles
-          </NuxtButton>
-          <p v-if="isLoadingMore" class="text-xs text-slate-500">Fetching more from the stacks…</p>
-        </div>
+        <CatalogGrid
+          :items="filteredItems"
+          :is-initial-loading="isInitialLoading"
+          :is-loading-more="isLoadingMore"
+          :has-more="hasMore"
+          :error="catalogError"
+          :fallback-cover="fallbackCover"
+          :media-type-labels="mediaTypeLabelMap"
+          @load-more="loadMore"
+        />
       </div>
     </section>
   </main>
