@@ -60,14 +60,32 @@ export function ensureSupabaseResult<T>(result: SupabaseResult<T>, fallbackMessa
   return result.data
 }
 
+const POSTGREST_STATUS_MAP: Record<string, number> = {
+  PGRST116: 404, // No rows returned
+  PGRST301: 401, // JWT invalid
+  PGRST302: 401, // JWT missing
+  '42501': 403, // permission denied
+}
+
+function resolveStatusCode(error: PostgrestError | Error | null | undefined, fallbackStatus: number) {
+  if (!error || !(error as PostgrestError).code) {
+    return fallbackStatus
+  }
+
+  const { code } = error as PostgrestError
+  return POSTGREST_STATUS_MAP[code] ?? fallbackStatus
+}
+
 export function normalizeSupabaseError(
   error: PostgrestError | Error | null | undefined,
   fallbackMessage: string,
   statusCode = 500
 ) {
+  const resolvedStatus = resolveStatusCode(error, statusCode)
+
   if (!error) {
     return createError({
-      statusCode,
+      statusCode: resolvedStatus,
       statusMessage: fallbackMessage,
     })
   }
@@ -76,7 +94,7 @@ export function normalizeSupabaseError(
   console.error('[Supabase] error', details, error)
 
   return createError({
-    statusCode,
+    statusCode: resolvedStatus,
     statusMessage: fallbackMessage,
   })
 }
