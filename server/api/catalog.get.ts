@@ -1,6 +1,24 @@
 import { createError, getQuery } from 'h3'
 import { getSupabaseServiceClient } from '../utils/supabaseServiceClient'
 
+type MediaRow = {
+  id: string
+  title: string
+  creator: string
+  media_type: string
+  media_format: string | null
+  cover_url: string | null
+  genre: string | null
+  subject: string | null
+  description: string | null
+  published_at: string | null
+  isbn: string | null
+  language: string | null
+  pages: number | null
+  duration_seconds: number | null
+  metadata: Record<string, unknown> | null
+}
+
 const DEFAULT_PAGE_SIZE = 24
 const MAX_PAGE_SIZE = 60
 const ALLOWED_MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
@@ -33,7 +51,23 @@ export default defineEventHandler(async (event) => {
   let builder = supabase
     .from('media')
     .select(
-      `id, title, creator, media_type, media_format, cover_url, genre, subject, description, published_at, metadata`,
+      [
+        'id',
+        'title',
+        'creator',
+        'media_type',
+        'media_format',
+        'cover_url',
+        'genre',
+        'subject',
+        'description',
+        'published_at',
+        'isbn',
+        'language',
+        'pages',
+        'duration_seconds',
+        'metadata',
+      ].join(', '),
       { count: 'exact' }
     )
     .order('title', { ascending: true })
@@ -64,18 +98,47 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const items = (data ?? []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    author: item.creator,
-    mediaType: item.media_type,
-    mediaFormat: item.media_format,
-    coverUrl: item.cover_url,
-    subjects: [item.genre, item.subject].filter(Boolean),
-    description: item.description,
-    publishedAt: item.published_at,
-    metadata: item.metadata ?? {},
-  }))
+  const items = ((data ?? []) as unknown as MediaRow[]).map((item) => {
+    const metadata: Record<string, unknown> = {}
+
+    if (item.metadata && typeof item.metadata === 'object') {
+      Object.assign(metadata, item.metadata)
+    }
+
+    const assignMetadata = (key: string, value: unknown) => {
+      if (value === null || value === undefined) {
+        return
+      }
+
+      if (typeof value === 'string' && !value.trim()) {
+        return
+      }
+
+      metadata[key] = value
+    }
+
+    assignMetadata('isbn', item.isbn)
+    assignMetadata('language', item.language)
+    assignMetadata('pages', item.pages)
+
+    if (typeof item.duration_seconds === 'number' && Number.isFinite(item.duration_seconds)) {
+      const minutes = Math.max(1, Math.round(item.duration_seconds / 60))
+      assignMetadata('duration_minutes', minutes)
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      author: item.creator,
+      mediaType: item.media_type,
+      mediaFormat: item.media_format,
+      coverUrl: item.cover_url,
+      subjects: [item.genre, item.subject].filter(Boolean),
+      description: item.description,
+      publishedAt: item.published_at,
+      metadata: Object.keys(metadata).length ? metadata : undefined,
+    }
+  })
 
   const total = count ?? items.length
   const hasMore = total > page * pageSize
