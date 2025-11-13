@@ -134,7 +134,6 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Added `/api/loans` GET handler for librarian/admin filtered loan listings with pagination and status derivation.
 - 2025-11-13 — Added `/api/loans` POST handler for librarian/admin checkouts with conflict guard and metadata capture.
 - 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
-- 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
 - 2025-11-13 — Added `/api/loans/:id/renew` POST handler allowing staff or the borrowing member when no reservations block the item.
 - 2025-11-13 — Wired catalog pages to the new `MediaDetailModal`; adjusted the modal component to follow Nuxt UI’s `v-model:open`/slot conventions so card clicks should surface the detail overlay for future enrichment.
 - 2025-11-13 — Extended `/pages/debug` console with loan controls (list/checkout/return/renew) for rapid circulation testing.
@@ -159,8 +158,16 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Paused follow-up work to propagate impersonation state across dashboard components; keep the idea bookmarked but focus next on higher-impact UI polish and staff tooling.
 - 2025-11-13 — Added `profiles-trigger.sql` documenting the `handle_new_user` trigger; new Supabase signups now upsert into `public.users` + `public.profiles` (with `ON CONFLICT` guards) so circulation endpoints resolve roles without manual seeding.
 - 2025-11-13 — Verified magic-link signup flow post-trigger update: new accounts now populate `users` + `profiles` automatically, and deletion guidance is to remove the UUID from `auth.users` then `public.users` (cascades clean the rest).
+- 2025-11-13 — Header now shows a prominent Dashboard link whenever the effective role (real or dev-impersonated) is librarian/admin so staff can jump straight into the dashboard without opening the profile menu.
 - 2025-11-13 — Replaced the desk placeholder with a catalog search grid plus checkout/check-in modal stubs; ready to hook into `/api/loans` endpoints and refresh availability after submissions.
 - 2025-11-13 — Wired desk modal actions to `/api/loans` and `/api/loans/:id/return`, updating catalog metadata on success so availability badges flip immediately; member lookup now accepts email or Supabase auth UUID and auto-seeds the `users`/`profiles` tables when needed.
 - 2025-11-13 — Consolidated admin media API helpers (`adminMedia.ts`), tightened validation (metadata, enums, numeric fields), and unified response mapping across GET/POST/PATCH to prep the dashboard CRUD screens.
 - 2025-11-13 — Replaced the admin placeholder page with a live catalog grid (search, filters, sort, modal view) to exercise the admin media GET endpoint ahead of edit/delete wiring.
+- 2025-11-13 — Added `AdminMediaFormModal` and wired `/dashboard/admin` edit/add buttons to open the new form modal (submit still stubs), kicking off the admin CRUD UI workflow.
+- 2025-11-13 — Hooked admin edit flow to the `/api/admin/media/:id` PATCH endpoint; modal now persists changes and updates the local list while showing inline errors.
+- 2025-11-13 — Wired the admin “Add media” modal to POST against `/api/admin/media`, preprending new items to the grid and sharing the same inline error handling.
+- 2025-11-13 — TODO follow-up: swap the generic Unsplash fallback cover for the seeded media-type images (book/dvd/audio/other) once the admin CRUD work wraps.
+- 2025-11-13 — Added delete confirmation modal on `/dashboard/admin`; calling the DELETE endpoint removes the item from the grid and surfaces errors inline.
+- 2025-11-13 — Added delete confirmation modal on `/dashboard/admin`; calling the DELETE endpoint removes the item from the grid and surfaces errors inline.
+- 2025-11-13 — Added unsaved-change guard to the admin media form; cancelling now prompts before discarding edits, while successful saves bypass the warning.
 - 2025-11-13 — Upgraded `/dashboard/admin` pagination with an intersection-observed "Load more" sentinel so additional pages fetch automatically as the control scrolls into view, while keeping the manual button as a fallback.

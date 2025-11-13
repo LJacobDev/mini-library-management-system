@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import AdminMediaFormModal from '~/components/admin/AdminMediaFormModal.vue'
 import MediaDetailModal from '~/components/catalog/MediaDetailModal.vue'
 import { useAdminMediaData, type AdminMediaItem, type SortField, type SortDirection } from '~/composables/useAdminMediaData'
 import { useDebouncedRef } from '~/composables/useDebouncedRef'
 import { useMediaDetail } from '~/composables/useMediaDetail'
+import type { AdminMediaFormMode, AdminMediaFormPayload } from '~/types/admin-media'
 
 definePageMeta({
   layout: 'dashboard',
@@ -62,6 +64,17 @@ const {
 const loadMoreSentinel = ref<HTMLElement | null>(null)
 let loadMoreObserver: IntersectionObserver | null = null
 const isClient = typeof window !== 'undefined'
+
+const isFormOpen = ref(false)
+const formMode = ref<AdminMediaFormMode>('edit')
+const editingItem = ref<AdminMediaItem | null>(null)
+const formError = ref<string | null>(null)
+const formLoading = ref(false)
+const formModalRef = ref<InstanceType<typeof AdminMediaFormModal> | null>(null)
+const isDeleteConfirmOpen = ref(false)
+const deleteTarget = ref<AdminMediaItem | null>(null)
+const deleteLoading = ref(false)
+const deleteError = ref<string | null>(null)
 
 function stopObserving(target?: Element | null) {
   if (!loadMoreObserver || !target) {
@@ -151,6 +164,15 @@ const adminItems = computed(() => items.value ?? [])
 const totalCount = computed(() => total.value ?? 0)
 const visibleCount = computed(() => adminItems.value.length)
 const listError = computed(() => error.value ?? null)
+const formInitialValue = computed(() => (formMode.value === 'edit' ? editingItem.value : null))
+const deleteTargetTitle = computed(() => deleteTarget.value?.title ?? 'this item')
+const hasUnsavedChanges = computed(() => {
+  if (!isFormOpen.value) {
+    return false
+  }
+
+  return Boolean(formModalRef.value?.isDirty)
+})
 
 const searchInput = ref(filters.q ?? '')
 const debouncedSearch = useDebouncedRef(searchInput, 300)
@@ -255,19 +277,151 @@ function handleView(item: AdminMediaItem) {
 }
 
 function handleEdit(item: AdminMediaItem) {
-  console.info('[admin] edit action placeholder', item.id, item.title)
+  formMode.value = 'edit'
+  editingItem.value = item
+  formError.value = null
+  formLoading.value = false
+  isFormOpen.value = true
 }
 
 function handleDelete(item: AdminMediaItem) {
-  console.info('[admin] delete action placeholder', item.id, item.title)
+  deleteTarget.value = item
+  deleteError.value = null
+  deleteLoading.value = false
+  isDeleteConfirmOpen.value = true
 }
 
 function startCreate() {
-  console.info('[admin] create action placeholder')
+  formMode.value = 'create'
+  editingItem.value = null
+  formError.value = null
+  formLoading.value = false
+  isFormOpen.value = true
 }
 
 function retryFetch() {
   refresh()
+}
+
+function handleFormClose(force = false) {
+  if (!force && hasUnsavedChanges.value) {
+    const discard = window.confirm('Discard unsaved changes?')
+    if (!discard) {
+      return
+    }
+  }
+
+  isFormOpen.value = false
+  formError.value = null
+  formLoading.value = false
+  editingItem.value = null
+  formModalRef.value?.resetForm()
+}
+
+function handleFormSubmit(payload: AdminMediaFormPayload) {
+  if (formMode.value === 'edit' && editingItem.value) {
+    updateMediaItem(editingItem.value.id, payload)
+  } else {
+    createMediaItem(payload)
+  }
+}
+
+function closeDeleteConfirm() {
+  isDeleteConfirmOpen.value = false
+  deleteTarget.value = null
+  deleteError.value = null
+  deleteLoading.value = false
+}
+
+async function updateMediaItem(id: string, payload: AdminMediaFormPayload) {
+  formLoading.value = true
+  formError.value = null
+
+  try {
+    const response = await $fetch<{ item: AdminMediaItem }>(`/api/admin/media/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+
+    const updated = response.item
+    const index = adminItems.value.findIndex((item) => item.id === updated.id)
+    if (index !== -1) {
+      adminItems.value.splice(index, 1, updated)
+    }
+
+  handleFormClose(true)
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      formError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to update media item.'
+    } else if (error instanceof Error) {
+      formError.value = error.message
+    } else {
+      formError.value = 'Unable to update media item.'
+    }
+  } finally {
+    formLoading.value = false
+  }
+}
+
+async function createMediaItem(payload: AdminMediaFormPayload) {
+  formLoading.value = true
+  formError.value = null
+
+  try {
+    const response = await $fetch<{ item: AdminMediaItem }>(`/api/admin/media`, {
+      method: 'POST',
+      body: payload,
+    })
+
+    const created = response.item
+    adminItems.value.unshift(created)
+  handleFormClose(true)
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      formError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to create media item.'
+    } else if (error instanceof Error) {
+      formError.value = error.message
+    } else {
+      formError.value = 'Unable to create media item.'
+    }
+  } finally {
+    formLoading.value = false
+  }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) {
+    return
+  }
+
+  deleteLoading.value = true
+  deleteError.value = null
+
+  try {
+    await $fetch(`/api/admin/media/${deleteTarget.value.id}`, {
+      method: 'DELETE',
+    })
+
+    const index = adminItems.value.findIndex((item) => item.id === deleteTarget.value?.id)
+    if (index !== -1) {
+      adminItems.value.splice(index, 1)
+    }
+
+    closeDeleteConfirm()
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      deleteError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to delete media item.'
+    } else if (error instanceof Error) {
+      deleteError.value = error.message
+    } else {
+      deleteError.value = 'Unable to delete media item.'
+    }
+  } finally {
+    deleteLoading.value = false
+  }
 }
 </script>
 
@@ -506,5 +660,59 @@ function retryFetch() {
       :error="detailError"
       @close="closeDetail"
     />
+
+    <AdminMediaFormModal
+      ref="formModalRef"
+      :open="isFormOpen"
+      :mode="formMode"
+      :initial-value="formInitialValue"
+      :loading="formLoading"
+      :error="formError"
+      @close="handleFormClose()"
+      @submit="handleFormSubmit"
+    />
+
+    <NuxtModal
+      v-model:open="isDeleteConfirmOpen"
+      title="Delete media item?"
+      :description="`This will permanently remove ${deleteTargetTitle}.`"
+      :overlay="true"
+      :prevent-close="deleteLoading"
+      class="max-w-md"
+    >
+      <template #body>
+        <div class="space-y-4 text-sm text-slate-200">
+          <p>
+            Are you sure you want to delete
+            <span class="font-semibold text-white">{{ deleteTargetTitle }}</span>
+            from the catalog? This action cannot be undone.
+          </p>
+          <p v-if="deleteError" class="rounded-md border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-200">
+            {{ deleteError }}
+          </p>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <NuxtButton
+            variant="ghost"
+            color="neutral"
+            :disabled="deleteLoading"
+            @click="closeDeleteConfirm"
+          >
+            Cancel
+          </NuxtButton>
+          <NuxtButton
+            color="error"
+            :loading="deleteLoading"
+            :disabled="deleteLoading"
+            @click="confirmDelete"
+          >
+            Delete
+          </NuxtButton>
+        </div>
+      </template>
+    </NuxtModal>
   </div>
 </template>
