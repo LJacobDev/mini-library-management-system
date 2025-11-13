@@ -4,3 +4,27 @@
 /* :root {
 	--brand-primary: 14 165 164;
 } */
+
+.catalog-grid {
+	display: grid;
+	gap: 1.5rem; /* Tailwind spacing 6 */
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+	.catalog-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1024px) {
+	.catalog-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 1536px) {
+	.catalog-grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}

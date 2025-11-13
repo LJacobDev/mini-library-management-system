@@ -213,15 +213,15 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          <NuxtCard v-for="n in 6" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
+        <div v-if="isInitialLoading" class="catalog-grid">
+          <NuxtCard v-for="n in 12" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
         </div>
 
         <div v-else-if="error" class="min-h-[200px] rounded-3xl border border-dashed border-red-500/40 bg-red-950/20 p-10 text-center text-sm text-red-200">
           Unable to load catalog right now. Please try again shortly.
         </div>
 
-        <div v-else-if="filteredItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div v-else-if="filteredItems.length" class="catalog-grid">
           <NuxtCard
             v-for="item in filteredItems"
             :key="item.id"

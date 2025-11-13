@@ -157,8 +157,8 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
-      <div v-if="isInitialLoading" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        <NuxtCard v-for="n in 9" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
+      <div v-if="isInitialLoading" class="catalog-grid">
+        <NuxtCard v-for="n in 12" :key="n" class="h-64 animate-pulse border border-white/5 bg-slate-900/40" />
       </div>
 
       <div
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
         Unable to load the catalog right now. Please refresh or check the Supabase connection.
       </div>
 
-      <div v-else-if="displayItems.length" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-else-if="displayItems.length" class="catalog-grid">
         <NuxtCard
           v-for="item in displayItems"
           :key="item.id"
