@@ -1,4 +1,4 @@
-import { createError } from 'h3'
+import { createError, getCookie } from 'h3'
 import type { H3Event } from 'h3'
 import type { PostgrestError, User } from '@supabase/supabase-js'
 import { requireSupabaseSession, type SupabaseSessionResult } from './requireSupabaseSession'
@@ -18,6 +18,8 @@ function resolveUserRole(user: User): AppRole {
 
 export interface SupabaseApiContext extends SupabaseSessionResult {
   role: AppRole
+  actualRole: AppRole
+  impersonatedRole: AppRole | null
 }
 
 interface RequireSessionOptions {
@@ -25,11 +27,30 @@ interface RequireSessionOptions {
   forbiddenMessage?: string
 }
 
+function resolveImpersonatedRole(event: H3Event): AppRole | null {
+  if (!import.meta.dev) {
+    return null
+  }
+
+  const cookie = getCookie(event, 'mlms-dev-role')
+  if (!cookie) {
+    return null
+  }
+
+  if (!VALID_ROLES.includes(cookie as AppRole)) {
+    return null
+  }
+
+  return cookie as AppRole
+}
+
 export async function getSupabaseContext(event: H3Event, options: RequireSessionOptions = {}): Promise<SupabaseApiContext> {
   const session = await requireSupabaseSession(event)
-  const role = resolveUserRole(session.user)
+  const actualRole = resolveUserRole(session.user)
+  const impersonatedRole = resolveImpersonatedRole(event)
+  const effectiveRole = impersonatedRole ?? actualRole
 
-  if (options.roles?.length && !options.roles.includes(role)) {
+  if (options.roles?.length && !options.roles.includes(effectiveRole)) {
     const required = options.roles.join(', ')
     throw createError({
       statusCode: 403,
@@ -39,7 +60,9 @@ export async function getSupabaseContext(event: H3Event, options: RequireSession
 
   return {
     ...session,
-    role,
+    role: effectiveRole,
+    actualRole,
+    impersonatedRole,
   }
 }
 

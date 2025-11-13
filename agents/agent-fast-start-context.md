@@ -7,8 +7,10 @@ _Last updated: 2025-11-13_
 - **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. Auth UX refresh is queued: guests keep the current header; authenticated users will gain a profile dropdown + sign-out actions, while staff additionally pick up a sidebar-driven dashboard.
 - **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Landing and dashboard catalog views now share the `CatalogGrid` component fed by `useCatalogData`, keep SSR and hydration in sync, reuse a shared `useDebouncedRef` composable for 300 ms search input debouncing, render via Tailwind responsive grids from the first paint, and elevate card clicks into the shared `MediaDetailModal` for richer item context with freshly added bibliographic metadata (ISBN, language, page counts, runtime).
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
+**AI concierge**: `/api/ai/recommend` now accepts POST prompts, extracts keywords, queries Supabase, and streams role-aware summaries over SSE. `AgentChatPanel` renders the experience on the landing page (members only) and `/debug`, showing live message bubbles and recommendation cards backed by the streaming endpoint. `useAgentChat` handles aborts, retries, and metadata parsing.
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS.
 - **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell. Reservation API work is scoped but paused after the working UI stub so we can prioritize staff tooling.
+**Developer tooling**: `/pages/debug/index.vue` (dev-only) now embeds the full `AgentChatPanel` alongside health-check buttons so we can exercise the streaming concierge without leaving the console. Existing cards still cover OpenAI/Supabase checks and admin circulation endpoints.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
 
 ### Live deployment
@@ -50,7 +52,7 @@ _Last updated: 2025-11-13_
 
 1. Ship role-aware header/sidebar + routing so member/staff journeys diverge appropriately.
 2. Stand up `/dashboard` with catalog, circulation, and admin views powered by existing APIs.
-3. Add member AI chat pane on the landing page while preserving guest experience.
+3. Polish the member AI concierge UI (styling, history, filters) and wire front-end prompts into dashboard tooling where useful.
 4. Once dashboard is live, resume reservation endpoint + account surfaces before moving to tests/palette refresh.
 
 ### Security considerations
@@ -144,3 +146,8 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Enriched chat recommendation rail with skeleton loaders, empty-state guidance, and richer metadata badges ahead of page integration.
 - 2025-11-13 — Mounted `AgentChatPanel` on the landing page for signed-in members and within the `/debug` console for rapid streaming verification.
 - 2025-11-13 — Updated agent chat fetch + debug console to send event-stream headers/bodies so POST prompts stream correctly and bubble meaningful errors when auth or payload is missing.
+- 2025-11-13 — Converted `AgentChatPanel` to the configured `Nuxt*` component prefix, simplified the message layout, and confirmed end-to-end streaming works in `/` and `/debug` with live metadata cards; remaining work is visual polish/historical transcript.
+- 2025-11-13 — Added a dev-only "View as" selector to `AppHeader` so impersonation UX can be exercised once the `/api/debug/impersonate` endpoint lands; controls currently POST and reload when the backend arrives, failing quietly during development until the API is ready.
+- 2025-11-13 — Implemented `/api/debug/impersonate` to toggle a dev-only cookie that overrides roles, updated `getSupabaseContext` to honor the cookie (while tracking actual vs impersonated role), and wired the header selector to persist/read the override so staff tooling can be demoed without switching accounts.
+- 2025-11-13 — Surfaced impersonation status in `AppHeader`: the "View as" control now shows a "Viewing as" pill plus the real role label whenever the dev cookie is active, giving instant visual confirmation of the effective vs actual role.
+- 2025-11-13 — Paused follow-up work to propagate impersonation state across dashboard components; keep the idea bookmarked but focus next on higher-impact UI polish and staff tooling.

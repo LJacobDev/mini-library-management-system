@@ -2,9 +2,9 @@
 const route = useRoute();
 
 const navItems = [
-  { label: 'Dashboard home', to: '/dashboard' },
-  { label: 'Library desk', to: '/dashboard/desk' },
-  { label: 'Admin tools', to: '/dashboard/admin' },
+  { label: 'Dashboard home', to: '/dashboard', icon: 'heroicons:home' },
+  { label: 'Library desk', to: '/dashboard/desk', icon: 'heroicons:queue-list' },
+  { label: 'Admin tools', to: '/dashboard/admin', icon: 'heroicons:adjustments-horizontal' },
 ];
 
 function isActive(path: string) {
@@ -31,7 +31,7 @@ function isActive(path: string) {
             class="flex items-center gap-2 rounded-lg px-2 py-2 text-slate-300 transition hover:bg-slate-800/60"
             :class="isActive(item.to) ? 'bg-slate-800/80 text-white' : ''"
           >
-            <span class="inline-flex size-2 rounded-full bg-cyan-400/80" aria-hidden="true" />
+            <NuxtIcon :name="item.icon" class="size-4" aria-hidden="true" />
             <span>{{ item.label }}</span>
           </NuxtLink>
         </nav>

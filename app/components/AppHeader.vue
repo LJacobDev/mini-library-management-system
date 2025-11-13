@@ -34,6 +34,36 @@
         </template>
 
         <template v-else>
+          <div v-if="showRoleSwitcher" class="hidden flex-col items-end gap-1 sm:flex">
+            <div
+              class="flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/60 px-3 py-1.5 text-xs text-white shadow-sm"
+            >
+              <label class="font-semibold uppercase tracking-wide text-white/70" for="demo-role-select">View as</label>
+              <select
+                id="demo-role-select"
+                v-model="selectedRole"
+                class="rounded-md border border-white/10 bg-slate-950/80 px-2 py-1 text-xs font-medium text-white focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                @change="handleRoleSelection"
+              >
+                <option v-for="option in roleOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div
+              v-if="isImpersonating"
+              class="flex items-center gap-2 text-[11px] font-medium text-cyan-200"
+            >
+              <span class="rounded-full bg-cyan-500/15 px-2 py-0.5 text-cyan-200">
+                Viewing as {{ impersonatedRoleLabel }}
+              </span>
+              <span class="text-slate-400">
+                Real role: {{ actualRoleLabel }}
+              </span>
+            </div>
+          </div>
+
           <details class="relative">
             <summary
               class="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -81,6 +111,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Ref } from "vue";
+
 const { user, signOut } = useSupabaseAuth();
 const isHeaderHidden = ref(false);
 const lastScrollY = ref(0);
@@ -103,13 +135,107 @@ const profileInitials = computed(() => {
   }
 
   const parts = label.split(/\s+/).filter(Boolean);
-  const initials = parts.slice(0, 2).map((part) => part.charAt(0)).join("");
+  const initials = parts.slice(0, 2).map((part: string) => part.charAt(0)).join("");
   return initials.toUpperCase();
 });
 
 const userEmail = computed(() => user.value?.email || "");
 
 const isHomeRoute = computed(() => route.path === "/");
+
+const showRoleSwitcher = computed(() => import.meta.dev && isAuthenticated.value);
+
+type DemoRole = "actual" | "member" | "librarian" | "admin";
+type AppRole = "member" | "librarian" | "admin";
+
+const appRoleLabels: Record<AppRole, string> = {
+  member: "Member",
+  librarian: "Librarian",
+  admin: "Admin"
+};
+
+const roleOptions: Array<{ value: DemoRole; label: string }> = [
+  { value: "actual", label: "Your session" },
+  { value: "member", label: "Member" },
+  { value: "librarian", label: "Librarian" },
+  { value: "admin", label: "Admin" }
+];
+
+const selectedRole = ref<DemoRole>("actual");
+
+let impersonationCookie: Ref<DemoRole | null> | null = null;
+
+if (import.meta.dev) {
+  impersonationCookie = useCookie<DemoRole | null>("mlms-dev-role", {
+    watch: false,
+    default: () => null
+  });
+
+  if (impersonationCookie && impersonationCookie.value) {
+    const cookieRole = impersonationCookie.value;
+    if (roleOptions.some((option) => option.value === cookieRole)) {
+      selectedRole.value = cookieRole;
+    }
+  }
+}
+
+async function handleRoleSelection(event: Event) {
+  const target = event.target as HTMLSelectElement | null;
+  if (!target) {
+    return;
+  }
+
+  const nextRole = target.value as DemoRole;
+  selectedRole.value = nextRole;
+
+  if (!import.meta.dev) {
+    return;
+  }
+
+  try {
+    await $fetch("/api/debug/impersonate", {
+      method: "POST",
+      body: { role: nextRole }
+    });
+
+    if (impersonationCookie) {
+      impersonationCookie.value = nextRole === "actual" ? null : nextRole;
+    }
+
+    window.location.reload();
+  } catch (error) {
+    console.warn("Impersonation endpoint unavailable", error);
+  }
+}
+
+const actualRole = computed<AppRole>(() => {
+  const rawRole = (user.value?.app_metadata?.role ?? user.value?.user_metadata?.role) as string | undefined;
+  if (rawRole && ["member", "librarian", "admin"].includes(rawRole)) {
+    return rawRole as AppRole;
+  }
+
+  return "member";
+});
+
+const impersonatedRole = computed<DemoRole>(() => {
+  if (!import.meta.dev || !impersonationCookie?.value) {
+    return "actual";
+  }
+
+  return impersonationCookie.value;
+});
+
+const isImpersonating = computed(() => impersonatedRole.value !== "actual");
+
+const impersonatedRoleLabel = computed(() => {
+  if (impersonatedRole.value === "actual") {
+    return appRoleLabels[actualRole.value];
+  }
+
+  return appRoleLabels[(impersonatedRole.value as AppRole) ?? "member"] ?? "Member";
+});
+
+const actualRoleLabel = computed(() => appRoleLabels[actualRole.value]);
 
 if (import.meta.client) {
   watch(
