@@ -26,17 +26,17 @@ This successor merges the structure of `spec-fast-start-3.md` with the public-fi
    - [x] Status view moved to `/status`; root page freed for catalog work.
 
 1. **Landing hero & navigation revamp** (Phase A.1)
-   - [ ] Redesign `/` with hero (“Welcome to Great City Community Library”), imagery, CTA, and top navigation (login/register, theme toggle, optional quick links).
-   - [ ] Remove sidebar for guests; rely on a clean top navbar.
+   - [x] Redesign `/` with hero (“Welcome to Great City Community Library”), imagery, CTA, and top navigation (login/register, theme toggle, optional quick links).
+   - [x] Remove sidebar for guests; rely on a clean top navbar.
 
 2. **Supabase catalog pipeline** (Phase A.2)
-   - [ ] Implement `server/api/catalog/index.get.ts` (pagination, search, filters, availability joins) and optional `catalog/[id].get.ts` for modal data.
-   - [ ] Build `useCatalogData` composable wrapping `$fetch` with SSR-friendly pagination/infinite scroll helpers.
-   - [ ] Swap `useCatalogMock` usages for live Supabase data on landing and catalog pages; keep mock helper for tests/storybook.
+   - [x] Implement `server/api/catalog/index.get.ts` (pagination, search, filters, availability joins) and optional `catalog/[id].get.ts` for modal data.
+   - [x] Build `useCatalogData` composable wrapping `$fetch` with SSR-friendly pagination/infinite scroll helpers.
+   - [x] Swap `useCatalogMock` usages for live Supabase data on landing and catalog pages; keep mock helper for tests/storybook.
 
 3. **Infinite scroll, search, and filter UX** (Phase A.3)
-   - [ ] Wire IntersectionObserver-based infinite scroll (10–20 items per page) with query param forwarding.
-   - [ ] Add search bar and filter chips tied to Supabase `ilike`/`eq` filters.
+   - [x] Wire IntersectionObserver-based infinite scroll (10–20 items per page) with query param forwarding.
+   - [x] Add search bar and filter chips tied to Supabase `ilike`/`eq` filters.
 
 4. **Media detail modal & auth-aware actions** (Phase A.4)
    - [ ] Open `UDialog`/`USlideover` on card click showing metadata, availability, related reservations/loans summary.
