@@ -30,7 +30,7 @@ const {
   isInitialLoading,
   isLoadingMore,
   total
-} = useCatalogData();
+} = await useCatalogData();
 
 const activeType = computed({
   get: () => filters.type ?? "",

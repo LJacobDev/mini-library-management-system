@@ -48,7 +48,7 @@ const {
   hasMore,
   isInitialLoading,
   isLoadingMore
-} = useCatalogData({ pageSize: 12 });
+} = await useCatalogData({ pageSize: 12 });
 
 const searchInput = ref(filters.q ?? "");
 const SEARCH_DEBOUNCE_MS = 300;
