@@ -1,8 +1,13 @@
 import { createError, getRouterParam, readBody } from 'h3'
+import {
+  assertMediaFormat,
+  assertMediaType,
+  mapMediaRow,
+  sanitizeString,
+  toMetadata,
+  toPositiveInteger,
+} from '../../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../../utils/supabaseApi'
-
-const MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
-const MEDIA_FORMATS = new Set(['print', 'ebook', 'audiobook', 'dvd', 'blu-ray'])
 
 interface UpdateMediaPayload {
   title?: string | null
@@ -19,14 +24,6 @@ interface UpdateMediaPayload {
   durationSeconds?: number | null
   publishedAt?: string | null
   metadata?: Record<string, unknown> | null
-}
-
-function sanitizeString(value: unknown) {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-  return null
 }
 
 export default defineEventHandler(async (event) => {
@@ -47,23 +44,41 @@ export default defineEventHandler(async (event) => {
   if ('creator' in body) updates.creator = sanitizeString(body.creator)
   if ('mediaType' in body) {
     const mediaType = sanitizeString(body.mediaType)
-    if (mediaType && !MEDIA_TYPES.has(mediaType)) {
+    if (!mediaType) {
       throw createError({
         statusCode: 400,
-        statusMessage: `Invalid mediaType. Expected one of: ${Array.from(MEDIA_TYPES).join(', ')}.`,
+        statusMessage: 'mediaType cannot be empty.',
       })
     }
-    updates.media_type = mediaType
+
+    try {
+      updates.media_type = assertMediaType(mediaType)
+    } catch (error) {
+      const message = error instanceof TypeError ? error.message : 'Invalid mediaType.'
+      throw createError({
+        statusCode: 400,
+        statusMessage: message,
+      })
+    }
   }
   if ('mediaFormat' in body) {
     const mediaFormat = sanitizeString(body.mediaFormat)
-    if (mediaFormat && !MEDIA_FORMATS.has(mediaFormat)) {
+    if (!mediaFormat) {
       throw createError({
         statusCode: 400,
-        statusMessage: `Invalid mediaFormat. Expected one of: ${Array.from(MEDIA_FORMATS).join(', ')}.`,
+        statusMessage: 'mediaFormat cannot be empty.',
       })
     }
-    updates.media_format = mediaFormat
+
+    try {
+      updates.media_format = assertMediaFormat(mediaFormat)
+    } catch (error) {
+      const message = error instanceof TypeError ? error.message : 'Invalid mediaFormat.'
+      throw createError({
+        statusCode: 400,
+        statusMessage: message,
+      })
+    }
   }
   if ('isbn' in body) updates.isbn = sanitizeString(body.isbn)
   if ('genre' in body) updates.genre = sanitizeString(body.genre)
@@ -72,16 +87,23 @@ export default defineEventHandler(async (event) => {
   if ('coverUrl' in body) updates.cover_url = sanitizeString(body.coverUrl)
   if ('language' in body) updates.language = sanitizeString(body.language)
   if ('pages' in body) {
-    const pages = body.pages
-    updates.pages = typeof pages === 'number' && Number.isFinite(pages) ? Math.max(1, Math.floor(pages)) : null
+    updates.pages = toPositiveInteger(body.pages)
   }
   if ('durationSeconds' in body) {
-    const duration = body.durationSeconds
-    updates.duration_seconds =
-      typeof duration === 'number' && Number.isFinite(duration) ? Math.max(1, Math.floor(duration)) : null
+    updates.duration_seconds = toPositiveInteger(body.durationSeconds)
   }
   if ('publishedAt' in body) updates.published_at = sanitizeString(body.publishedAt)
-  if ('metadata' in body && body.metadata) updates.metadata = body.metadata
+  if ('metadata' in body) {
+    try {
+      updates.metadata = toMetadata(body.metadata ?? {}, {})
+    } catch (error) {
+      const message = error instanceof TypeError ? error.message : 'Invalid metadata payload.'
+      throw createError({
+        statusCode: 400,
+        statusMessage: message,
+      })
+    }
+  }
 
   if (Object.keys(updates).length === 0) {
     throw createError({
@@ -97,24 +119,6 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
-    item: {
-      id: data.id,
-      title: data.title,
-      author: data.creator,
-      mediaType: data.media_type,
-      mediaFormat: data.media_format,
-      isbn: data.isbn,
-      genre: data.genre,
-      subject: data.subject,
-      description: data.description,
-      coverUrl: data.cover_url,
-      language: data.language,
-      pages: data.pages,
-      durationSeconds: data.duration_seconds,
-      publishedAt: data.published_at,
-      metadata: data.metadata ?? {},
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    },
+    item: mapMediaRow(data),
   }
 })

@@ -1,23 +1,718 @@
-<template>
-  <div class="space-y-6">
-    <header class="space-y-1">
-      <h1 class="text-2xl font-semibold text-white">Admin tools</h1>
-      <p class="text-sm text-slate-400">
-        Manage catalog records, formats, and metadata. Forms will be connected to the admin media APIs shortly.
-      </p>
-    </header>
-
-    <section class="rounded-2xl border border-white/5 bg-slate-950/60 p-6 shadow-lg">
-      <p class="text-sm text-slate-400">
-        Placeholder admin surface. Soon this area will list media items with create, update, and delete capabilities
-        backed by `/api/admin/media` routes.
-      </p>
-    </section>
-  </div>
-</template>
-
 <script setup lang="ts">
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import AdminMediaFormModal from '~/components/admin/AdminMediaFormModal.vue'
+import MediaDetailModal from '~/components/catalog/MediaDetailModal.vue'
+import { useAdminMediaData, type AdminMediaItem, type SortField, type SortDirection } from '~/composables/useAdminMediaData'
+import { useDebouncedRef } from '~/composables/useDebouncedRef'
+import { useMediaDetail } from '~/composables/useMediaDetail'
+import type { AdminMediaFormMode, AdminMediaFormPayload } from '~/types/admin-media'
+
 definePageMeta({
   layout: 'dashboard',
-});
+  requiresAuth: true,
+})
+
+useHead({
+  title: 'Admin catalog • Library Console',
+})
+
+const fallbackCover =
+  'https://images.unsplash.com/photo-1526313199968-70e399ffe791?auto=format&fit=crop&w=512&q=80'
+
+const mediaTypeLabelMap: Record<string, string> = {
+  book: 'Book',
+  video: 'Video',
+  audio: 'Audio',
+  other: 'Other',
+}
+
+const mediaTypeFilters = [
+  { label: 'All', value: '' },
+  { label: 'Books', value: 'book' },
+  { label: 'Video', value: 'video' },
+  { label: 'Audio', value: 'audio' },
+  { label: 'Other', value: 'other' },
+]
+
+const sortOptions: Array<{ label: string; value: SortField }> = [
+  { label: 'Title', value: 'title' },
+  { label: 'Created', value: 'created_at' },
+  { label: 'Updated', value: 'updated_at' },
+]
+
+const directionOptions: Array<{ icon: string; label: string; value: SortDirection }> = [
+  { label: 'Ascending', value: 'asc', icon: 'i-heroicons-arrow-up-20-solid' },
+  { label: 'Descending', value: 'desc', icon: 'i-heroicons-arrow-down-20-solid' },
+]
+
+const {
+  items,
+  total,
+  error,
+  filters,
+  hasMore,
+  isInitialLoading,
+  isLoadingMore,
+  setSearch,
+  setMediaType,
+  setSort,
+  setDirection,
+  loadMore,
+  refresh,
+} = await useAdminMediaData()
+
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let loadMoreObserver: IntersectionObserver | null = null
+const isClient = typeof window !== 'undefined'
+
+const isFormOpen = ref(false)
+const formMode = ref<AdminMediaFormMode>('edit')
+const editingItem = ref<AdminMediaItem | null>(null)
+const formError = ref<string | null>(null)
+const formLoading = ref(false)
+const formModalRef = ref<InstanceType<typeof AdminMediaFormModal> | null>(null)
+const isDeleteConfirmOpen = ref(false)
+const deleteTarget = ref<AdminMediaItem | null>(null)
+const deleteLoading = ref(false)
+const deleteError = ref<string | null>(null)
+
+function stopObserving(target?: Element | null) {
+  if (!loadMoreObserver || !target) {
+    return
+  }
+
+  loadMoreObserver.unobserve(target)
+}
+
+function cleanupObserver() {
+  if (!loadMoreObserver) {
+    return
+  }
+
+  loadMoreObserver.disconnect()
+  loadMoreObserver = null
+}
+
+function ensureObserver() {
+  if (!isClient || loadMoreObserver || typeof window.IntersectionObserver === 'undefined') {
+    return
+  }
+
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          loadMore()
+        }
+      }
+    },
+    { rootMargin: '320px 0px 320px 0px' },
+  )
+}
+
+function observeTarget(target: HTMLElement | null) {
+  if (!isClient || !target) {
+    return
+  }
+
+  ensureObserver()
+  loadMoreObserver?.observe(target)
+}
+
+watch(
+  () => loadMoreSentinel.value,
+  (element, previous) => {
+    if (!isClient) {
+      return
+    }
+
+    if (previous) {
+      stopObserving(previous)
+    }
+
+    if (element && hasMore.value) {
+      observeTarget(element)
+    }
+  },
+  { flush: 'post' },
+)
+
+watch(
+  () => hasMore.value,
+  (value) => {
+    if (!isClient) {
+      return
+    }
+
+    if (!value) {
+      cleanupObserver()
+      return
+    }
+
+    if (loadMoreSentinel.value) {
+      observeTarget(loadMoreSentinel.value)
+    }
+  },
+  { flush: 'post' },
+)
+
+onBeforeUnmount(() => {
+  cleanupObserver()
+})
+
+const adminItems = computed(() => items.value ?? [])
+const totalCount = computed(() => total.value ?? 0)
+const visibleCount = computed(() => adminItems.value.length)
+const listError = computed(() => error.value ?? null)
+const formInitialValue = computed(() => (formMode.value === 'edit' ? editingItem.value : null))
+const deleteTargetTitle = computed(() => deleteTarget.value?.title ?? 'this item')
+const hasUnsavedChanges = computed(() => {
+  if (!isFormOpen.value) {
+    return false
+  }
+
+  return Boolean(formModalRef.value?.isDirty)
+})
+
+const searchInput = ref(filters.q ?? '')
+const debouncedSearch = useDebouncedRef(searchInput, 300)
+
+watch(
+  () => filters.q ?? '',
+  (value) => {
+    if (value !== searchInput.value) {
+      searchInput.value = value
+    }
+  },
+)
+
+watch(debouncedSearch, (value) => {
+  if ((filters.q ?? '') !== value) {
+    setSearch(value)
+  }
+})
+
+const activeType = computed({
+  get: () => filters.mediaType ?? '',
+  set: (value: string) => setMediaType(value || undefined),
+})
+
+const activeSort = computed({
+  get: () => filters.sort ?? 'title',
+  set: (value: SortField) => setSort(value),
+})
+
+const activeDirection = computed({
+  get: () => filters.direction ?? 'asc',
+  set: (value: SortDirection) => setDirection(value),
+})
+
+const hasActiveFilters = computed(() => {
+  const hasSearch = Boolean(filters.q && filters.q.length)
+  const hasType = Boolean(filters.mediaType)
+  const hasSort = (filters.sort ?? 'title') !== 'title'
+  const hasDirection = (filters.direction ?? 'asc') !== 'asc'
+  return hasSearch || hasType || hasSort || hasDirection
+})
+
+const {
+  media: detailMedia,
+  isOpen: isDetailOpen,
+  isLoading: isDetailLoading,
+  error: detailError,
+  openWithMedia,
+  close: closeDetail,
+} = useMediaDetail()
+
+function selectType(value: string) {
+  activeType.value = value
+}
+
+function mediaTypeLabel(type: string | null | undefined) {
+  if (!type) {
+    return '—'
+  }
+
+  return mediaTypeLabelMap[type] ?? type
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date)
+  } catch {
+    return date.toISOString().slice(0, 16).replace('T', ' ')
+  }
+}
+
+function toDetail(item: AdminMediaItem) {
+  const subjects = [item.genre, item.subject].filter((value): value is string => Boolean(value && value.trim()))
+  return {
+    id: item.id,
+    title: item.title,
+    author: item.author,
+    mediaType: item.mediaType,
+    mediaFormat: item.mediaFormat,
+    coverUrl: item.coverUrl ?? undefined,
+    subjects,
+    description: item.description,
+    metadata: item.metadata,
+    publishedAt: item.publishedAt ?? undefined,
+  }
+}
+
+function handleView(item: AdminMediaItem) {
+  openWithMedia(toDetail(item))
+}
+
+function handleEdit(item: AdminMediaItem) {
+  formMode.value = 'edit'
+  editingItem.value = item
+  formError.value = null
+  formLoading.value = false
+  isFormOpen.value = true
+}
+
+function handleDelete(item: AdminMediaItem) {
+  deleteTarget.value = item
+  deleteError.value = null
+  deleteLoading.value = false
+  isDeleteConfirmOpen.value = true
+}
+
+function startCreate() {
+  formMode.value = 'create'
+  editingItem.value = null
+  formError.value = null
+  formLoading.value = false
+  isFormOpen.value = true
+}
+
+function retryFetch() {
+  refresh()
+}
+
+function handleFormClose(force = false) {
+  if (!force && hasUnsavedChanges.value) {
+    const discard = window.confirm('Discard unsaved changes?')
+    if (!discard) {
+      return
+    }
+  }
+
+  isFormOpen.value = false
+  formError.value = null
+  formLoading.value = false
+  editingItem.value = null
+  formModalRef.value?.resetForm()
+}
+
+function handleFormSubmit(payload: AdminMediaFormPayload) {
+  if (formMode.value === 'edit' && editingItem.value) {
+    updateMediaItem(editingItem.value.id, payload)
+  } else {
+    createMediaItem(payload)
+  }
+}
+
+function closeDeleteConfirm() {
+  isDeleteConfirmOpen.value = false
+  deleteTarget.value = null
+  deleteError.value = null
+  deleteLoading.value = false
+}
+
+async function updateMediaItem(id: string, payload: AdminMediaFormPayload) {
+  formLoading.value = true
+  formError.value = null
+
+  try {
+    const response = await $fetch<{ item: AdminMediaItem }>(`/api/admin/media/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+
+    const updated = response.item
+    const index = adminItems.value.findIndex((item) => item.id === updated.id)
+    if (index !== -1) {
+      adminItems.value.splice(index, 1, updated)
+    }
+
+  handleFormClose(true)
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      formError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to update media item.'
+    } else if (error instanceof Error) {
+      formError.value = error.message
+    } else {
+      formError.value = 'Unable to update media item.'
+    }
+  } finally {
+    formLoading.value = false
+  }
+}
+
+async function createMediaItem(payload: AdminMediaFormPayload) {
+  formLoading.value = true
+  formError.value = null
+
+  try {
+    const response = await $fetch<{ item: AdminMediaItem }>(`/api/admin/media`, {
+      method: 'POST',
+      body: payload,
+    })
+
+    const created = response.item
+    adminItems.value.unshift(created)
+  handleFormClose(true)
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      formError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to create media item.'
+    } else if (error instanceof Error) {
+      formError.value = error.message
+    } else {
+      formError.value = 'Unable to create media item.'
+    }
+  } finally {
+    formLoading.value = false
+  }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) {
+    return
+  }
+
+  deleteLoading.value = true
+  deleteError.value = null
+
+  try {
+    await $fetch(`/api/admin/media/${deleteTarget.value.id}`, {
+      method: 'DELETE',
+    })
+
+    const index = adminItems.value.findIndex((item) => item.id === deleteTarget.value?.id)
+    if (index !== -1) {
+      adminItems.value.splice(index, 1)
+    }
+
+    closeDeleteConfirm()
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'data' in error) {
+      const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
+      deleteError.value = errorData?.data?.statusMessage ?? errorData?.statusMessage ?? 'Unable to delete media item.'
+    } else if (error instanceof Error) {
+      deleteError.value = error.message
+    } else {
+      deleteError.value = 'Unable to delete media item.'
+    }
+  } finally {
+    deleteLoading.value = false
+  }
+}
 </script>
+
+<template>
+  <div class="space-y-8">
+    <NuxtPageHeader>
+      <template #title>Admin tools</template>
+      <template #description>
+        Search, review, and edit every media item in the collection. Create new entries or retire outdated records.
+      </template>
+    </NuxtPageHeader>
+
+    <NuxtPageSection>
+      <template #title>Manage media catalog</template>
+      <template #description>
+        Use search, filters, and sort controls to locate specific items. View details now—inline edit and delete
+        actions wire up next.
+      </template>
+
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <NuxtInput
+          v-model="searchInput"
+          icon="i-heroicons-magnifying-glass"
+          placeholder="Search by title, creator, ISBN, or subject"
+          size="md"
+          class="w-full lg:w-96"
+        />
+
+        <div class="flex flex-wrap items-center gap-2">
+          <NuxtButton
+            v-for="filter in mediaTypeFilters"
+            :key="filter.value"
+            :variant="activeType === filter.value ? 'soft' : 'ghost'"
+            color="primary"
+            size="sm"
+            class="capitalize"
+            @click="selectType(filter.value)"
+          >
+            {{ filter.label }}
+          </NuxtButton>
+
+          <NuxtButton
+            color="primary"
+            icon="i-heroicons-plus-circle"
+            size="sm"
+            @click="startCreate"
+          >
+            Add media
+          </NuxtButton>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col gap-3 rounded-xl border border-white/5 bg-slate-900/60 p-4 text-sm text-slate-300">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Showing
+            <span class="font-semibold text-slate-100">{{ visibleCount }}</span>
+            of
+            <span class="font-semibold text-slate-100">{{ totalCount }}</span>
+            admin catalog records
+          </p>
+          <div class="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide">
+            <NuxtBadge v-if="hasActiveFilters" variant="soft" color="primary">
+              Filters active
+            </NuxtBadge>
+            <NuxtBadge v-else variant="soft" color="neutral">
+              Default view
+            </NuxtBadge>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500">Sort by</span>
+            <div class="flex items-center gap-1">
+              <NuxtButton
+                v-for="option in sortOptions"
+                :key="option.value"
+                :variant="activeSort === option.value ? 'soft' : 'ghost'"
+                color="neutral"
+                size="xs"
+                class="capitalize"
+                @click="activeSort = option.value"
+              >
+                {{ option.label }}
+              </NuxtButton>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <span class="text-slate-500">Direction</span>
+            <NuxtButton
+              v-for="option in directionOptions"
+              :key="option.value"
+              :variant="activeDirection === option.value ? 'soft' : 'ghost'"
+              color="neutral"
+              size="xs"
+              :icon="option.icon"
+              @click="activeDirection = option.value"
+            >
+              <span class="sr-only">{{ option.label }}</span>
+            </NuxtButton>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 space-y-6">
+        <div
+          v-if="listError"
+          class="rounded-2xl border border-red-500/40 bg-red-950/20 p-6 text-sm text-red-200"
+        >
+          <p class="font-medium">{{ listError instanceof Error ? listError.message : listError }}</p>
+          <NuxtButton class="mt-4" size="sm" color="primary" variant="soft" @click="retryFetch">
+            Retry fetch
+          </NuxtButton>
+        </div>
+
+        <div v-else-if="isInitialLoading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="index in 9"
+            :key="`admin-media-skeleton-${index}`"
+            class="h-80 animate-pulse rounded-2xl border border-white/5 bg-slate-900/40"
+          />
+        </div>
+
+        <div v-else-if="adminItems.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <article
+            v-for="item in adminItems"
+            :key="item.id"
+            class="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-slate-950/60 transition hover:border-primary-500/60 hover:shadow-lg hover:shadow-primary-500/10"
+          >
+            <div class="relative h-40 w-full overflow-hidden border-b border-white/5">
+              <NuxtImg
+                :src="item.coverUrl || fallbackCover"
+                alt=""
+                class="h-full w-full object-cover"
+                sizes="(min-width: 768px) 240px, 80vw"
+                loading="lazy"
+              />
+              <div class="absolute inset-0 bg-linear-to-t from-slate-950/70 via-transparent to-transparent" />
+            </div>
+
+            <div class="flex flex-1 flex-col gap-4 p-5 text-sm text-slate-300">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-slate-500">
+                    {{ mediaTypeLabel(item.mediaType) }} • {{ item.mediaFormat || 'Unknown format' }}
+                  </p>
+                  <h3 class="mt-1 text-lg font-semibold text-white">{{ item.title }}</h3>
+                  <p class="text-xs text-slate-400">{{ item.author || 'Creator unknown' }}</p>
+                </div>
+              </div>
+
+              <p class="line-clamp-3 text-sm leading-relaxed text-slate-300">
+                {{ item.description || 'No description provided yet.' }}
+              </p>
+
+              <dl class="space-y-2 text-xs text-slate-400">
+                <div class="flex items-center justify-between gap-2">
+                  <dt class="uppercase tracking-wide text-slate-500">ISBN</dt>
+                  <dd class="text-slate-200">{{ item.isbn || '—' }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <dt class="uppercase tracking-wide text-slate-500">Language</dt>
+                  <dd class="text-slate-200">{{ item.language || '—' }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                  <dt class="uppercase tracking-wide text-slate-500">Updated</dt>
+                  <dd class="text-slate-200">{{ formatDate(item.updatedAt) }}</dd>
+                </div>
+              </dl>
+
+              <div v-if="item.genre || item.subject" class="flex flex-wrap gap-2 text-xs">
+                <NuxtBadge
+                  v-for="tag in [item.genre, item.subject].filter((value): value is string => Boolean(value))"
+                  :key="`${item.id}-${tag}`"
+                  color="neutral"
+                  variant="outline"
+                >
+                  {{ tag }}
+                </NuxtBadge>
+              </div>
+
+              <div class="mt-auto flex flex-wrap items-center gap-2 pt-2 text-xs">
+                <NuxtButton
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  icon="i-heroicons-eye"
+                  @click="handleView(item)"
+                >
+                  View
+                </NuxtButton>
+                <NuxtButton
+                  size="xs"
+                  variant="soft"
+                  color="primary"
+                  icon="i-heroicons-pencil-square"
+                  @click="handleEdit(item)"
+                >
+                  Edit
+                </NuxtButton>
+                <NuxtButton
+                  size="xs"
+                  variant="ghost"
+                  color="error"
+                  icon="i-heroicons-trash"
+                  @click="handleDelete(item)"
+                >
+                  Delete
+                </NuxtButton>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div
+          v-else
+          class="rounded-2xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400"
+        >
+          No media matches those filters yet. Try adjusting the search or adding a new title.
+        </div>
+
+        <div v-if="hasMore" ref="loadMoreSentinel" class="flex justify-center">
+          <NuxtButton variant="soft" color="primary" :loading="isLoadingMore" @click="loadMore">
+            Load more media
+          </NuxtButton>
+        </div>
+      </div>
+    </NuxtPageSection>
+
+    <MediaDetailModal
+      :open="isDetailOpen"
+      :media="detailMedia"
+      :loading="isDetailLoading"
+      :error="detailError"
+      @close="closeDetail"
+    />
+
+    <AdminMediaFormModal
+      ref="formModalRef"
+      :open="isFormOpen"
+      :mode="formMode"
+      :initial-value="formInitialValue"
+      :loading="formLoading"
+      :error="formError"
+      @close="handleFormClose()"
+      @submit="handleFormSubmit"
+    />
+
+    <NuxtModal
+      v-model:open="isDeleteConfirmOpen"
+      title="Delete media item?"
+      :description="`This will permanently remove ${deleteTargetTitle}.`"
+      :overlay="true"
+      :prevent-close="deleteLoading"
+      class="max-w-md"
+    >
+      <template #body>
+        <div class="space-y-4 text-sm text-slate-200">
+          <p>
+            Are you sure you want to delete
+            <span class="font-semibold text-white">{{ deleteTargetTitle }}</span>
+            from the catalog? This action cannot be undone.
+          </p>
+          <p v-if="deleteError" class="rounded-md border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-200">
+            {{ deleteError }}
+          </p>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <NuxtButton
+            variant="ghost"
+            color="neutral"
+            :disabled="deleteLoading"
+            @click="closeDeleteConfirm"
+          >
+            Cancel
+          </NuxtButton>
+          <NuxtButton
+            color="error"
+            :loading="deleteLoading"
+            :disabled="deleteLoading"
+            @click="confirmDelete"
+          >
+            Delete
+          </NuxtButton>
+        </div>
+      </template>
+    </NuxtModal>
+  </div>
+</template>

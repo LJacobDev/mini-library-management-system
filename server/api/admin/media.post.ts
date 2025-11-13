@@ -1,8 +1,13 @@
 import { createError, readBody } from 'h3'
+import {
+  assertMediaFormat,
+  assertMediaType,
+  mapMediaRow,
+  sanitizeString,
+  toMetadata,
+  toPositiveInteger,
+} from '../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../utils/supabaseApi'
-
-const MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
-const MEDIA_FORMATS = new Set(['print', 'ebook', 'audiobook', 'dvd', 'blu-ray'])
 
 interface CreateMediaPayload {
   title?: string
@@ -21,14 +26,6 @@ interface CreateMediaPayload {
   metadata?: Record<string, unknown> | null
 }
 
-function sanitizeString(value: unknown) {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-  return null
-}
-
 export default defineEventHandler(async (event) => {
   const { supabase } = await getSupabaseContext(event, { roles: ['admin'] })
 
@@ -36,27 +33,43 @@ export default defineEventHandler(async (event) => {
 
   const title = sanitizeString(body.title)
   const creator = sanitizeString(body.creator)
-  const mediaType = sanitizeString(body.mediaType)
-  const mediaFormat = sanitizeString(body.mediaFormat)
+  const rawMediaType = sanitizeString(body.mediaType)
+  const rawMediaFormat = sanitizeString(body.mediaFormat)
 
-  if (!title || !creator || !mediaType || !mediaFormat) {
+  if (!title || !creator) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Missing required media fields (title, creator, mediaType, mediaFormat).',
     })
   }
 
-  if (!MEDIA_TYPES.has(mediaType)) {
+  if (!rawMediaType || !rawMediaFormat) {
     throw createError({
       statusCode: 400,
-      statusMessage: `Invalid mediaType. Expected one of: ${Array.from(MEDIA_TYPES).join(', ')}.`,
+      statusMessage: 'Missing required media fields (mediaType, mediaFormat).',
     })
   }
 
-  if (!MEDIA_FORMATS.has(mediaFormat)) {
+  let mediaType: string | null = null
+  let mediaFormat: string | null = null
+  let metadata: Record<string, unknown>
+
+  try {
+    mediaType = assertMediaType(rawMediaType)
+    mediaFormat = assertMediaFormat(rawMediaFormat)
+    metadata = toMetadata('metadata' in body ? body.metadata ?? {} : {})
+  } catch (error) {
+    const message = error instanceof TypeError ? error.message : 'Invalid media payload.'
     throw createError({
       statusCode: 400,
-      statusMessage: `Invalid mediaFormat. Expected one of: ${Array.from(MEDIA_FORMATS).join(', ')}.`,
+      statusMessage: message,
+    })
+  }
+
+  if (!mediaType || !mediaFormat) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing required media fields (mediaType, mediaFormat).',
     })
   }
 
@@ -71,13 +84,10 @@ export default defineEventHandler(async (event) => {
     description: sanitizeString(body.description),
     cover_url: sanitizeString(body.coverUrl),
     language: sanitizeString(body.language),
-    pages: typeof body.pages === 'number' && Number.isFinite(body.pages) ? Math.max(1, Math.floor(body.pages)) : null,
-    duration_seconds:
-      typeof body.durationSeconds === 'number' && Number.isFinite(body.durationSeconds)
-        ? Math.max(1, Math.floor(body.durationSeconds))
-        : null,
+    pages: toPositiveInteger(body.pages),
+    duration_seconds: toPositiveInteger(body.durationSeconds),
     published_at: sanitizeString(body.publishedAt),
-    metadata: body.metadata ?? {},
+    metadata,
   }
 
   const { data, error } = await supabase.from('media').insert(payload).select('*').single()
@@ -87,24 +97,6 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
-    item: {
-      id: data.id,
-      title: data.title,
-      author: data.creator,
-      mediaType: data.media_type,
-      mediaFormat: data.media_format,
-      isbn: data.isbn,
-      genre: data.genre,
-      subject: data.subject,
-      description: data.description,
-      coverUrl: data.cover_url,
-      language: data.language,
-      pages: data.pages,
-      durationSeconds: data.duration_seconds,
-      publishedAt: data.published_at,
-      metadata: data.metadata ?? {},
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    },
+    item: mapMediaRow(data),
   }
 })

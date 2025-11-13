@@ -4,13 +4,15 @@ _Last updated: 2025-11-13_
 
 ## Current State Snapshot
 
-- **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. Auth UX refresh is queued: guests keep the current header; authenticated users will gain a profile dropdown + sign-out actions, while staff additionally pick up a sidebar-driven dashboard.
+- **Frontend shell**: Nuxt 4.2 + Tailwind CSS v4 + Nuxt UI. The public landing page (`pages/index.vue`) now pulls live catalog data via `useCatalogData`, features working search & media-type filters, and showcases branch info with Supabase-hosted imagery. Authenticated users see the refreshed header with profile menu + sign out, and in dev mode a role switcher surfaces impersonation status for quick staff previews; staff dashboards keep iterating toward the sidebar layout.
 - **Catalog experience**: `/api/catalog` serves Supabase-backed results with pagination, search, and validated media-type filters. Landing and dashboard catalog views now share the `CatalogGrid` component fed by `useCatalogData`, keep SSR and hydration in sync, reuse a shared `useDebouncedRef` composable for 300 ms search input debouncing, render via Tailwind responsive grids from the first paint, and elevate card clicks into the shared `MediaDetailModal` for richer item context with freshly added bibliographic metadata (ISBN, language, page counts, runtime).
+- **Circulation desk**: `/dashboard/desk` now ships with a live catalog lookup (debounced search + availability badges) and a modal circulation panel wired to `/api/loans` + `/api/loans/:id/return`, with auto-provisioning of member records when staff provide an email or UUID and instant availability status updates.
+- **Admin catalog APIs**: `/api/admin/media` endpoints now share a strict mapper/validator, accept metadata clears, surface enum validation errors cleanly, and normalize responses for the upcoming CRUD UI.
+- **Admin catalog console**: `/dashboard/admin` now lists media with search/filter/sort controls, detail modal preview, and action stubs ready for the upcoming edit/create/delete wiring.
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
 **AI concierge**: `/api/ai/recommend` now accepts POST prompts, extracts keywords, queries Supabase, and streams role-aware summaries over SSE. `AgentChatPanel` renders the experience on the landing page (members only) and `/debug`, showing live message bubbles and recommendation cards backed by the streaming endpoint. `useAgentChat` handles aborts, retries, and metadata parsing.
-- **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS.
-- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks and catalog fetches for quick manual verification. `StatusCheckStream`/`StatusCheckString` components surface integration status in the dashboard shell. Reservation API work is scoped but paused after the working UI stub so we can prioritize staff tooling.
-**Developer tooling**: `/pages/debug/index.vue` (dev-only) now embeds the full `AgentChatPanel` alongside health-check buttons so we can exercise the streaming concierge without leaving the console. Existing cards still cover OpenAI/Supabase checks and admin circulation endpoints.
+- **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS, and `handle_new_user` trigger now mirrors every fresh `auth.users` row into `public.profiles` for immediate role resolution.
+- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks, catalog fetches, and the full `AgentChatPanel` so we can exercise streaming concierge + admin endpoints in one place; impersonation toggles pair with `/api/debug/impersonate` to preview staff-only flows without juggling accounts. Reservation API work is scoped but paused so staff tooling stays front of queue.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
 
 ### Live deployment
@@ -38,12 +40,16 @@ _Last updated: 2025-11-13_
 7. Removed SQLite fallback from active plan — Supabase is the canonical data source now.
 
 8. Ran repo-owned `schema.sql`, `seed.sql`, and `rls-policies.sql` against Supabase so the database now mirrors documentation and enforces locked-down role management policies.
+9. Delivered admin catalog endpoints (`/api/admin/media*`) with validation, pagination, and Supabase error normalization.
+10. Implemented staff circulation APIs (`/api/loans*`) covering checkout, return, and renew flows with reservation conflict checks.
+11. Rebuilt `/api/ai/recommend` as a streaming concierge endpoint and wired `AgentChatPanel` + `useAgentChat` for the member-facing chat experience.
+12. Added dev-only role impersonation: header switcher, `/api/debug/impersonate`, and cookie-aware `getSupabaseContext` so we can demo staff roles without extra accounts.
 
 ## Upcoming Objectives
 
 - **Auth-aware headers & routing**: Implement split guest/auth headers, profile dropdown with logout, and role-based redirects (members remain on `/`, staff head to the new `/dashboard`).
 - **Dashboard experience**: Build the `/dashboard` layout with shared header + staff sidebar, default to catalog grid, and surface quick switches for check-out, check-in, and admin catalog management views.
-- **Staff tooling UI**: Wire librarian check-out/check-in screens and admin catalog CRUD panels to the existing Supabase APIs with loading/error feedback so endpoints can be exercised end to end.
+- **Staff tooling UI**: Layer on member lookup autocomplete + receipts for the circulation modal and continue building the admin catalog CRUD panels with loading/error feedback so endpoints can be exercised end to end.
 - **Member enhancements**: Add AI recommendation chat on the landing page for authenticated members and prep `/account/loans`/`/account/reservations` once reservation API resumes.
 - **Reservation flow (paused)**: Resume real reservation endpoint + modal confirm dialog after dashboard tooling ships; keep plan documented for quick restart.
 - **Documentation & testing**: Keep `spec-fast-start-*`, `agent-fast-start-context`, and `llm-training-cutoff-updates` in sync; add smoke tests when UI stabilizes.
@@ -128,7 +134,6 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Added `/api/loans` GET handler for librarian/admin filtered loan listings with pagination and status derivation.
 - 2025-11-13 — Added `/api/loans` POST handler for librarian/admin checkouts with conflict guard and metadata capture.
 - 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
-- 2025-11-13 — Added `/api/loans/:id/return` POST handler for check-ins with loan event logging.
 - 2025-11-13 — Added `/api/loans/:id/renew` POST handler allowing staff or the borrowing member when no reservations block the item.
 - 2025-11-13 — Wired catalog pages to the new `MediaDetailModal`; adjusted the modal component to follow Nuxt UI’s `v-model:open`/slot conventions so card clicks should surface the detail overlay for future enrichment.
 - 2025-11-13 — Extended `/pages/debug` console with loan controls (list/checkout/return/renew) for rapid circulation testing.
@@ -151,3 +156,18 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Implemented `/api/debug/impersonate` to toggle a dev-only cookie that overrides roles, updated `getSupabaseContext` to honor the cookie (while tracking actual vs impersonated role), and wired the header selector to persist/read the override so staff tooling can be demoed without switching accounts.
 - 2025-11-13 — Surfaced impersonation status in `AppHeader`: the "View as" control now shows a "Viewing as" pill plus the real role label whenever the dev cookie is active, giving instant visual confirmation of the effective vs actual role.
 - 2025-11-13 — Paused follow-up work to propagate impersonation state across dashboard components; keep the idea bookmarked but focus next on higher-impact UI polish and staff tooling.
+- 2025-11-13 — Added `profiles-trigger.sql` documenting the `handle_new_user` trigger; new Supabase signups now upsert into `public.users` + `public.profiles` (with `ON CONFLICT` guards) so circulation endpoints resolve roles without manual seeding.
+- 2025-11-13 — Verified magic-link signup flow post-trigger update: new accounts now populate `users` + `profiles` automatically, and deletion guidance is to remove the UUID from `auth.users` then `public.users` (cascades clean the rest).
+- 2025-11-13 — Header now shows a prominent Dashboard link whenever the effective role (real or dev-impersonated) is librarian/admin so staff can jump straight into the dashboard without opening the profile menu.
+- 2025-11-13 — Replaced the desk placeholder with a catalog search grid plus checkout/check-in modal stubs; ready to hook into `/api/loans` endpoints and refresh availability after submissions.
+- 2025-11-13 — Wired desk modal actions to `/api/loans` and `/api/loans/:id/return`, updating catalog metadata on success so availability badges flip immediately; member lookup now accepts email or Supabase auth UUID and auto-seeds the `users`/`profiles` tables when needed.
+- 2025-11-13 — Consolidated admin media API helpers (`adminMedia.ts`), tightened validation (metadata, enums, numeric fields), and unified response mapping across GET/POST/PATCH to prep the dashboard CRUD screens.
+- 2025-11-13 — Replaced the admin placeholder page with a live catalog grid (search, filters, sort, modal view) to exercise the admin media GET endpoint ahead of edit/delete wiring.
+- 2025-11-13 — Added `AdminMediaFormModal` and wired `/dashboard/admin` edit/add buttons to open the new form modal (submit still stubs), kicking off the admin CRUD UI workflow.
+- 2025-11-13 — Hooked admin edit flow to the `/api/admin/media/:id` PATCH endpoint; modal now persists changes and updates the local list while showing inline errors.
+- 2025-11-13 — Wired the admin “Add media” modal to POST against `/api/admin/media`, preprending new items to the grid and sharing the same inline error handling.
+- 2025-11-13 — TODO follow-up: swap the generic Unsplash fallback cover for the seeded media-type images (book/dvd/audio/other) once the admin CRUD work wraps.
+- 2025-11-13 — Added delete confirmation modal on `/dashboard/admin`; calling the DELETE endpoint removes the item from the grid and surfaces errors inline.
+- 2025-11-13 — Added delete confirmation modal on `/dashboard/admin`; calling the DELETE endpoint removes the item from the grid and surfaces errors inline.
+- 2025-11-13 — Added unsaved-change guard to the admin media form; cancelling now prompts before discarding edits, while successful saves bypass the warning.
+- 2025-11-13 — Upgraded `/dashboard/admin` pagination with an intersection-observed "Load more" sentinel so additional pages fetch automatically as the control scrolls into view, while keeping the manual button as a fallback.

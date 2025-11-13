@@ -64,6 +64,14 @@
             </div>
           </div>
 
+          <NuxtLink
+            v-if="showDashboardLink"
+            to="/dashboard"
+            class="hidden items-center rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-white/20 sm:flex"
+          >
+            Dashboard
+          </NuxtLink>
+
           <details class="relative">
             <summary
               class="flex cursor-pointer list-none items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
@@ -236,6 +244,18 @@ const impersonatedRoleLabel = computed(() => {
 });
 
 const actualRoleLabel = computed(() => appRoleLabels[actualRole.value]);
+
+const effectiveRole = computed<AppRole>(() => {
+  if (import.meta.dev && impersonatedRole.value !== "actual" && ["member", "librarian", "admin"].includes(impersonatedRole.value)) {
+    return impersonatedRole.value as AppRole;
+  }
+
+  return actualRole.value;
+});
+
+const showDashboardLink = computed(() =>
+  isAuthenticated.value && (effectiveRole.value === "librarian" || effectiveRole.value === "admin")
+);
 
 if (import.meta.client) {
   watch(
