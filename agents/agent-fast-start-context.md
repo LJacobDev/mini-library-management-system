@@ -116,3 +116,9 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Refactored `/pages/catalog.vue` to use the shared `CatalogGrid` with unified filters, summary badge header, and search reset, removing duplicated markup and restoring build health.
 - 2025-11-13 — Extracted shared `useDebouncedRef` composable powering landing and dashboard catalog search inputs, removed redundant inline timeouts, and simplified dashboard filter controls.
 - 2025-11-13 — Decided Media deletion via hard delete; add soft-delete column later if required.
+- 2025-11-13 — Introduced `server/utils/supabaseApi.ts` consolidating role-aware session checks plus Supabase error helpers ahead of admin/loan route work.
+- 2025-11-13 — Added `/api/admin/media` GET handler with admin-only Supabase query, pagination, search, and extended media fields.
+- 2025-11-13 — Added `/api/admin/media` POST handler validating inputs and inserting new catalog rows into Supabase.
+- 2025-11-13 — Added `/api/admin/media/:id` PATCH handler for partial updates with enum validation and normalization.
+- 2025-11-13 — Added `/api/admin/media/:id` DELETE handler performing hard deletes per fast-start decision.
+- 2025-11-13 — Extended `/pages/debug` console with admin media buttons (list/create/update/delete) using sample payload prompts.

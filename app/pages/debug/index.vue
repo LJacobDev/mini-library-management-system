@@ -20,12 +20,19 @@ definePageMeta({
 
 type HttpVerb = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS" | "CONNECT" | "TRACE";
 
+type PreparedRequest = {
+  path?: string;
+  method?: HttpVerb;
+  body?: Record<string, unknown>;
+};
+
 type DebugEndpoint = {
   label: string;
   description: string;
   method: HttpVerb | "LOCAL";
   path: string;
   stream?: boolean;
+  prepare?: () => PreparedRequest | Promise<PreparedRequest>;
 };
 
 const endpoints: DebugEndpoint[] = [
@@ -47,6 +54,89 @@ const endpoints: DebugEndpoint[] = [
     description: "Uses current mock composable for quick comparison.",
     method: "LOCAL",
     path: "mock"
+  },
+  {
+    label: "Admin: list media",
+    description: "GET /api/admin/media?page=1 (requires admin session)",
+    method: "GET",
+    path: "/api/admin/media",
+    prepare: () => ({ path: "/api/admin/media?page=1" })
+  },
+  {
+    label: "Admin: create media sample",
+    description: "POST /api/admin/media with sample payload (requires admin session)",
+    method: "POST",
+    path: "/api/admin/media",
+    prepare: () => {
+      const timestamp = new Date().toISOString();
+      return {
+        body: {
+          title: `Debug Sample ${timestamp}`,
+          creator: "System Debug",
+          mediaType: "book",
+          mediaFormat: "print",
+          genre: "debug",
+          subject: "automation",
+          description: "Seeded via /debug console",
+        },
+      };
+    },
+  },
+  {
+    label: "Admin: update media title",
+    description: "PATCH /api/admin/media/:id to tweak title (requires admin session)",
+    method: "PATCH",
+    path: "/api/admin/media/:id",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      const id = window.prompt("Media ID to update?", "");
+      if (!id) {
+        throw new Error("Update cancelled: media ID required.");
+      }
+
+      const newTitle = window.prompt("New title", "");
+      const newGenre = window.prompt("Optional genre", "");
+
+      const payload: Record<string, unknown> = {};
+      if (newTitle && newTitle.trim().length) {
+        payload.title = newTitle.trim();
+      }
+      if (newGenre && newGenre.trim().length) {
+        payload.genre = newGenre.trim();
+      }
+
+      if (Object.keys(payload).length === 0) {
+        throw new Error("No fields provided for update.");
+      }
+
+      return {
+        path: `/api/admin/media/${id}`,
+        body: payload,
+      };
+    },
+  },
+  {
+    label: "Admin: delete media",
+    description: "DELETE /api/admin/media/:id (requires admin session)",
+    method: "DELETE",
+    path: "/api/admin/media/:id",
+    prepare: () => {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      const id = window.prompt("Media ID to delete?", "");
+      if (!id) {
+        throw new Error("Delete cancelled: media ID required.");
+      }
+
+      return {
+        path: `/api/admin/media/${id}`,
+      };
+    },
   }
 ];
 
@@ -54,9 +144,31 @@ const result = ref<string>("Press a button to run a check.");
 const loadingKey = ref<string | null>(null);
 
 async function runEndpoint(endpoint: DebugEndpoint) {
-  loadingKey.value = endpoint.path;
+  let activePath = endpoint.path;
+  let body: Record<string, unknown> | undefined;
+  let method = endpoint.method;
 
-  if (endpoint.method === "LOCAL") {
+  if (endpoint.prepare) {
+    try {
+      const prepared = await endpoint.prepare();
+      if (prepared.path) {
+        activePath = prepared.path;
+      }
+      if (prepared.body) {
+        body = prepared.body;
+      }
+      if (prepared.method) {
+        method = prepared.method;
+      }
+    } catch (error) {
+      result.value = error instanceof Error ? `Cancelled: ${error.message}` : "Cancelled";
+      return;
+    }
+  }
+
+  loadingKey.value = `${endpoint.label}-${activePath}`;
+
+  if (method === "LOCAL") {
     const { items } = useCatalogMock({ take: 3 });
     result.value = JSON.stringify(items.value, null, 2);
     loadingKey.value = null;
@@ -65,8 +177,8 @@ async function runEndpoint(endpoint: DebugEndpoint) {
 
   try {
     if (endpoint.stream) {
-      const response = await fetch(endpoint.path, {
-        method: endpoint.method,
+      const response = await fetch(activePath, {
+        method,
         headers: {
           Accept: "text/event-stream"
         }
@@ -80,8 +192,9 @@ async function runEndpoint(endpoint: DebugEndpoint) {
       const parsed = parseSSEPayload(payload);
       result.value = JSON.stringify(parsed, null, 2);
     } else {
-      const res = await $fetch(endpoint.path, {
-        method: endpoint.method
+      const res = await $fetch(activePath, {
+        method,
+        body: method === "GET" ? undefined : body
       });
       result.value = JSON.stringify(res, null, 2);
     }
@@ -160,10 +273,14 @@ function parseSSEPayload(payload: string) {
         </p>
       </header>
 
-      <div class="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div class="space-y-4">
-          <NuxtCard v-for="endpoint in endpoints" :key="endpoint.label" class="border border-white/5 bg-slate-900/70">
-            <div class="space-y-3">
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+        <div class="flex w-full max-w-xs flex-col gap-2">
+          <NuxtCard
+            v-for="endpoint in endpoints"
+            :key="endpoint.label"
+            class="flex w-full flex-col gap-1 rounded-lg border border-white/5 bg-slate-900/70 px-4 py-2"
+          >
+            <div class="space-y-1">
               <div class="flex items-center justify-between">
                 <h2 class="text-base font-semibold text-white">{{ endpoint.label }}</h2>
                 <span class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">
@@ -186,7 +303,7 @@ function parseSSEPayload(payload: string) {
           </NuxtCard>
         </div>
 
-        <NuxtCard class="border border-white/5 bg-slate-900/70">
+        <NuxtCard class="border border-white/5 bg-slate-900/70 lg:sticky lg:top-16">
           <template #header>
             <div class="flex items-center justify-between">
               <h2 class="text-base font-semibold text-white">Result</h2>
