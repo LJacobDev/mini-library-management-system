@@ -14,7 +14,7 @@ interface CatalogFilters {
   pageSize?: number
 }
 
-interface CatalogItem {
+export interface CatalogItem {
   id: string
   title: string
   author: string

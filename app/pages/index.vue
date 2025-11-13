@@ -50,10 +50,28 @@ const {
   isLoadingMore
 } = useCatalogData({ pageSize: 12 });
 
-const searchTerm = computed({
-  get: () => filters.q ?? "",
-  set: (value: string) => setSearch(value)
-});
+const searchInput = ref(filters.q ?? "");
+const SEARCH_DEBOUNCE_MS = 300;
+
+watch(
+  () => filters.q ?? "",
+  (value) => {
+    if (value !== searchInput.value) {
+      searchInput.value = value;
+    }
+  }
+);
+
+watch(
+  searchInput,
+  (value, _previous, onCleanup) => {
+    const timeout = setTimeout(() => {
+      setSearch(value);
+    }, SEARCH_DEBOUNCE_MS);
+
+    onCleanup(() => clearTimeout(timeout));
+  }
+);
 
 const activeType = computed({
   get: () => filters.type ?? "",
@@ -190,7 +208,7 @@ onBeforeUnmount(() => {
 
           <div class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
             <NuxtInput
-              v-model="searchTerm"
+              v-model="searchInput"
               icon="i-heroicons-magnifying-glass"
               placeholder="Search by title, author, or tag"
               size="md"

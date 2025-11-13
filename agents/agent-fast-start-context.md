@@ -108,3 +108,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Updated the brand link behavior to smooth-scroll to the top of `/` when already on the landing page.
 - 2025-11-12 — Normalized catalog media-type filters to Supabase enums (`book`, `video`, `audio`, `other`) and added backend guard so invalid filter values no longer break `/api/catalog`.
 - 2025-11-12 — Added `/api/catalog` pagination metadata, extended `useCatalogData` with infinite scroll accumulation, and converted landing/dashboard catalog views to use intersection-observed load-more triggers with manual button fallback.
+- 2025-11-12 — Introduced `useMediaDetail` composable to manage selected catalog items, modal open state, and future detail fetching hooks.
+- 2025-11-12 — Debounced catalog search inputs (landing + dashboard views at 300 ms with watcher cleanup) to reduce redundant `/api/catalog` requests while typing.

@@ -32,11 +32,6 @@ const {
   total
 } = useCatalogData();
 
-const searchTerm = computed({
-  get: () => filters.q ?? "",
-  set: (value: string) => setSearch(value)
-});
-
 const activeType = computed({
   get: () => filters.type ?? "",
   set: (value: string) => setMediaType(value || undefined)
@@ -51,6 +46,29 @@ const mediaTypeFilters = [
 ];
 
 const displayItems = computed(() => items.value ?? []);
+
+const searchInput = ref(filters.q ?? "");
+const SEARCH_DEBOUNCE_MS = 300;
+
+watch(
+  () => filters.q ?? "",
+  (value) => {
+    if (value !== searchInput.value) {
+      searchInput.value = value;
+    }
+  }
+);
+
+watch(
+  searchInput,
+  (value, _previous, onCleanup) => {
+    const timeout = setTimeout(() => {
+      setSearch(value);
+    }, SEARCH_DEBOUNCE_MS);
+
+    onCleanup(() => clearTimeout(timeout));
+  }
+);
 
 function selectType(value: string) {
   activeType.value = value;
@@ -135,7 +153,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="mt-4 flex flex-wrap items-center gap-4">
           <NuxtInput
-            v-model="searchTerm"
+            v-model="searchInput"
             icon="i-heroicons-magnifying-glass"
             placeholder="Search title, creator, or subject"
             size="md"
