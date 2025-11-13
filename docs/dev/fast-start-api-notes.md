@@ -54,12 +54,21 @@ Minimum viable implementation:
 2. Return canned list: `[{ mediaId, title, reason }]`.
 3. Later swap helper to call OpenAI + Supabase embeddings.
 
+## Debug Console Hooks
+
+- Extend `app/pages/debug/index.vue` with panels for each route. Each panel should:
+  - Show minimal form inputs mirroring the payloads above (e.g., memberId, copyId, media fields).
+  - Trigger `await $fetch()` calls pointing at the new API endpoints.
+  - Render raw JSON responses and status codes for quick validation.
+- Provide canned payload buttons ("Checkout sample copy", "Mock recommendations") that hydrate the form values to speed manual tests.
+- Surface Supabase session status in the console header so role constraints are obvious during testing.
+
 ## Next Steps Checklist
 
 - [ ] Implement handlers under `server/api/admin/media/*.ts`, `server/api/librarian/loans/*.ts`, `server/api/recommendations/suggest.post.ts`.
 - [ ] Add shared helper for Supabase error normalization.
 - [ ] Extend responses to align with eventual OpenAPI spec.
-- [ ] Write debug playground hooks (e.g., `app/pages/debug/index.vue`) to exercise each endpoint.
+- [ ] Build the `/debug` console panels + canned payload buttons described above.
 
 ## Open Questions
 
