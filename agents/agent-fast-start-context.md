@@ -97,3 +97,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Rebuilt `/pages/index.vue` into the public landing hero with Supabase-hosted imagery, welcome copy, and catalog preview cards hooked to `useCatalogMock` pending live data.
 - 2025-11-12 — Refined landing welcome section with branch address, phone, and hours to match refreshed marketing copy.
 - 2025-11-12 — Scaffolded `/pages/debug/index.vue` as a developer console with Nuxt UI cards hitting OpenAI/Supabase health checks and the catalog mock for rapid integration testing, now gated to dev-only builds.
+- 2025-11-12 — Added Supabase-backed `/api/catalog` route with pagination, search, and media-type filters, returning normalized media summaries for the upcoming UI swap.
+- 2025-11-12 — Clarified that `docs/dev/llm-training-cutoff-updates.md` is reserved for true post-cutoff ecosystem changes; kept catalog notes within this context log instead.

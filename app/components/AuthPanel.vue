@@ -39,7 +39,7 @@
         type="submit"
         :disabled="loading"
       >
-        <span v-if="!loading">Send magic link</span>
+        <span v-if="!loading">Send link</span>
         <span v-else>Sending…</span>
       </button>
 
@@ -80,7 +80,7 @@ const handleSignIn = async () => {
 
   const success = await signInWithMagicLink(trimmedEmail)
   if (success) {
-    feedback.value = 'Check your inbox for the magic link to finish signing in.'
+    feedback.value = 'Check your inbox for the link to finish signing in.'
     email.value = ''
   }
 }
