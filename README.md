@@ -8,6 +8,18 @@ Submitted by Lee Jacob (LJacobDev)
 
 The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and OpenAPI, etc files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
 
+### Running locally
+
+npm install
+npm run dev
+
+In its current form it's difficult to run with full features locally 
+
+The env keys needed for database and ai integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions)
+
+When in dev mode, the app header will show a control to allow changing session role to view site as member, librarian, admin.  There is also a dev-mode /debug page with a control panel for testing endpoints.
+
+
 ### Current state of the application
 
 Complete, regarding minimum objectives:
@@ -37,7 +49,7 @@ Documentation / files of interest:
 - [spec-fast-start*.md](docs/dev/spec/spec-fast-start-5.md) is a series of spec files used to capture the goals and tasks to accomplish - may be slightly outdated
 
 
-Built with Nuxt 4, TailwindCSS 4, hosted with Vercel.
+Built with Nuxt 4, TailwindCSS 4, hosted with Vercel.  Auth and Postgres database provided by Supabase.
 
 
 
