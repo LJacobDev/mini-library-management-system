@@ -2,9 +2,7 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-
-
-### See its [live deployment state](https://mini-library-management-system.vercel.app/)
+### See it [deployed](https://mini-library-management-system.vercel.app/)
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
@@ -39,6 +37,8 @@ Documentation / files of interest:
 - [agent-fast-start-context.md](agents/agent-fast-start-context.md) is a living document where the agent keeps working notes and a history of all actions taken
 - [spec-fast-start*.md](docs/dev/spec/spec-fast-start-5.md) is a series of spec files used to capture the goals and tasks to accomplish - may be slightly outdated
 
+
+Built with Nuxt 4, TailwindCSS 4, hosted with Vercel.
 
 
 
