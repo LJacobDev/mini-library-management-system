@@ -12,7 +12,7 @@ The goal of this project was to use agentic coding workflows to build a high qua
 
 Complete, regarding minimum objectives:
 - Add, edit, delete books (extened to videos, audiobooks, other)
-- Check in and check out books (performed via librarian role through /dashboard
+- Check in and check out books (performed via librarian role through /dashboard)
 - Search, filter books/media by title, author, descroption, type
 
 Extra features added:
