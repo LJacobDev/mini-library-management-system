@@ -95,3 +95,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-12 — Authored `docs/dev/spec/spec-fast-start-4.md` to pivot focus toward a public-first catalog experience, Supabase-backed data, and a debug control panel plan.
 - 2025-11-12 — Noted in `docs/dev/spec/spec-fast-start-5.md` that we must archive the current dark palette and schedule a cheerful light-mode palette proposal; remember to spin up the design task soon.
 - 2025-11-12 — Rebuilt `/pages/index.vue` into the public landing hero with Supabase-hosted imagery, welcome copy, and catalog preview cards hooked to `useCatalogMock` pending live data.
+- 2025-11-12 — Refined landing welcome section with branch address, phone, and hours to match refreshed marketing copy.
+- 2025-11-12 — Scaffolded `/pages/debug/index.vue` as a developer console with Nuxt UI cards hitting OpenAI/Supabase health checks and the catalog mock for rapid integration testing, now gated to dev-only builds.

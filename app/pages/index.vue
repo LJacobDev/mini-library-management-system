@@ -62,23 +62,23 @@ function selectType(value: string) {
   <main class="bg-slate-950 text-slate-100">
     <section class="relative overflow-hidden">
       <div class="mx-auto flex w-full max-w-6xl flex-col-reverse items-center gap-10 px-6 py-16 lg:flex-row lg:py-24">
-        <div class="flex-1 space-y-6 text-center lg:text-left">
+  <div class="flex-1 space-y-6 text-center lg:text-left">
           <p class="text-sm uppercase tracking-widest text-primary-300">Welcome to</p>
           <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
             Great City Community Library
           </h1>
-          <p class="max-w-xl text-lg text-slate-300">
+          <p class="mx-auto max-w-xl text-lg text-slate-300 lg:mx-0">
             Discover books, magazines, films, and more—curated for every member. Explore the
             catalog, place holds, and keep up with the latest arrivals - all online!
           </p>
-          <div class="flex flex-col items-center gap-4 sm:flex-row">
+          <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
             <NuxtButton to="#catalog" color="primary" size="lg" icon="i-heroicons-magnifying-glass">
               Browse catalog
             </NuxtButton>
           </div>
         </div>
 
-        <div class="flex-1">
+  <div class="flex-1 w-full max-w-xl self-center mx-auto lg:max-w-none lg:self-stretch lg:mx-0">
           <div class="overflow-hidden rounded-3xl border border-white/10 shadow-xl">
             <NuxtImg
               :src="heroImage"
@@ -92,8 +92,8 @@ function selectType(value: string) {
     </section>
 
     <section class="bg-slate-900/60">
-      <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-14 lg:flex-row lg:items-center">
-        <div class="flex-1">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-14 lg:flex-row lg:items-center">
+        <div class="flex-1 w-full max-w-xl self-center mx-auto lg:max-w-none lg:self-stretch lg:mx-0">
           <div class="overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-primary-500/10">
             <NuxtImg
               :src="interiorImage"
@@ -103,16 +103,17 @@ function selectType(value: string) {
             />
           </div>
         </div>
-        <div class="flex-1 space-y-5 text-center lg:text-left">
-          <h2 class="text-3xl font-semibold text-white">Visit us in the heart of Great City</h2>
-          <p class="text-slate-300">
+        <div class="flex-1 space-y-5 text-center lg:self-center">
+          <h2 class="mx-auto max-w-xl text-3xl font-semibold text-white">Visit us in the heart of Great City</h2>
+          <p class="mx-auto max-w-xl text-slate-300">
             Settle into a cozy reading nook, drop by a workshop, or meet neighbors at one of our weekly events.
             There’s always something new happening here.
           </p>
 
-          <div class="mx-auto max-w-md rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300 lg:mx-0">
+          <div class="mx-auto max-w-md rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300">
             <p class="font-semibold text-white">Downtown Branch</p>
             <p>415 Library Lane, Great City, GC 20415</p>
+            <p>(555) 867-3200</p>
             <div class="mt-3 space-y-1">
               <p>Mon–Thu · 9:00 AM – 8:00 PM</p>
               <p>Fri–Sat · 9:00 AM – 6:00 PM</p>
