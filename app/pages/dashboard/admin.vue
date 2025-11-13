@@ -71,6 +71,7 @@ const editingItem = ref<AdminMediaItem | null>(null)
 const formError = ref<string | null>(null)
 const formLoading = ref(false)
 const formModalRef = ref<InstanceType<typeof AdminMediaFormModal> | null>(null)
+const isDiscardConfirmOpen = ref(false)
 const isDeleteConfirmOpen = ref(false)
 const deleteTarget = ref<AdminMediaItem | null>(null)
 const deleteLoading = ref(false)
@@ -171,7 +172,12 @@ const hasUnsavedChanges = computed(() => {
     return false
   }
 
-  return Boolean(formModalRef.value?.isDirty)
+  const instance = formModalRef.value
+  if (instance && typeof instance.hasChanges === 'function') {
+    return instance.hasChanges()
+  }
+
+  return false
 })
 
 const searchInput = ref(filters.q ?? '')
@@ -303,19 +309,32 @@ function retryFetch() {
   refresh()
 }
 
-function handleFormClose(force = false) {
-  if (!force && hasUnsavedChanges.value) {
-    const discard = window.confirm('Discard unsaved changes?')
-    if (!discard) {
-      return
-    }
-  }
-
+function performFormClose() {
+  isDiscardConfirmOpen.value = false
   isFormOpen.value = false
   formError.value = null
   formLoading.value = false
   editingItem.value = null
   formModalRef.value?.resetForm()
+}
+
+function handleFormClose(force = false) {
+  if (!force && hasUnsavedChanges.value) {
+    isDiscardConfirmOpen.value = true
+    return
+  }
+
+  isDiscardConfirmOpen.value = false
+  performFormClose()
+}
+
+function confirmDiscard() {
+  isDiscardConfirmOpen.value = false
+  performFormClose()
+}
+
+function cancelDiscard() {
+  isDiscardConfirmOpen.value = false
 }
 
 function handleFormSubmit(payload: AdminMediaFormPayload) {
@@ -349,7 +368,7 @@ async function updateMediaItem(id: string, payload: AdminMediaFormPayload) {
       adminItems.value.splice(index, 1, updated)
     }
 
-  handleFormClose(true)
+    performFormClose()
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'data' in error) {
       const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
@@ -376,7 +395,7 @@ async function createMediaItem(payload: AdminMediaFormPayload) {
 
     const created = response.item
     adminItems.value.unshift(created)
-  handleFormClose(true)
+    performFormClose()
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'data' in error) {
       const errorData = (error as { data?: { statusMessage?: string }; statusMessage?: string })
@@ -671,6 +690,41 @@ async function confirmDelete() {
       @close="handleFormClose()"
       @submit="handleFormSubmit"
     />
+
+    <NuxtModal
+      v-model:open="isDiscardConfirmOpen"
+      title="Discard unsaved changes?"
+      description="You have edits that haven't been saved yet."
+      :overlay="true"
+      :prevent-close="formLoading"
+      class="max-w-md"
+    >
+      <template #body>
+        <p class="text-sm text-slate-200">
+          Are you sure you want to close this editor? Your changes will be lost.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <NuxtButton
+            variant="ghost"
+            color="neutral"
+            :disabled="formLoading"
+            @click="cancelDiscard"
+          >
+            Keep editing
+          </NuxtButton>
+          <NuxtButton
+            color="warning"
+            :disabled="formLoading"
+            @click="confirmDiscard"
+          >
+            Discard changes
+          </NuxtButton>
+        </div>
+      </template>
+    </NuxtModal>
 
     <NuxtModal
       v-model:open="isDeleteConfirmOpen"
