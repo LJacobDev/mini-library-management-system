@@ -2,18 +2,45 @@
 
 Submitted by Lee Jacob (LJacobDev)
 
-## Current state of the application
 
-Complete, regarding minimum objectives of achieving library management functions.
-
-Extra features added include AI generated recommendations for which available books / videos match user's prompt that explains what they'd like.
-
-Requires UI, UX, Code, Documentation / README clean up
-
-
-### This project is being revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
 ### See its [live deployment state](https://mini-library-management-system.vercel.app/)
+
+### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
+
+It was first built with a spec-building approach that laid out serveral files and plans that ballooned in complexity.
+These files remain in the repo as guidelines while the build process was reworked into something that connected simple
+parts quickly in order to achieve a working product faster.  Then, the original specs and OpenAPI files can be gradually
+completed or reconciled / cleaned up with any new change in direction taken.
+
+### Current state of the application
+
+Complete, regarding minimum objectives:
+- Add, edit, delete books (extened to videos, audiobooks, other)
+- Check in and check out books (performed via librarian role through /dashboard
+- Search, filter books/media by title, author, descroption, type
+
+Extra features added:
+- Multi user, multi role sign in (library member, librarian desk, admin)
+- Site is designed as a patron-facing library site to serve the members, but also has library staff dashboard
+- Users can prompt a chat agent to recommend media from the library catalog that they would like
+
+Manual testing completed along the way to ensure core functions are working
+
+Still requires / working on:
+- UI, UX, Code, Documentation / README clean up
+- Unit Tests planned, but not added yet in order to complete build faster
+
+Additional features planned / considered:
+- Allow members to put a reservation / hold on available media
+- Allow members to renew their existing loans if no upcoming revervations are in queue for it
+
+Documentation / files of interest:
+- [agent-fast-start-context.md](agents/agent-fast-start-context.md) is a living document where the agent keeps working notes and a history of all actions taken
+- [spec-fast-start*.md](docs/dev/spec/spec-fast-start-5.md) is a series of spec files used to capture the goals and tasks to accomplish - may be slightly outdated
+
+
+
 
 ## Everything Below Here is the Final State of the Initial Documentation-First TDD Approach Before Switching To Fast Start Approach
 
