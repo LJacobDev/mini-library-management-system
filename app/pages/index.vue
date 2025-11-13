@@ -103,11 +103,22 @@ function selectType(value: string) {
             />
           </div>
         </div>
-        <div class="flex-1 space-y-4 text-center lg:text-left">
-          <h2 class="text-3xl font-semibold text-white">Come visit us - there's so much to do here!</h2>
+        <div class="flex-1 space-y-5 text-center lg:text-left">
+          <h2 class="text-3xl font-semibold text-white">Visit us in the heart of Great City</h2>
           <p class="text-slate-300">
-            Cozy reading nooks, community events, expert staff help, learning workshops and more.
+            Settle into a cozy reading nook, drop by a workshop, or meet neighbors at one of our weekly events.
+            There’s always something new happening here.
           </p>
+
+          <div class="mx-auto max-w-md rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-300 lg:mx-0">
+            <p class="font-semibold text-white">Downtown Branch</p>
+            <p>415 Library Lane, Great City, GC 20415</p>
+            <div class="mt-3 space-y-1">
+              <p>Mon–Thu · 9:00 AM – 8:00 PM</p>
+              <p>Fri–Sat · 9:00 AM – 6:00 PM</p>
+              <p>Sun · 12:00 PM – 5:00 PM</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
