@@ -44,7 +44,7 @@ Extra features added:
 Manual testing completed along the way to ensure core functions are working
 
 Still requires / working on:
-- UI, UX, polish, a11y audit
+- UI, UX, polish, a11y audit, dark/light mode appearance
 - Code refactoring, removing obsolete routes endpoints
 - Documentation / README clean up and presentation
 - Unit Tests planned, but not added yet in order to complete build faster
