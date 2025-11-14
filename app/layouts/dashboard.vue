@@ -21,8 +21,10 @@ function isActive(path: string) {
     <AppHeader />
 
     <div class="flex min-h-[calc(100vh-4rem)]">
-      <aside class="hidden w-64 flex-shrink-0 border-r border-white/5 bg-slate-950/80 backdrop-blur md:flex">
-        <nav class="flex w-full flex-col gap-1 px-4 py-6 text-sm">
+      <aside
+  class="hidden w-64 shrink-0 border-r border-white/5 bg-slate-950/80 backdrop-blur md:flex md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:max-h-[calc(100vh-4rem)]"
+      >
+        <nav class="flex w-full flex-col gap-1 overflow-y-auto px-4 py-6 text-sm">
           <span class="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Workspace</span>
           <NuxtLink
             v-for="item in navItems"
