@@ -9,6 +9,8 @@ Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Su
 
 **Note:** There's an issue where in some browsers/systems it appears as the dark theme that it was developed in, but in some browsers it is showing in a light theme that has yet to be finished, making it hard to view.  If this is happening to you, you can try viewing it in dark mode for now - but there is also a proper view of this app [in this demo video](https://youtu.be/1Q_yvrdJDmo).
 
+**Note:** On mobile devices, certain key aspects are not displaying properly, so it is recommended to view this site on something with a wider display like a desktop browser.
+
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
 The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and openapi.yaml files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
