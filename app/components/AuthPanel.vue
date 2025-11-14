@@ -21,7 +21,7 @@
 
     <form v-else class="space-y-4" @submit.prevent="handleSubmit">
       <p class="text-sm text-center text-cyan-100">
-        <span v-if="isSignUp">Create your account with an email and password, or request a magic link.</span>
+        <span v-if="isSignUp">Create your account with an email and password, or request a magic link. After signing up, watch your inbox for the confirmation link to activate your account.</span>
         <span v-else>Sign in with your password or request a magic link to your inbox.</span>
       </p>
 
@@ -167,7 +167,7 @@ const handleSubmit = async () => {
         feedback.value = 'Check your email to confirm your account, then sign in.'
         authMode.value = 'sign-in'
       } else {
-        feedback.value = 'Account created and signed in!'
+        feedback.value = 'Account created! Check your inbox for the confirmation link to finish setting things up.'
         email.value = ''
       }
       password.value = ''
