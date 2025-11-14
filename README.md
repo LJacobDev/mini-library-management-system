@@ -4,9 +4,7 @@ Submitted by Lee Jacob (LJacobDev)
 
 ### See it [deployed](https://mini-library-management-system.vercel.app/)
 
-Currently there's an issue where in some browsers it appears in the intended dark theme, but in other browswers it is showing as a light theme that is hard to view.
-
-If this is happening to you, until it gets fixed you can see the proper view of the app [in this demo video](https://youtu.be/1Q_yvrdJDmo)
+**Note:** There's an issue where in some browsers it appears in the intended dark theme, but in other browswers it is showing as a light theme that makes it hard to view.  If this is happening to you, a proper view of this app is available [in this demo video](https://youtu.be/1Q_yvrdJDmo)
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
