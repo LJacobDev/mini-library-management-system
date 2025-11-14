@@ -121,7 +121,7 @@ async function buildAiSummary(event: H3Event, role: AppRole, intent: string | nu
     const completion = await streamChatCompletion({
       event,
       temperature: 0.45,
-      maxTokens: 160,
+      maxTokens: 1000,
       messages: [
         {
           role: 'system',
