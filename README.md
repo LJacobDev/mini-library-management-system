@@ -9,7 +9,7 @@ Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Su
 
 **Note:** There's an issue where in some browsers/systems it appears as the dark theme that it was developed in, but in some browsers it is showing in a light theme that has yet to be finished, making it hard to view.  If this is happening to you, you can try viewing it in dark mode for now - but there is also a proper view of this app [in this demo video](https://youtu.be/1Q_yvrdJDmo).
 
-**Note:** On mobile devices, certain key aspects are not displaying properly, so it is recommended to view this site on something with a wider display like a desktop browser.
+**Note:** On mobile devices, certain key aspects are not showing up in the smaller view, so it is recommended to view this site on something with a wider display like a desktop browser.
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
