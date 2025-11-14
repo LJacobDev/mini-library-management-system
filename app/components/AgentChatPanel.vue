@@ -20,7 +20,7 @@
           <div
             ref="messageScrollEl"
             class="flex-1 overflow-y-auto rounded-xl border border-gray-200/60 bg-white p-4 shadow-sm transition-[max-height] dark:border-gray-800/60 dark:bg-slate-900 dark:text-gray-100"
-            style="max-height: clamp(280px, 52vh, 520px);"
+            style="max-height: clamp(250px, 48vh, 415px);"
           >
             <div class="space-y-4">
               <div
