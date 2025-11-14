@@ -1,35 +1,15 @@
 # Mini Library Management System
 
-Submitted by Lee Jacob (LJacobDev)
+An example of a library management system for CRUD, search and filter, and check in / check out operations on a library's media catalog.  Extra features were added, such as making it a patron-facing web application in addition to the catalog management functions.
+
 
 ### See it [deployed](https://mini-library-management-system.vercel.app/)
 
-**Note:** There's an issue where in some browsers it appears as the intended dark theme, but in other browswers it is showing as a light theme that makes it hard to view.  If this is happening to you, a proper view of this app is available [in this demo video](https://youtu.be/1Q_yvrdJDmo).
+**Note:** There's an issue where in some browsers/systems it appears as the intended dark theme, but in others it is showing in an unindented light theme that makes it hard to view.  If this is happening to you, you can try viewing it in dark mode for now - but there is also a proper view of this app [in this demo video](https://youtu.be/1Q_yvrdJDmo).
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
-The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and OpenAPI, etc files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
-
-### Running locally
-
-```
-npm install
-
-npm run dev
-```
-
-**Note: In its current form it's difficult to run with full features locally**
-
-The env keys needed for database and AI integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions).  
-
-You should be able to use your own OpenAI api key, and you can create a Supabase project with your own keys and use SQL files in docs/data to seed data.  
-
-The site's images are live urls hosted in a Supabase bucket, so those should load.
-
-When in dev mode, the app header will show a control to allow **changing session role** to view site as member, librarian, admin.
-
-There is also a dev-mode /debug page with a control panel for testing endpoints.
-
+The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and openapi.yaml files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
 
 ### Current state of the application
 
@@ -64,6 +44,29 @@ Documentation / files of interest:
 
 
 Built with Nuxt 4, TailwindCSS 4, hosted with Vercel.  Auth and Postgres database provided by Supabase.
+
+
+### Running locally
+
+```
+npm install
+
+npm run dev
+```
+
+**Note: In its current form it's difficult to run with full features locally**
+
+The env keys needed for database and AI integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions).  
+
+You should be able to use your own OpenAI api key, and you can create a Supabase project with your own keys and use SQL files in docs/data to seed data.  
+
+The site's images are live urls hosted in a Supabase bucket, so those should load.
+
+When in dev mode, the app header will show a control to allow **changing session role** to view site as member, librarian, admin.
+
+There is also a dev-mode /debug page with a control panel for testing endpoints.
+
+
 
 
 
