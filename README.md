@@ -22,7 +22,7 @@ Complete, regarding minimum objectives:
 
 Extra features added:
 - Multi user, multi role sign in (library member, librarian desk, admin) with email and password, or email and magic liknk
-- Route guarding depending on role permissions
+- Route guarding to protect and RLS to enforce role based permissions
 - Site is designed as a patron-facing library site to serve the members, but also has library staff dashboard
 - Users can prompt a chat agent to recommend media from the library catalog that they would like (persisting sessions for follow up questions not yet enabled)
 - Running in dev environment enables a 'view as' role impersonation switch in the header to test views and route guards
