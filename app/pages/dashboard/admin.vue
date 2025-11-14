@@ -453,13 +453,7 @@ async function confirmDelete() {
       </template>
     </NuxtPageHeader>
 
-    <NuxtPageSection>
-      <template #title>Manage media catalog</template>
-      <template #description>
-        Use search, filters, and sort controls to locate specific items. View details now—inline edit and delete
-        actions wire up next.
-      </template>
-
+  <NuxtPageSection>
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <NuxtInput
           v-model="searchInput"
