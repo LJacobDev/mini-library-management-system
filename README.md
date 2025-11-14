@@ -39,11 +39,12 @@ Complete, regarding minimum objectives:
 Extra features added:
 - Multi user, multi role sign in (library member, librarian desk, admin)
 - Site is designed as a patron-facing library site to serve the members, but also has library staff dashboard
-- Users can prompt a chat agent to recommend media from the library catalog that they would like
+- Users can prompt a chat agent to recommend media from the library catalog that they would like (persisting sessions for follow up questions not yet enabled)
 
 Manual testing completed along the way to ensure core functions are working
 
 Still requires / working on:
+- Allowing chat agent to carry a session context for followup prompts
 - UI, UX, polish, a11y audit, dark/light mode appearance
 - Code refactoring, removing obsolete routes endpoints
 - Documentation / README clean up and presentation
@@ -52,6 +53,8 @@ Still requires / working on:
 Additional features planned / considered:
 - Allow members to put a reservation / hold on available media
 - Allow members to renew their existing loans online if no upcoming revervations are in queue for it
+- Allow admin to use AI agent to help gather insights about patterns in catalog contents and member loans
+
 
 Documentation / files of interest:
 - [agent-fast-start-context.md](agents/agent-fast-start-context.md) is a living document where the agent keeps working notes and a history of all actions taken

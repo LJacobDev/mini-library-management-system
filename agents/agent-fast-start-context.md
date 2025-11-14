@@ -172,3 +172,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — Added unsaved-change guard to the admin media form with a Nuxt modal confirmation; cancelling warns before discarding edits while successful saves bypass the prompt.
 - 2025-11-13 — Upgraded `/dashboard/admin` pagination with an intersection-observed "Load more" sentinel so additional pages fetch automatically as the control scrolls into view, while keeping the manual button as a fallback.
 - 2025-11-13 — Documented Supabase recovery steps: manual SQL reset instructions for stray `media_loans` rows, plus reminder that desk/loan event tables only update once we finish the logging hooks (circulation flow currently relies solely on `media_loans`).
+- 2025-11-13 — `AuthPanel` now supports both email/password sign-in and magic-link requests, clearing stored passwords on logout while reusing the refreshed `useSupabaseAuth` helpers.
