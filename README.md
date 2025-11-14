@@ -14,14 +14,16 @@ The goal of this project was to use agentic coding workflows to build a high qua
 ### Current state of the application
 
 Complete, regarding minimum objectives:
-- Add, edit, delete books (extened to videos, audiobooks, other)
-- Check in and check out books (performed via librarian role through /dashboard)
+- Add, edit, delete books through the admin role's /dashboard/admin route (extened to videos, audiobooks, other)
+- Check in and check out books through the librarian role at /dashboard/desk
 - Search, filter books/media by title, author, description, type
 
 Extra features added:
 - Multi user, multi role sign in (library member, librarian desk, admin)
+- Route guarding depending on role permissions
 - Site is designed as a patron-facing library site to serve the members, but also has library staff dashboard
 - Users can prompt a chat agent to recommend media from the library catalog that they would like (persisting sessions for follow up questions not yet enabled)
+- Running in dev environment enables a 'view as' role impersonation switch in the header to test views and route guards
 
 Documentation / files of interest:
 - [agent-fast-start-context.md](agents/agent-fast-start-context.md) is a living document where the agent keeps working notes and a history of all actions taken
@@ -45,7 +47,7 @@ Additional features planned / considered:
 
 
 
-Built with Nuxt 4, TailwindCSS 4, hosted with Vercel.  Auth and Postgres database provided by Supabase.
+Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Supabase, and hosted with Vercel.
 
 
 ### Running locally
@@ -72,7 +74,7 @@ There is also a dev-mode /debug page with a control panel for testing endpoints.
 
 
 
-## Everything Below Here is the Final State of the Initial Documentation-First TDD Approach Before Switching To Fast Start Approach
+## Everything Below Here is a Snapshot of the Final State of the Initial Documentation-First TDD Approach Before Switching To Fast Start Approach
 
 
 This application was meant to be a demonstration of rapidly making a high quality demo application in a very short amount of time by leveraging modern Agentic Coding workflows, involving spec-driven and multi-agent aspects.
