@@ -13,7 +13,7 @@ The goal of this project was to use agentic coding workflows to build a high qua
 
 See [README.old.md](README.old.md) for a snapshot of the app state at the moment before deciding to rework the old approach to the fast start one.
 
-## Current state of the application
+## Current State Of The Application
 
 Complete, regarding minimum objectives:
 - Add, edit, delete books through the admin role's /dashboard/admin route (extened to videos, audiobooks, other)
@@ -52,7 +52,7 @@ Additional features planned / considered:
 Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Supabase, and hosted with Vercel.
 
 
-## Running locally
+## Running It Locally
 
 ```
 npm install
@@ -66,7 +66,7 @@ The env keys needed for database and AI integrations include OPENAI_API_KEY, SUP
 
 You should be able to use your own OpenAI api key, and you can create a Supabase project with your own keys and use SQL files in docs/data to seed data.  
 
-The site's images are live urls hosted in a Supabase bucket, so those should load.
+The site's images are live urls hosted in a Supabase bucket, so those are available to you online but I'm considering including them in /public in the future to make it easier.
 
 When in dev mode, the app header will show a control to allow **changing session role** to view site as member, librarian, admin.
 
