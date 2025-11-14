@@ -3,7 +3,7 @@
 An example of a library management system for CRUD, search and filter, and check in / check out operations on a library's media catalog.  Extra features were added, such as making it a patron-facing web application in addition to the catalog management functions.
 
 
-### See it [deployed](https://mini-library-management-system.vercel.app/)
+### See it deployed at [mini-library-management-system.vercel.app](https://mini-library-management-system.vercel.app/)
 
 **Note:** There's an issue where in some browsers/systems it appears as the intended dark theme, but in others it is showing in a light theme that has yet to be finished, making it hard to view.  If this is happening to you, you can try viewing it in dark mode for now - but there is also a proper view of this app [in this demo video](https://youtu.be/1Q_yvrdJDmo).
 
