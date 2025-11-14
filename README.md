@@ -11,7 +11,7 @@ An example of a library management system for CRUD, search and filter, and check
 
 The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and openapi.yaml files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
 
-See the [old README.md](README.old.md) for a snapshot of the app state at the time of deciding to rework the approach to fast start.
+See [README.old.md](README.old.md) for a snapshot of the app state at the time of deciding to rework the approach to fast start.
 
 ### Current state of the application
 
