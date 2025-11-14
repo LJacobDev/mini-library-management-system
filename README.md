@@ -13,7 +13,7 @@ The goal of this project was to use agentic coding workflows to build a high qua
 
 See [README.old.md](README.old.md) for a snapshot of the app state at the moment before deciding to rework the old approach to the fast start one.
 
-### Current state of the application
+## Current state of the application
 
 Complete, regarding minimum objectives:
 - Add, edit, delete books through the admin role's /dashboard/admin route (extened to videos, audiobooks, other)
@@ -52,7 +52,7 @@ Additional features planned / considered:
 Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Supabase, and hosted with Vercel.
 
 
-### Running locally
+## Running locally
 
 ```
 npm install
