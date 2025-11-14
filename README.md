@@ -47,6 +47,7 @@ Additional features planned / considered:
 - Allow members to renew their existing loans online if no upcoming revervations are in queue for it
 - Allow admin to use AI agent to help gather insights about patterns in catalog contents and member loans
 - Setting up historical logging of librarian desk transactions
+- SSO logins
 
 
 
