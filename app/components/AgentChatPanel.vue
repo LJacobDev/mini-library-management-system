@@ -1,5 +1,5 @@
 <template>
-  <NuxtCard class="flex h-full max-h-[min(80vh,720px)] flex-col">
+  <NuxtCard class="flex w-full min-h-[480px] max-h-[70vh] flex-col overflow-hidden md:max-h-[720px]">
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
@@ -14,160 +14,179 @@
       </div>
     </template>
 
-    <div class="grid h-full min-h-0 gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
-      <section class="flex min-h-0 flex-col">
-        <div class="flex-1 overflow-y-auto rounded-xl border border-gray-200/60 bg-white p-4 shadow-sm dark:border-gray-800/60 dark:bg-slate-900 dark:text-gray-100">
-          <div class="space-y-4">
-            <div
-              v-for="message in messages"
-              :key="message.id"
-              :class="[
-                'max-w-prose rounded-xl px-4 py-3 text-sm shadow-sm',
-                message.role === 'user'
-                  ? 'ml-auto bg-primary-500 text-white'
-                  : 'mr-auto bg-slate-100 text-gray-900 dark:bg-slate-800 dark:text-gray-100',
-              ]"
-            >
-              <p v-if="message.heading" class="font-medium">
-                {{ message.heading }}
-              </p>
-              <p class="whitespace-pre-wrap leading-relaxed">
-                {{ message.content }}
-              </p>
-              <p class="mt-1 text-xs opacity-80">{{ message.description }}</p>
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <div class="grid h-full flex-1 min-h-0 gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
+        <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div
+            ref="messageScrollEl"
+            class="flex-1 overflow-y-auto rounded-xl border border-gray-200/60 bg-white p-4 shadow-sm transition-[max-height] dark:border-gray-800/60 dark:bg-slate-900 dark:text-gray-100"
+            style="max-height: clamp(250px, 48vh, 415px);"
+          >
+            <div class="space-y-4">
+              <div
+                v-for="message in messages"
+                :key="message.id"
+                :class="[
+                  'max-w-prose rounded-xl px-4 py-3 text-sm shadow-sm',
+                  message.role === 'user'
+                    ? 'ml-auto bg-primary-500 text-white'
+                    : 'mr-auto bg-slate-100 text-gray-900 dark:bg-slate-800 dark:text-gray-100',
+                ]"
+              >
+                <p v-if="message.heading" class="font-medium">
+                  {{ message.heading }}
+                </p>
+                <p class="whitespace-pre-wrap leading-relaxed">
+                  {{ message.content }}
+                </p>
+                <p class="mt-1 text-xs opacity-80">{{ message.description }}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="mt-4 space-y-3">
-          <label class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400" for="chat-prompt">
-            What can we help you discover?
-          </label>
-          <textarea
-            id="chat-prompt"
-            v-model="promptText"
-            class="min-h-24 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200 disabled:opacity-70 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-100 dark:focus:border-primary-500"
-            placeholder="Ask for book club picks, STEM resources, or anything else…"
-            :disabled="chat.isStreaming.value"
-          />
-          <div class="flex flex-wrap items-center gap-2">
-            <NuxtButton
-              color="primary"
-              :loading="chat.isStreaming.value"
-              :disabled="!canSubmit"
-              icon="i-heroicons-paper-airplane"
-              @click="handleSubmit"
-            >
-              Send
-            </NuxtButton>
-            <NuxtButton
-              v-if="chat.isStreaming.value"
-              color="neutral"
-              variant="soft"
-              icon="i-heroicons-stop-circle"
-              @click="chat.cancel"
-            >
-              Stop
-            </NuxtButton>
+          <div class="mt-4 space-y-3">
+            <label class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400" for="chat-prompt">
+              What can we help you discover?
+            </label>
+            <textarea
+              id="chat-prompt"
+              v-model="promptText"
+              class="min-h-24 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200 disabled:opacity-70 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-100 dark:focus:border-primary-500"
+              placeholder="Ask for book club picks, STEM resources, or anything else…"
+              :disabled="chat.isStreaming.value"
+            />
+            <div class="flex flex-wrap items-center gap-2">
+              <NuxtButton
+                color="primary"
+                :loading="chat.isStreaming.value"
+                :disabled="!canSubmit"
+                icon="i-heroicons-paper-airplane"
+                @click="handleSubmit"
+              >
+                Send
+              </NuxtButton>
+              <NuxtButton
+                v-if="chat.isStreaming.value"
+                color="neutral"
+                variant="soft"
+                icon="i-heroicons-stop-circle"
+                @click="chat.cancel"
+              >
+                Stop
+              </NuxtButton>
+            </div>
           </div>
-        </div>
 
-        <NuxtAlert
-          v-if="hasError"
-          class="mt-4"
-          color="error"
-          icon="i-heroicons-exclamation-triangle"
-          :title="errorMessage"
-        >
-          <template #description>
-            Please try again in a moment. If the problem persists, confirm your session is active.
-          </template>
-          <template #actions>
-            <NuxtButton color="error" variant="soft" size="xs" @click="retryLastPrompt">Retry</NuxtButton>
-          </template>
-        </NuxtAlert>
-      </section>
+          <NuxtAlert
+            v-if="hasError"
+            class="mt-4"
+            color="error"
+            icon="i-heroicons-exclamation-triangle"
+            :title="errorMessage"
+          >
+            <template #description>
+              Please try again in a moment. If the problem persists, confirm your session is active.
+            </template>
+            <template #actions>
+              <NuxtButton color="error" variant="soft" size="xs" @click="retryLastPrompt">Retry</NuxtButton>
+            </template>
+          </NuxtAlert>
+        </section>
 
-      <aside class="min-h-0 space-y-3">
-        <header class="flex items-center justify-between gap-2">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Suggested titles
-          </h3>
-          <NuxtTooltip :text="tooltipLabel">
-            <NuxtIcon name="i-heroicons-sparkles" class="text-primary-500" />
-          </NuxtTooltip>
-        </header>
+  <aside class="flex min-h-0 flex-col space-y-3 overflow-hidden">
+          <header class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Suggested titles
+            </h3>
+            <NuxtTooltip :text="tooltipLabel">
+              <NuxtIcon name="i-heroicons-sparkles" class="text-primary-500" />
+            </NuxtTooltip>
+          </header>
 
-        <div class="flex h-full flex-col gap-3 overflow-y-auto pr-1">
-          <template v-if="chat.isStreaming && !hasItems">
-            <NuxtSkeleton v-for="index in 3" :key="`skeleton-${index}`" class="h-24 w-full" />
-          </template>
+          <div class="flex h-full flex-col gap-3 overflow-y-auto pr-1">
+            <template v-if="chat.isStreaming && !hasItems">
+              <NuxtSkeleton v-for="index in 3" :key="`skeleton-${index}`" class="h-24 w-full" />
+            </template>
 
-          <template v-else-if="hasItems">
-            <NuxtCard
-              v-for="item in recommendations"
-              :key="item.id"
-              variant="soft"
-              class="shadow-none"
-            >
-              <div class="flex items-start gap-3">
-                <div class="h-14 w-10 shrink-0 overflow-hidden rounded-md bg-gray-200 dark:bg-gray-700">
-                  <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover">
-                  <div
-                    v-else
-                    class="flex h-full w-full items-center justify-center text-xs text-gray-500 dark:text-gray-400"
-                  >
-                    {{ item.mediaType.toUpperCase() }}
-                  </div>
-                </div>
-                <div class="space-y-2">
-                  <div>
-                    <h4 class="text-sm font-medium leading-tight text-gray-900 dark:text-gray-100">
-                      {{ item.title }}
-                    </h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.author }}</p>
-                  </div>
-                  <div class="flex flex-wrap gap-1">
-                    <NuxtBadge size="xs" color="neutral" variant="soft">{{ item.mediaFormat }}</NuxtBadge>
-                    <NuxtBadge v-if="item.publishedAt" size="xs" color="neutral" variant="soft">
-                      {{ item.publishedAt.slice(0, 4) }}
-                    </NuxtBadge>
-                    <NuxtBadge
-                      v-for="subject in item.subjects"
-                      :key="subject"
-                      size="xs"
-                      color="primary"
-                      variant="soft"
+            <template v-else-if="hasItems">
+              <NuxtCard
+                v-for="item in recommendations"
+                :key="item.id"
+                variant="soft"
+                class="shadow-none"
+              >
+                <div class="flex items-start gap-3">
+                  <div class="h-14 w-10 shrink-0 overflow-hidden rounded-md bg-gray-200 dark:bg-gray-700">
+                    <img v-if="item.coverUrl" :src="item.coverUrl" :alt="item.title" class="h-full w-full object-cover">
+                    <div
+                      v-else
+                      class="flex h-full w-full items-center justify-center text-xs text-gray-500 dark:text-gray-400"
                     >
-                      {{ subject }}
-                    </NuxtBadge>
+                      {{ item.mediaType.toUpperCase() }}
+                    </div>
                   </div>
-                  <p v-if="item.description" class="line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
-                    {{ item.description }}
-                  </p>
+                  <div class="space-y-2">
+                    <div>
+                      <h4 class="text-sm font-medium leading-tight text-gray-900 dark:text-gray-100">
+                        {{ item.title }}
+                      </h4>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ item.author }}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-1">
+                      <NuxtBadge size="xs" color="neutral" variant="soft">{{ item.mediaFormat }}</NuxtBadge>
+                      <NuxtBadge v-if="item.publishedAt" size="xs" color="neutral" variant="soft">
+                        {{ item.publishedAt.slice(0, 4) }}
+                      </NuxtBadge>
+                      <NuxtBadge
+                        v-for="subject in item.subjects"
+                        :key="subject"
+                        size="xs"
+                        color="primary"
+                        variant="soft"
+                      >
+                        {{ subject }}
+                      </NuxtBadge>
+                    </div>
+                    <p v-if="item.description" class="line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                      {{ item.description }}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </NuxtCard>
-          </template>
+              </NuxtCard>
+            </template>
 
-          <template v-else>
-            <p class="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              Ask for anything from "picture books about kindness" to "films on local history" and recommendations will appear here.
-            </p>
-          </template>
-        </div>
-      </aside>
+            <template v-else>
+              <p class="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                Ask for anything from "picture books about kindness" to "films on local history" and recommendations will appear here.
+              </p>
+            </template>
+          </div>
+        </aside>
+      </div>
     </div>
   </NuxtCard>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from '#imports'
+import { computed, nextTick, onMounted, ref, watch } from '#imports'
 import { useAgentChat } from '../composables/useAgentChat'
 
 const chat = useAgentChat()
 
 const promptText = ref('')
+const messageScrollEl = ref<HTMLElement | null>(null)
+
+function scrollToBottom() {
+  const el = messageScrollEl.value
+  if (!el) {
+    return
+  }
+  el.scrollTop = el.scrollHeight
+}
+
+onMounted(() => {
+  nextTick(scrollToBottom)
+})
 
 const previewRecommendations = [
   {
@@ -257,6 +276,13 @@ const messages = computed(() => {
 
   return data
 })
+
+watch(
+  () => [messages.value.length, chat.isStreaming.value, chat.summary.value],
+  () => {
+    void nextTick(scrollToBottom)
+  }
+)
 
 const recommendations = computed(() => {
   const metadata = chat.metadata.value

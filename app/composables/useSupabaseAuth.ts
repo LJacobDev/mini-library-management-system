@@ -144,6 +144,60 @@ export function useSupabaseAuth() {
     return !authError
   }
 
+  async function signInWithPassword(email: string, password: string) {
+    error.value = null
+    loading.value = true
+    const client = useSupabaseBrowserClient()
+
+    const {
+      data,
+      error: authError,
+    } = await client.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (!authError && data?.user) {
+      user.value = data.user
+      syncSupabaseAccessCookie(data.session ?? null)
+    }
+
+    handleAuthResult(authError)
+    loading.value = false
+
+    return !authError
+  }
+
+  async function signUpWithPassword(email: string, password: string) {
+    error.value = null
+    loading.value = true
+    const client = useSupabaseBrowserClient()
+
+    const {
+      data,
+      error: authError,
+    } = await client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    })
+
+    if (!authError && data?.session) {
+      user.value = data.user ?? null
+      syncSupabaseAccessCookie(data.session)
+    }
+
+    handleAuthResult(authError)
+    loading.value = false
+
+    return {
+      success: !authError,
+      requiresEmailConfirmation: !authError && !data?.session,
+    }
+  }
+
   async function signOut() {
     const client = useSupabaseBrowserClient()
     const { error: authError } = await client.auth.signOut()
@@ -174,6 +228,8 @@ export function useSupabaseAuth() {
     error,
     refreshSession,
     signInWithMagicLink,
+    signInWithPassword,
+    signUpWithPassword,
     signOut,
   }
 }

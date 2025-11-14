@@ -219,6 +219,7 @@ const isDirty = computed(() => formFields.some((key) => form[key] !== baseline[k
 
 defineExpose({
   isDirty,
+  hasChanges: () => isDirty.value,
   resetForm,
 })
 </script>
