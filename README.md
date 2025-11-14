@@ -2,6 +2,8 @@
 
 An example of a library management system for CRUD, search and filter, and check in / check out operations on a library's media catalog.  Extra features were added, such as making it a patron-facing web application in addition to the catalog management functions.
 
+Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Supabase, and hosted with Vercel.
+
 
 ### See it deployed at [mini-library-management-system.vercel.app](https://mini-library-management-system.vercel.app/)
 
@@ -49,7 +51,7 @@ Additional features planned / considered:
 
 
 
-Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Supabase, and hosted with Vercel.
+
 
 
 ## Running It Locally
