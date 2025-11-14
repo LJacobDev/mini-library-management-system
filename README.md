@@ -4,6 +4,10 @@ Submitted by Lee Jacob (LJacobDev)
 
 ### See it [deployed](https://mini-library-management-system.vercel.app/)
 
+Currently there's an issue where in some browsers it appears in the intended dark theme, but in other browswers it is showing as a light theme that is hard to view.
+
+If this is happening to you, until it gets fixed you can see the proper view of the app [in this demo video](https://youtu.be/1Q_yvrdJDmo)
+
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
 The goal of this project was to use agentic coding workflows to build a high quality app as quickly as possible.  It was first worked on with a spec-building approach that laid out detailed plans, schemas, api contracts, etc that began to balloon in complexity and got in the way of building things quickly.  These files remain in the repo as guidelines while the build process was reworked into something that connected simple parts quickly in order to achieve a working product faster.  Now, the original spec-final.md and OpenAPI, etc files can be gradually completed or reconciled / cleaned up with any new change in direction taken.
