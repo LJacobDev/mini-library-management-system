@@ -22,6 +22,9 @@ type MediaRow = {
 const DEFAULT_PAGE_SIZE = 24
 const MAX_PAGE_SIZE = 60
 const ALLOWED_MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
+const MAX_SEARCH_LENGTH = 300
+
+const SAFE_SEARCH_PATTERN = /[^\p{L}\p{N}\p{M}\s'",.!?\-_/]/gu
 
 function parsePositiveInteger(value: unknown, fallback: number) {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -38,12 +41,58 @@ function parsePositiveInteger(value: unknown, fallback: number) {
   return fallback
 }
 
+function stripUnsafeSearchCharacters(value: string) {
+  return value.replace(SAFE_SEARCH_PATTERN, ' ')
+}
+
+function stripControlCharacters(value: string) {
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeSearchTerm(value: string | null | undefined) {
+  if (!value) {
+    return ''
+  }
+
+  const normalized = stripControlCharacters(stripUnsafeSearchCharacters(value.normalize('NFKC')))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return ''
+  }
+
+  return normalized.slice(0, MAX_SEARCH_LENGTH)
+}
+
+function escapeLikeTerm(term: string) {
+  if (!term) {
+    return term
+  }
+
+  return term.replace(/([%_\\])/g, '\\$1')
+}
+
+function quoteFilterValue(value: string) {
+  const escapedQuotes = value.replace(/"/g, '\\"')
+  return `"${escapedQuotes}"`
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const page = parsePositiveInteger(query.page, 1)
   const requestedPageSize = parsePositiveInteger(query.pageSize, DEFAULT_PAGE_SIZE)
   const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE)
-  const search = typeof query.q === 'string' ? query.q.trim() : ''
+  const search = sanitizeSearchTerm(typeof query.q === 'string' ? query.q : '')
   const rawType = typeof query.type === 'string' ? query.type.trim().toLowerCase() : ''
   const type = ALLOWED_MEDIA_TYPES.has(rawType) ? rawType : ''
 
@@ -77,12 +126,11 @@ export default defineEventHandler(async (event) => {
   }
 
   if (search) {
-    const like = `%${search}%`
-    builder = builder.or(
-      ['title.ilike.', 'creator.ilike.', 'genre.ilike.', 'subject.ilike.']
-        .map((column) => `${column}${like}`)
-        .join(',')
-    )
+    const escaped = escapeLikeTerm(search)
+    const like = quoteFilterValue(`%${escaped}%`)
+    const searchableColumns = ['title', 'creator', 'genre', 'subject']
+    const orFilters = searchableColumns.map((column) => `${column}.ilike.${like}`).join(',')
+    builder = builder.or(orFilters)
   }
 
   const offset = (page - 1) * pageSize

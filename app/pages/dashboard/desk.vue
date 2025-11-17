@@ -303,6 +303,66 @@ const feedbackClasses = computed(() =>
     : 'border-red-500/40 bg-red-900/30 text-red-200',
 )
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9@._-]{3,120}$/
+const EMAIL_PATTERN = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
+
+function stripControlCharacters(input: string) {
+  let result = ''
+  for (const char of input) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeNoteInput(value: string, maxLength = 500) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.slice(0, maxLength)
+}
+
+function sanitizeIdentifierInput(raw: string | undefined) {
+  if (typeof raw !== 'string') {
+    return null
+  }
+
+  const normalized = stripControlCharacters(raw).trim()
+  if (!normalized) {
+    return null
+  }
+
+  if (UUID_PATTERN.test(normalized)) {
+    return normalized
+  }
+
+  const lowered = normalized.toLowerCase()
+  if (EMAIL_PATTERN.test(lowered)) {
+    return lowered
+  }
+
+  const compact = normalized.replace(/[^A-Za-z0-9@._-]/g, '')
+  if (!compact || !IDENTIFIER_PATTERN.test(compact)) {
+    return null
+  }
+
+  return compact
+}
+
 function extractLoanMetadata(item: CatalogItem): DeskLoanMetadata {
   const raw = (item.metadata ?? {}) as Record<string, unknown>
   const borrowerRaw = raw.borrower as Record<string, unknown> | undefined
@@ -459,12 +519,14 @@ async function submitCheckout() {
     return
   }
 
-  const memberIdentifier = checkoutForm.patronIdentifier.trim()
+  const memberIdentifier = sanitizeIdentifierInput(checkoutForm.patronIdentifier)
   if (!memberIdentifier) {
     formStatus.value = 'error'
-    formMessage.value = 'Enter a member email, card number, or UUID.'
+    formMessage.value = 'Enter a valid member email, card number, or UUID (3-120 characters).'
     return
   }
+
+  const checkoutNote = sanitizeNoteInput(checkoutForm.notes) ?? undefined
 
   isSubmitting.value = true
   formMessage.value = null
@@ -476,7 +538,7 @@ async function submitCheckout() {
         memberIdentifier,
         mediaId: activeItem.value.id,
         dueDate: checkoutDueDateIso.value,
-        note: checkoutForm.notes || undefined,
+        note: checkoutNote,
       },
     })
 
@@ -532,6 +594,9 @@ async function submitCheckin() {
     return
   }
 
+  const conditionNote = sanitizeNoteInput(checkinForm.notes, 300) ?? undefined
+  const clerkNote = sanitizeNoteInput(checkinForm.notes) ?? undefined
+
   isSubmitting.value = true
   formMessage.value = null
 
@@ -539,8 +604,8 @@ async function submitCheckin() {
     await $fetch(`/api/loans/${loanId}/return`, {
       method: 'POST',
       body: {
-        condition: checkinForm.notes || undefined,
-        notes: checkinForm.notes || undefined,
+        condition: conditionNote,
+        notes: clerkNote,
       },
     })
 

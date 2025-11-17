@@ -1,11 +1,66 @@
 import { createError, getQuery } from 'h3'
-import { mapMediaRow, type MediaRow } from '../../utils/adminMedia'
+import { mapMediaRow, MEDIA_TYPES, type MediaRow } from '../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../utils/supabaseApi'
 
 const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
+const MAX_SEARCH_LENGTH = 300
+const SAFE_SEARCH_PATTERN = /[^\p{L}\p{N}\p{M}\s'",.!?\-_/]/gu
+const SEARCHABLE_COLUMNS = ['title', 'creator', 'genre', 'subject', 'isbn']
+const ALLOWED_SORTS = ['title', 'created_at', 'updated_at'] as const
+const UUID_SORT_DEFAULT = 'title'
 
-function parsePositiveInteger(value: unknown, fallback: number) {
+function stripUnsafeSearchCharacters(value: string) {
+  return value.replace(SAFE_SEARCH_PATTERN, ' ')
+}
+
+function stripControlCharacters(value: string) {
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeSearchTerm(value: string | null | undefined) {
+  if (!value) {
+    return ''
+  }
+
+  const normalized = stripControlCharacters(stripUnsafeSearchCharacters(value.normalize('NFKC')))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return ''
+  }
+
+  return normalized.slice(0, MAX_SEARCH_LENGTH)
+}
+
+function escapeLikeTerm(term: string) {
+  if (!term) {
+    return term
+  }
+
+  return term.replace(/([%_\\])/g, '\\$1')
+}
+
+function quoteFilterValue(value: string) {
+  const escapedQuotes = value.replace(/"/g, '\\"')
+  return `"${escapedQuotes}"`
+}
+
+function parsePositiveInteger(value: unknown, fallback: number): number {
+  if (Array.isArray(value) && value.length) {
+    return parsePositiveInteger(value[0], fallback)
+  }
+
   if (typeof value === 'number' && Number.isFinite(value)) {
     return Math.max(1, Math.floor(value))
   }
@@ -20,20 +75,32 @@ function parsePositiveInteger(value: unknown, fallback: number) {
   return fallback
 }
 
+function getQueryString(value: unknown) {
+  if (Array.isArray(value) && value.length) {
+    const first = value.find((entry): entry is string => typeof entry === 'string')
+    return first ?? null
+  }
+
+  return typeof value === 'string' ? value : null
+}
+
 export default defineEventHandler(async (event) => {
   const { supabase } = await getSupabaseContext(event, { roles: ['admin'] })
 
-  const query = getQuery(event)
+  const query = getQuery(event) as Record<string, string | string[] | undefined>
   const page = parsePositiveInteger(query.page, 1)
   const requestedPageSize = parsePositiveInteger(query.pageSize ?? query.limit, DEFAULT_PAGE_SIZE)
   const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE)
-  const search = typeof query.q === 'string' ? query.q.trim() : ''
-  const mediaType = typeof query.mediaType === 'string' ? query.mediaType.trim() : ''
-  const sort = typeof query.sort === 'string' ? query.sort.trim() : 'title'
-  const direction = typeof query.direction === 'string' ? query.direction.trim().toLowerCase() : 'asc'
+  const search = sanitizeSearchTerm(getQueryString(query.q))
+  const mediaTypeCandidate = getQueryString(query.mediaType)?.trim().toLowerCase() ?? ''
+  const mediaType = MEDIA_TYPES.includes(mediaTypeCandidate as (typeof MEDIA_TYPES)[number])
+    ? mediaTypeCandidate
+    : ''
+  const sortCandidate = getQueryString(query.sort)?.trim() ?? UUID_SORT_DEFAULT
+  const directionCandidate = (getQueryString(query.direction)?.trim().toLowerCase() ?? 'asc') as 'asc' | 'desc'
 
-  const orderColumn = ['title', 'created_at', 'updated_at'].includes(sort) ? sort : 'title'
-  const orderDirection = direction === 'desc' ? { ascending: false } : { ascending: true }
+  const orderColumn = (ALLOWED_SORTS as readonly string[]).includes(sortCandidate) ? sortCandidate : UUID_SORT_DEFAULT
+  const orderDirection = directionCandidate === 'desc' ? { ascending: false } : { ascending: true }
 
   let builder = supabase
     .from('media')
@@ -48,12 +115,10 @@ export default defineEventHandler(async (event) => {
   }
 
   if (search) {
-    const like = `%${search}%`
-    builder = builder.or(
-      ['title.ilike.', 'creator.ilike.', 'genre.ilike.', 'subject.ilike.', 'isbn.ilike.']
-        .map((column) => `${column}${like}`)
-        .join(',')
-    )
+    const escaped = escapeLikeTerm(search)
+    const like = quoteFilterValue(`%${escaped}%`)
+    const orFilters = SEARCHABLE_COLUMNS.map((column) => `${column}.ilike.${like}`).join(',')
+    builder = builder.or(orFilters)
   }
 
   const offset = (page - 1) * pageSize

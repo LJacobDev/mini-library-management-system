@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { AdminMediaItem } from '~/composables/useAdminMediaData'
 import type { AdminMediaFormMode, AdminMediaFormPayload } from '~/types/admin-media'
 
@@ -17,6 +17,19 @@ const MEDIA_FORMAT_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'DVD', value: 'dvd' },
   { label: 'Blu-ray', value: 'blu-ray' },
 ]
+
+const MAX_SHORT_TEXT_LENGTH = 256
+const MAX_LONG_TEXT_LENGTH = 2000
+const MAX_TAG_TEXT_LENGTH = 160
+const MAX_LANGUAGE_LENGTH = 64
+const MAX_ISBN_LENGTH = 32
+const MAX_DATE_LENGTH = 64
+const MAX_URL_LENGTH = 1024
+const MAX_PAGE_VALUE = 100000
+const MAX_DURATION_VALUE = 864000
+
+const allowedMediaTypes = new Set(MEDIA_TYPE_OPTIONS.map((option) => option.value))
+const allowedMediaFormats = new Set(MEDIA_FORMAT_OPTIONS.map((option) => option.value))
 
 interface AdminMediaFormState {
   title: string
@@ -92,6 +105,130 @@ const formFields = [
   'publishedAt',
 ] as const
 
+const validationErrors = ref<string[]>([])
+
+function stripControlCharacters(value: string) {
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function normalizeText(value: string, maxLength = MAX_SHORT_TEXT_LENGTH) {
+  return stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength)
+}
+
+function sanitizeRequiredText(value: string, label: string, errors: string[], maxLength = MAX_SHORT_TEXT_LENGTH) {
+  const normalized = normalizeText(value, maxLength)
+  if (!normalized) {
+    errors.push(`${label} is required.`)
+    return null
+  }
+
+  return normalized
+}
+
+function sanitizeOptionalText(value: string, maxLength = MAX_SHORT_TEXT_LENGTH) {
+  const normalized = normalizeText(value, maxLength)
+  return normalized.length ? normalized : null
+}
+
+function sanitizeEnumValue(value: string, label: string, errors: string[], allowed: Set<string>) {
+  const normalized = value.trim().toLowerCase()
+  if (!allowed.has(normalized)) {
+    errors.push(`${label} selection is invalid.`)
+    return null
+  }
+
+  return normalized
+}
+
+function sanitizeOptionalPositiveInteger(value: string, label: string, errors: string[], maxValue: number) {
+  const trimmed = value.trim()
+  if (!trimmed.length) {
+    return null
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    errors.push(`${label} must contain digits only.`)
+    return null
+  }
+
+  const parsed = Number.parseInt(trimmed, 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    errors.push(`${label} must be a positive whole number.`)
+    return null
+  }
+
+  if (parsed > maxValue) {
+    errors.push(`${label} must be less than ${maxValue.toLocaleString()}.`)
+    return null
+  }
+
+  return parsed
+}
+
+function sanitizeOptionalUrl(value: string, label: string, errors: string[]) {
+  const normalized = sanitizeOptionalText(value, MAX_URL_LENGTH)
+  if (!normalized) {
+    return null
+  }
+
+  try {
+    const url = new URL(normalized)
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Only http/https supported')
+    }
+    return url.toString()
+  } catch {
+    errors.push(`${label} must be a valid URL starting with http or https.`)
+    return null
+  }
+}
+
+function sanitizeOptionalDate(value: string, label: string, errors: string[]) {
+  const normalized = sanitizeOptionalText(value, MAX_DATE_LENGTH)
+  if (!normalized) {
+    return null
+  }
+
+  const timestamp = Date.parse(normalized)
+  if (Number.isNaN(timestamp)) {
+    errors.push(`${label} must be a valid date.`)
+    return null
+  }
+
+  return new Date(timestamp).toISOString()
+}
+
+function formatDateForInput(value: string | null | undefined) {
+  if (!value) {
+    return ''
+  }
+
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) {
+    return ''
+  }
+
+  return new Date(timestamp).toISOString().slice(0, 10)
+}
+
+function clearValidationErrors() {
+  if (validationErrors.value.length) {
+    validationErrors.value = []
+  }
+}
+
 function syncBaseline() {
   for (const key of formFields) {
     baseline[key] = form[key]
@@ -116,10 +253,10 @@ const description = computed(() =>
 const submitLabel = computed(() => (props.mode === 'edit' ? 'Save changes' : 'Create media'))
 
 const requiredFields = computed(() => ({
-  title: form.title.trim().length > 0,
-  creator: form.creator.trim().length > 0,
-  mediaType: form.mediaType.trim().length > 0,
-  mediaFormat: form.mediaFormat.trim().length > 0,
+  title: Boolean(normalizeText(form.title)),
+  creator: Boolean(normalizeText(form.creator)),
+  mediaType: allowedMediaTypes.has(form.mediaType?.trim().toLowerCase()),
+  mediaFormat: allowedMediaFormats.has(form.mediaFormat?.trim().toLowerCase()),
 }))
 
 const missingFields = computed(() =>
@@ -128,27 +265,9 @@ const missingFields = computed(() =>
     .map(([field]) => field),
 )
 
-const hasValidationErrors = computed(() => missingFields.value.length > 0)
+const hasMissingRequiredFields = computed(() => missingFields.value.length > 0)
+const hasValidationErrors = computed(() => hasMissingRequiredFields.value || validationErrors.value.length > 0)
 const isSubmitDisabled = computed(() => props.loading || hasValidationErrors.value)
-
-function toNullableString(value: string): string | null {
-  const trimmed = value.trim()
-  return trimmed.length ? trimmed : null
-}
-
-function toNullableNumber(value: string): number | null {
-  const trimmed = value.trim()
-  if (!trimmed.length) {
-    return null
-  }
-
-  const parsed = Number.parseInt(trimmed, 10)
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    return null
-  }
-
-  return parsed
-}
 
 function assignFromInitial(item: AdminMediaItem | null) {
   if (!item) {
@@ -169,13 +288,15 @@ function assignFromInitial(item: AdminMediaItem | null) {
   form.language = item.language ?? ''
   form.pages = item.pages != null ? String(item.pages) : ''
   form.durationSeconds = item.durationSeconds != null ? String(item.durationSeconds) : ''
-  form.publishedAt = item.publishedAt ?? ''
+  form.publishedAt = formatDateForInput(item.publishedAt)
   syncBaseline()
+  clearValidationErrors()
 }
 
 function resetForm() {
   Object.assign(form, createEmptyForm())
   syncBaseline()
+  clearValidationErrors()
 }
 
 watch(
@@ -195,24 +316,67 @@ watch(
   },
 )
 
-function handleSubmit() {
-  const payload: AdminMediaFormPayload = {
-    title: form.title.trim(),
-    creator: form.creator.trim(),
-    mediaType: form.mediaType.trim(),
-    mediaFormat: form.mediaFormat.trim(),
-    isbn: toNullableString(form.isbn),
-    genre: toNullableString(form.genre),
-    subject: toNullableString(form.subject),
-    description: toNullableString(form.description),
-    coverUrl: toNullableString(form.coverUrl),
-    language: toNullableString(form.language),
-    pages: toNullableNumber(form.pages),
-    durationSeconds: toNullableNumber(form.durationSeconds),
-    publishedAt: toNullableString(form.publishedAt),
+watch(
+  () => formFields.map((key) => form[key]),
+  () => {
+    clearValidationErrors()
+  },
+)
+
+function buildSanitizedPayload(): { payload: AdminMediaFormPayload | null; errors: string[] } {
+  const errors: string[] = []
+
+  const title = sanitizeRequiredText(form.title, 'Title', errors)
+  const creator = sanitizeRequiredText(form.creator, 'Creator / Author', errors)
+  const mediaType = sanitizeEnumValue(form.mediaType, 'Media type', errors, allowedMediaTypes)
+  const mediaFormat = sanitizeEnumValue(form.mediaFormat, 'Media format', errors, allowedMediaFormats)
+
+  const isbn = sanitizeOptionalText(form.isbn, MAX_ISBN_LENGTH)
+  const genre = sanitizeOptionalText(form.genre, MAX_TAG_TEXT_LENGTH)
+  const subject = sanitizeOptionalText(form.subject, MAX_TAG_TEXT_LENGTH)
+  const description = sanitizeOptionalText(form.description, MAX_LONG_TEXT_LENGTH)
+  const coverUrl = sanitizeOptionalUrl(form.coverUrl, 'Cover URL', errors)
+  const language = sanitizeOptionalText(form.language, MAX_LANGUAGE_LENGTH)
+  const pages = sanitizeOptionalPositiveInteger(form.pages, 'Page count', errors, MAX_PAGE_VALUE)
+  const durationSeconds = sanitizeOptionalPositiveInteger(
+    form.durationSeconds,
+    'Duration',
+    errors,
+    MAX_DURATION_VALUE,
+  )
+  const publishedAt = sanitizeOptionalDate(form.publishedAt, 'Published date', errors)
+
+  if (errors.length || !title || !creator || !mediaType || !mediaFormat) {
+    return { payload: null, errors }
   }
 
-  emit('submit', payload)
+  const payload: AdminMediaFormPayload = {
+    title,
+    creator,
+    mediaType,
+    mediaFormat,
+    isbn,
+    genre,
+    subject,
+    description,
+    coverUrl,
+    language,
+    pages,
+    durationSeconds,
+    publishedAt,
+  }
+
+  return { payload, errors }
+}
+
+function handleSubmit() {
+  const result = buildSanitizedPayload()
+  validationErrors.value = result.errors
+  if (!result.payload) {
+    return
+  }
+
+  emit('submit', result.payload)
 }
 
 const isDirty = computed(() => formFields.some((key) => form[key] !== baseline[key]))
@@ -239,8 +403,20 @@ defineExpose({
           {{ error }}
         </div>
 
-        <div v-if="hasValidationErrors" class="rounded-lg border border-amber-500/40 bg-amber-900/30 p-3 text-xs text-amber-100">
+        <div v-if="hasMissingRequiredFields" class="rounded-lg border border-amber-500/40 bg-amber-900/30 p-3 text-xs text-amber-100">
           Missing required fields: {{ missingFields.join(', ') }}
+        </div>
+
+        <div
+          v-if="validationErrors.length"
+          class="rounded-lg border border-red-500/30 bg-red-950/30 p-3 text-xs text-red-100"
+        >
+          <p class="font-semibold">Resolve the following before submitting:</p>
+          <ul class="mt-2 list-disc space-y-1 pl-5">
+            <li v-for="(message, index) in validationErrors" :key="`${message}-${index}`">
+              {{ message }}
+            </li>
+          </ul>
         </div>
 
         <div class="grid gap-4 md:grid-cols-2">

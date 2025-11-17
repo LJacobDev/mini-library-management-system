@@ -11,12 +11,219 @@ interface CheckoutPayload {
   note?: string
 }
 
+interface SanitizedCheckoutPayload extends CheckoutPayload {
+  mediaId: string
+  dueDate?: string
+  note?: string
+}
+
+const CHECKOUT_ALLOWED_FIELDS = new Set<keyof CheckoutPayload>([
+  'memberId',
+  'memberEmail',
+  'memberIdentifier',
+  'mediaId',
+  'dueDate',
+  'note',
+])
+
+const NOTE_MAX_LENGTH = 500
+const MAX_DUE_DATE_DAYS_AHEAD = 365
+const MAX_PAST_DUE_DATE_MINUTES = 60
+
 function isUuid(value: unknown) {
   return typeof value === 'string' && /^[0-9a-fA-F-]{36}$/.test(value)
 }
 
+const EMAIL_PATTERN = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
+
 function isEmail(value: unknown) {
-  return typeof value === 'string' && /.+@.+\..+/.test(value)
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const normalized = value.trim().toLowerCase()
+  return Boolean(normalized && normalized.length <= 254 && EMAIL_PATTERN.test(normalized))
+}
+
+function normalizeEmail(value: unknown) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = value.trim().toLowerCase()
+  if (!normalized || normalized.length > 254 || !EMAIL_PATTERN.test(normalized)) {
+    return undefined
+  }
+
+  return normalized
+}
+
+function stripControlCharacters(input: string) {
+  let result = ''
+  for (const char of input) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeNote(value: unknown) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.slice(0, NOTE_MAX_LENGTH)
+}
+
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9@._-]{3,120}$/
+
+function sanitizeIdentifier(value: unknown) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  const compact = trimmed.replace(/[^A-Za-z0-9@._-]/g, '')
+  if (!compact || !IDENTIFIER_PATTERN.test(compact)) {
+    return undefined
+  }
+
+  return compact
+}
+
+function normalizeDueDate(value: unknown) {
+  if (value === undefined || value === null) {
+    return undefined
+  }
+
+  if (typeof value !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate must be an ISO date string.',
+    })
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  const timestamp = Date.parse(trimmed)
+  if (Number.isNaN(timestamp)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate must be a valid date.',
+    })
+  }
+
+  const now = Date.now()
+  const minAllowed = now - MAX_PAST_DUE_DATE_MINUTES * 60 * 1000
+  const maxAllowed = now + MAX_DUE_DATE_DAYS_AHEAD * 24 * 60 * 60 * 1000
+
+  if (timestamp < minAllowed) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate cannot be earlier than the current time.',
+    })
+  }
+
+  if (timestamp > maxAllowed) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `dueDate cannot be more than ${MAX_DUE_DATE_DAYS_AHEAD} days in the future.`,
+    })
+  }
+
+  return new Date(timestamp).toISOString()
+}
+
+function sanitizeCheckoutPayload(raw: CheckoutPayload | null | undefined): SanitizedCheckoutPayload {
+  if (!raw || typeof raw !== 'object') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid request body.',
+    })
+  }
+
+  const unexpectedKeys = Object.keys(raw).filter((key) => !CHECKOUT_ALLOWED_FIELDS.has(key as keyof CheckoutPayload))
+  if (unexpectedKeys.length) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Unsupported field(s): ${unexpectedKeys.join(', ')}`,
+    })
+  }
+
+  const payload: SanitizedCheckoutPayload = {
+    mediaId: '',
+  }
+
+  if (raw.memberId !== undefined) {
+    if (typeof raw.memberId !== 'string' || !isUuid(raw.memberId.trim())) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'memberId must be a valid UUID string.',
+      })
+    }
+    payload.memberId = raw.memberId.trim()
+  }
+
+  if (raw.memberEmail !== undefined) {
+    const normalizedEmail = normalizeEmail(raw.memberEmail)
+    if (!normalizedEmail) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'memberEmail must be a valid email address.',
+      })
+    }
+    payload.memberEmail = normalizedEmail
+  }
+
+  if (raw.memberIdentifier !== undefined) {
+    const sanitizedIdentifier = sanitizeIdentifier(raw.memberIdentifier)
+    if (!sanitizedIdentifier) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'memberIdentifier must be 3-120 characters (letters, numbers, @ . _ -).',
+      })
+    }
+    payload.memberIdentifier = sanitizedIdentifier
+  }
+
+  if (!raw.mediaId || typeof raw.mediaId !== 'string' || !isUuid(raw.mediaId.trim())) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'mediaId must be a valid UUID string.',
+    })
+  }
+  payload.mediaId = raw.mediaId.trim()
+
+  const normalizedDueDate = normalizeDueDate(raw.dueDate)
+  if (normalizedDueDate) {
+    payload.dueDate = normalizedDueDate
+  }
+
+  const sanitizedNote = sanitizeNote(raw.note)
+  if (sanitizedNote) {
+    payload.note = sanitizedNote
+  }
+
+  return payload
 }
 
 function resolveRoleFromAuthUser(user: User): AppRole {
@@ -202,21 +409,14 @@ async function resolveMember(
 
 export default defineEventHandler(async (event) => {
   const { supabase, user } = await getSupabaseContext(event, { roles: ['librarian', 'admin'] })
-  const body = (await readBody<CheckoutPayload>(event)) ?? {}
-
-  if (!isUuid(body.mediaId)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'mediaId must be a valid UUID string.',
-    })
-  }
+  const body = sanitizeCheckoutPayload(await readBody<CheckoutPayload>(event))
 
   const member = await resolveMember(supabase, body)
 
   const processedBy = user.id
 
-  const dueDateISO = body.dueDate && !Number.isNaN(Date.parse(body.dueDate)) ? new Date(body.dueDate).toISOString() : null
-  const note = typeof body.note === 'string' && body.note.trim().length ? body.note.trim() : null
+  const dueDateISO = body.dueDate ?? null
+  const note = body.note ?? null
 
   const now = new Date().toISOString()
 
