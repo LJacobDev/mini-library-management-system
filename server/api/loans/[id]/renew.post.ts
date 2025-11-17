@@ -1,5 +1,6 @@
 import { createError, getRouterParam, readBody } from 'h3'
 import { getSupabaseContext, normalizeSupabaseError } from '../../../utils/supabaseApi'
+import { assertUuid } from '../../../utils/validators'
 
 interface RenewPayload {
   dueDate?: string
@@ -10,12 +11,6 @@ const RESERVATION_BLOCK_STATUSES = ['pending', 'waiting', 'ready_for_pickup'] as
 const NOTE_MAX_LENGTH = 500
 const MAX_DUE_DATE_DAYS_AHEAD = 365
 const MAX_PAST_DUE_DATE_MINUTES = 60
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isUuid(value: unknown) {
-  return typeof value === 'string' && UUID_PATTERN.test(value)
-}
-
 function stripControlCharacters(input: string) {
   let result = ''
   for (const char of input) {
@@ -91,13 +86,7 @@ function normalizeRenewDueDate(value: unknown) {
 }
 
 export default defineEventHandler(async (event) => {
-  const loanId = getRouterParam(event, 'id')
-  if (!loanId || !isUuid(loanId)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Loan ID must be a valid UUID.',
-    })
-  }
+  const loanId = assertUuid(getRouterParam(event, 'id'), 'Loan ID')
 
   const { supabase, user, role } = await getSupabaseContext(event, { roles: ['member', 'librarian', 'admin'] })
   const body = (await readBody<RenewPayload>(event)) ?? {}

@@ -2,6 +2,7 @@ import { createError, readBody } from 'h3'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { getSupabaseContext, normalizeSupabaseError, type AppRole } from '../utils/supabaseApi'
 import { sanitizeFreeform } from '../../utils/sanitizeText'
+import { assertEmail, assertUuid, isUuid, normalizeEmail, sanitizeIdentifier } from '../utils/validators'
 
 interface CheckoutPayload {
   memberId?: string
@@ -30,54 +31,6 @@ const CHECKOUT_ALLOWED_FIELDS = new Set<keyof CheckoutPayload>([
 const NOTE_MAX_LENGTH = 500
 const MAX_DUE_DATE_DAYS_AHEAD = 365
 const MAX_PAST_DUE_DATE_MINUTES = 60
-
-function isUuid(value: unknown) {
-  return typeof value === 'string' && /^[0-9a-fA-F-]{36}$/.test(value)
-}
-
-const EMAIL_PATTERN = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
-
-function isEmail(value: unknown) {
-  if (typeof value !== 'string') {
-    return false
-  }
-
-  const normalized = value.trim().toLowerCase()
-  return Boolean(normalized && normalized.length <= 254 && EMAIL_PATTERN.test(normalized))
-}
-
-function normalizeEmail(value: unknown) {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  const normalized = value.trim().toLowerCase()
-  if (!normalized || normalized.length > 254 || !EMAIL_PATTERN.test(normalized)) {
-    return undefined
-  }
-
-  return normalized
-}
-
-const IDENTIFIER_PATTERN = /^[A-Za-z0-9@._-]{3,120}$/
-
-function sanitizeIdentifier(value: unknown) {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return undefined
-  }
-
-  const compact = trimmed.replace(/[^A-Za-z0-9@._-]/g, '')
-  if (!compact || !IDENTIFIER_PATTERN.test(compact)) {
-    return undefined
-  }
-
-  return compact
-}
 
 function normalizeDueDate(value: unknown) {
   if (value === undefined || value === null) {
@@ -146,24 +99,11 @@ function sanitizeCheckoutPayload(raw: CheckoutPayload | null | undefined): Sanit
   }
 
   if (raw.memberId !== undefined) {
-    if (typeof raw.memberId !== 'string' || !isUuid(raw.memberId.trim())) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'memberId must be a valid UUID string.',
-      })
-    }
-    payload.memberId = raw.memberId.trim()
+    payload.memberId = assertUuid(raw.memberId, 'memberId')
   }
 
   if (raw.memberEmail !== undefined) {
-    const normalizedEmail = normalizeEmail(raw.memberEmail)
-    if (!normalizedEmail) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'memberEmail must be a valid email address.',
-      })
-    }
-    payload.memberEmail = normalizedEmail
+    payload.memberEmail = assertEmail(raw.memberEmail, 'memberEmail')
   }
 
   if (raw.memberIdentifier !== undefined) {
@@ -177,13 +117,13 @@ function sanitizeCheckoutPayload(raw: CheckoutPayload | null | undefined): Sanit
     payload.memberIdentifier = sanitizedIdentifier
   }
 
-  if (!raw.mediaId || typeof raw.mediaId !== 'string' || !isUuid(raw.mediaId.trim())) {
+  if (!raw.mediaId) {
     throw createError({
       statusCode: 400,
       statusMessage: 'mediaId must be a valid UUID string.',
     })
   }
-  payload.mediaId = raw.mediaId.trim()
+  payload.mediaId = assertUuid(raw.mediaId, 'mediaId')
 
   const normalizedDueDate = normalizeDueDate(raw.dueDate)
   if (normalizedDueDate) {
@@ -360,14 +300,14 @@ async function resolveMember(
   supabase: SupabaseClient,
   payload: CheckoutPayload,
 ) {
-  const identifier = payload.memberIdentifier?.trim()
+  const identifier = payload.memberIdentifier ?? undefined
   const candidateId = payload.memberId ?? (identifier && isUuid(identifier) ? identifier : undefined)
 
   if (candidateId && isUuid(candidateId)) {
     return resolveMemberById(supabase, candidateId)
   }
 
-  const candidateEmail = payload.memberEmail ?? (identifier && isEmail(identifier) ? identifier : undefined)
+  const candidateEmail = payload.memberEmail ?? (identifier ? normalizeEmail(identifier) : undefined)
 
   if (candidateEmail) {
     return resolveMemberByEmail(supabase, candidateEmail)

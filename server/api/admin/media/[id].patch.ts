@@ -10,6 +10,7 @@ import {
   toPositiveInteger,
 } from '../../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../../utils/supabaseApi'
+import { assertUuid } from '../../../utils/validators'
 
 interface UpdateMediaPayload {
   title?: string | null
@@ -29,14 +30,7 @@ interface UpdateMediaPayload {
 }
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if (!id || !UUID_PATTERN.test(id)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Media ID must be a valid UUID.',
-    })
-  }
+  const id = assertUuid(getRouterParam(event, 'id'), 'mediaId')
 
   const { supabase } = await getSupabaseContext(event, { roles: ['admin'] })
   const body = (await readBody<UpdateMediaPayload>(event)) ?? {}

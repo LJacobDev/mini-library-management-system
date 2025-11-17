@@ -1,5 +1,6 @@
 import { createError, getQuery } from 'h3'
 import { getSupabaseContext, normalizeSupabaseError } from '../utils/supabaseApi'
+import { assertUuid } from '../utils/validators'
 
 type LoanStatus = 'active' | 'returned' | 'overdue'
 
@@ -8,7 +9,6 @@ const MAX_PAGE_SIZE = 100
 const MAX_SEARCH_LENGTH = 300
 const VALID_STATUS = new Set<LoanStatus>(['active', 'returned', 'overdue'])
 const SAFE_SEARCH_PATTERN = /[^\p{L}\p{N}\p{M}\s'",.!?\-_/]/gu
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const LOAN_SEARCH_COLUMNS = ['note', 'user_id', 'media_id', 'id']
 
 function parsePositiveInteger(value: unknown, fallback: number) {
@@ -50,14 +50,7 @@ function sanitizeUuidParam(value: unknown, fieldName: string) {
     return null
   }
 
-  if (!UUID_PATTERN.test(normalized)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `${fieldName} must be a valid UUID.`,
-    })
-  }
-
-  return normalized
+  return assertUuid(normalized, fieldName)
 }
 
 function stripUnsafeSearchCharacters(value: string) {
