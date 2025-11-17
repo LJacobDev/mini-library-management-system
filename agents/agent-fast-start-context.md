@@ -12,7 +12,7 @@ _Last updated: 2025-11-16_
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
 **AI concierge**: `/api/ai/recommend` now accepts POST prompts, extracts keywords, queries Supabase, and streams role-aware summaries over SSE. `AgentChatPanel` renders the experience on the landing page (members only) and `/debug`, showing live message bubbles and recommendation cards backed by the streaming endpoint. `useAgentChat` handles aborts, retries, and metadata parsing.
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS, and `handle_new_user` trigger now mirrors every fresh `auth.users` row into `public.profiles` for immediate role resolution.
-- **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks, catalog fetches, and the full `AgentChatPanel` so we can exercise streaming concierge + admin endpoints in one place; impersonation toggles pair with `/api/debug/impersonate` to preview staff-only flows without juggling accounts. Reservation API work is scoped but paused so staff tooling stays front of queue.
+- **Developer tooling**: `/pages/debug/index.vue` (dev-only) now features grouped quick buttons with inline method/param/expected-result notes, a full-width manual HTTP builder, and detailed result inspection (status/headers/body) alongside the embedded `AgentChatPanel`. Impersonation toggles still pair with `/api/debug/impersonate` for role previews, and a follow-up task remains to prune placeholder buttons that still reference future endpoints. Reservation API work is scoped but paused so staff tooling stays front of queue.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
 - **Theme handling**: `app/app.vue` now pins `html`/`body` to `class="dark" data-theme="dark"`, and base CSS sets `color-scheme: dark` so every visitor sees the vetted dark palette while the upcoming civic light palette is designed.
 
@@ -54,6 +54,7 @@ _Last updated: 2025-11-16_
 - **Member enhancements**: Add AI recommendation chat on the landing page for authenticated members and prep `/account/loans`/`/account/reservations` once reservation API resumes.
 - **Reservation flow (paused)**: Resume real reservation endpoint + modal confirm dialog after dashboard tooling ships; keep plan documented for quick restart.
 - **Documentation & testing**: Keep `spec-fast-start-*`, `agent-fast-start-context`, and `llm-training-cutoff-updates` in sync; add smoke tests when UI stabilizes.
+- **Sanitizer deduplication plan**: Follow `docs/dev/hardening-deduplication-plan.md` to consolidate repeated sanitizing/search/pagination helpers before the next wave of features.
 
 ### Prioritized next steps (short list)
 
@@ -61,6 +62,7 @@ _Last updated: 2025-11-16_
 2. Stand up `/dashboard` with catalog, circulation, and admin views powered by existing APIs.
 3. Polish the member AI concierge UI (styling, history, filters) and wire front-end prompts into dashboard tooling where useful.
 4. Once dashboard is live, resume reservation endpoint + account surfaces before moving to tests/palette refresh.
+5. Kick off the hardening dedup plan (see `docs/dev/hardening-deduplication-plan.md`) so future endpoint work starts from shared utilities.
 
 ### Security considerations
 
@@ -194,3 +196,7 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-17 — AI concierge prompt entrypoints now enforce JSON allow-lists, trim/sanitize text, redact obvious PII, and are mid-flight on wrapping prompts with explicit instructions so OpenAI calls resist prompt injection attempts; continuing to guard the remaining steps (system prompts, rate limiting) before moving on to /debug hardening.
 - 2025-11-17 — AI concierge endpoint fully hardened: request allow-list, sanitized/redacted prompts, prompt wrappers, system-override guards, strict filter enums, and a per-IP 30 req / 5 min rate limit now sit in `server/api/ai/recommend.post.ts`; next focus is the `/debug` panel inputs and documentation.
 - 2025-11-16 — Admin media dashboard form now mirrors backend sanitizers (control-char stripping, enum/url/date/number validation) before emitting payloads, and the admin media composable clamps search/filter params client-side to prevent malformed requests.
+- 2025-11-17 — Authored `docs/manual-testing-guidelines-2.md` with end-to-end endpoint and fuzz coverage, exposed `/api/manual-testing-guidelines` to read it on demand, and wired the `/debug` modal to fetch and display the live doc (with error fallback) so testers always see the latest manual runbook.
+- 2025-11-17 — Locked `/api/manual-testing-guidelines` behind librarian/admin Supabase auth and pointed it at the relocated `docs/tests/manual-testing-guidelines-2.md` file so the debug modal pulls the protected source of truth.
+- 2025-11-17 — Authored `docs/dev/hardening-deduplication-plan.md` outlining the sanitizer/validator dedup steps; next up is executing that plan to extract shared helpers and keep server/UI guardrails aligned.
+- 2025-11-17 — `/pages/debug` quick buttons were rebuilt with inline endpoint/parameter/expected-result context, a richer manual request form, and response viewer showing status/headers/body; note that while the button appearance and results display are helpful, the buttons themselves need to be reworked, as many of them aren't getting expected results and some are pointing at routes like /status as though they were endpoints like /api/status.
