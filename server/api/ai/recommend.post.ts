@@ -209,7 +209,7 @@ async function extractKeywords(event: H3Event, prompt: string): Promise<KeywordR
         },
       ],
       temperature: 0.1,
-      maxTokens: 200,
+      maxTokens: 1000,
       model: 'gpt-4o-mini',
       responseFormat: {
         type: 'json_schema',
@@ -421,7 +421,7 @@ export default defineEventHandler(async (event) => {
       event,
       model: 'gpt-4o-mini',
       temperature: 0.4,
-      maxTokens: 320,
+      maxTokens: 1000,
       messages: [
         { role: 'system', content: buildSummaryPrompt(role) },
         {
@@ -443,8 +443,16 @@ export default defineEventHandler(async (event) => {
       ],
     })
 
+    let finishReason: string | null = null
+
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta?.content
+      const choice = chunk.choices?.[0]
+      const delta = choice?.delta?.content
+
+      if (choice?.finish_reason) {
+        finishReason = choice.finish_reason
+      }
+
       if (!delta) {
         continue
       }
@@ -452,7 +460,7 @@ export default defineEventHandler(async (event) => {
       writeEvent('token', { delta })
     }
 
-    writeEvent('done', { status: 'completed' })
+    writeEvent('done', { status: 'completed', finishReason: finishReason ?? 'unknown' })
   } catch (error) {
     console.error('[Recommendations] Streaming summary failed', error)
     writeEvent('error', { message: 'Unable to generate AI summary at this time.' })

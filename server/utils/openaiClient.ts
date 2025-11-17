@@ -44,7 +44,7 @@ export async function streamChatCompletion({
 	messages,
 	model = 'gpt-4o-mini',
 	temperature = 0.2,
-	maxTokens = 200,
+	maxTokens = 400,
 }: StreamChatParams) {
 	const client = getClient(event)
 

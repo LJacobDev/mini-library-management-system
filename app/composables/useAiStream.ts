@@ -34,6 +34,10 @@ function parseEventData(raw: string): StreamMessage {
 	}
 }
 
+const logStreamEvent = (label: string, payload?: unknown) => {
+	console.info(`[AI Stream] ${label}`, payload ?? null)
+}
+
 export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
 	const streamText = ref('')
 	const status = ref<StreamStatus>('idle')
@@ -41,7 +45,10 @@ export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
 
 	let source: EventSource | null = null
 
-	const closeStream = () => {
+	const closeStream = (reason?: string, payload?: unknown) => {
+		if (reason) {
+			logStreamEvent(`close:${reason}`, payload)
+		}
 		source?.close()
 		source = null
 	}
@@ -52,7 +59,7 @@ export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
 			return
 		}
 
-		closeStream()
+		closeStream('restart')
 		streamText.value = ''
 		errorMessage.value = null
 		status.value = 'connecting'
@@ -61,6 +68,7 @@ export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
 
 		source.addEventListener('status', (event) => {
 			const payload = parseEventData((event as MessageEvent).data)
+			logStreamEvent('status', payload)
 			if (payload.status) {
 				status.value =
 					payload.status === 'connected' ? 'connecting' : (payload.status as StreamStatus)
@@ -75,29 +83,33 @@ export function useAiStream({ url, autoStart = false }: UseAiStreamOptions) {
 			}
 		})
 
-		source.addEventListener('done', () => {
+		source.addEventListener('done', (event) => {
+			const payload = parseEventData((event as MessageEvent).data)
+			logStreamEvent('done', payload)
 			status.value = 'completed'
-			closeStream()
+			closeStream('done', payload)
 		})
 
 		source.addEventListener('error', (event) => {
 			const payload = parseEventData((event as MessageEvent).data)
+			logStreamEvent('error', payload)
 			errorMessage.value = payload.message ?? 'Stream failed.'
 			status.value = 'error'
-			closeStream()
+			closeStream('event-error', payload)
 		})
 
-		source.onerror = () => {
+		source.onerror = (nativeError) => {
+			logStreamEvent('source-error', nativeError)
 			if (status.value !== 'completed') {
 				errorMessage.value = 'Connection lost.'
 				status.value = 'error'
 			}
-			closeStream()
+			closeStream('source-error', nativeError)
 		}
 	}
 
 	const stop = () => {
-		closeStream()
+		closeStream('manual-stop')
 	}
 
 	if (autoStart) {

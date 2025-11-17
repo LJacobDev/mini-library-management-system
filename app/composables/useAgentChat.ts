@@ -68,6 +68,10 @@ function parseEventBlock(raw: string): ParsedEvent {
   return parsed
 }
 
+const logAgentChat = (label: string, payload?: unknown) => {
+  console.info(`[AgentChat] ${label}`, payload ?? null)
+}
+
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const endpoint = options.endpoint ?? '/api/ai/recommend'
 
@@ -75,6 +79,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const summary = ref('')
   const metadata = ref<AgentChatMetadata | null>(null)
   const errorMessage = ref<string | null>(null)
+  const completionReason = ref<string | null>(null)
 
   const state = reactive({
     lastPrompt: '' as string,
@@ -89,6 +94,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     summary.value = ''
     metadata.value = null
     errorMessage.value = null
+    completionReason.value = null
   }
 
   const closeStream = async () => {
@@ -114,6 +120,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       const payload = JSON.parse(parsed.data)
       switch (parsed.event) {
         case 'status': {
+          logAgentChat('status', payload)
           if (payload.status === 'connected') {
             status.value = 'connecting'
           }
@@ -133,10 +140,16 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         case 'error': {
           errorMessage.value = payload.message ?? 'Unable to complete request.'
           status.value = 'error'
+          logAgentChat('stream:error-event', payload)
           break
         }
         case 'done': {
           status.value = payload.status === 'no-results' ? 'completed' : 'completed'
+          completionReason.value = payload.finishReason ?? null
+          logAgentChat('stream:done', {
+            status: payload.status,
+            finishReason: completionReason.value,
+          })
           break
         }
         default:
@@ -186,13 +199,14 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       throw new Error('Agent chat endpoint is not defined.')
     }
 
-    await closeStream()
-    reset()
+  await closeStream()
+  reset()
 
     state.lastPrompt = prompt
     state.filters = filters ?? null
 
     status.value = 'connecting'
+  logAgentChat('stream:start', { endpoint: resolvedEndpoint, promptLength: prompt.length })
 
     abortController = new AbortController()
 
@@ -232,6 +246,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           console.debug('Failed to read error body', error)
         }
 
+        logAgentChat('stream:response-error', { status: response.status, detail })
         throw new Error(detail)
       }
 
@@ -243,22 +258,30 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       } else if (status.value === 'streaming') {
         status.value = 'completed'
       }
+      logAgentChat('stream:complete', {
+        status: status.value,
+        finishReason: completionReason.value,
+      })
     } catch (error) {
       if ((error instanceof DOMException && error.name === 'AbortError') || (error as Error).name === 'AbortError') {
         status.value = 'idle'
+        logAgentChat('stream:aborted')
       } else {
         console.error('Agent chat request failed', error)
         errorMessage.value = (error as Error).message ?? 'Unexpected error occurred.'
         status.value = 'error'
+        logAgentChat('stream:error', error)
       }
     } finally {
       await closeStream()
+      logAgentChat('stream:closed')
     }
   }
 
   const cancel = async () => {
     await closeStream()
     status.value = 'idle'
+    logAgentChat('stream:cancelled')
   }
 
   onBeforeUnmount(() => {
