@@ -1,5 +1,5 @@
 import { computed, reactive, ref, watch } from 'vue'
-import { sanitizeFreeform } from '../../utils/sanitizeText'
+import { sanitizeClientSearchInput } from '~/utils/sanitizeClient'
 import { clampPage, clampPageSize } from '../../utils/pagination'
 
 const MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
@@ -46,17 +46,15 @@ const DEFAULT_FILTERS: Required<Pick<CatalogFilters, 'page' | 'pageSize'>> = {
 
 const MAX_SEARCH_LENGTH = 300
 
-function sanitizeSearchQuery(input: string | null | undefined) {
-  return sanitizeFreeform(input, { maxLength: MAX_SEARCH_LENGTH }) || undefined
-}
-
 export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   const sanitizedInitialFilters: CatalogFilters = {
     ...initialFilters,
   }
 
   if (sanitizedInitialFilters.q) {
-    sanitizedInitialFilters.q = sanitizeSearchQuery(sanitizedInitialFilters.q)
+    sanitizedInitialFilters.q = sanitizeClientSearchInput(sanitizedInitialFilters.q, {
+      maxLength: MAX_SEARCH_LENGTH,
+    })
   }
 
   if (sanitizedInitialFilters.page) {
@@ -78,10 +76,16 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
     ...sanitizedInitialFilters,
   })
 
+  const sanitizedSearch = computed(() =>
+    sanitizeClientSearchInput(filters.q, {
+      maxLength: MAX_SEARCH_LENGTH,
+    })
+  )
+
   const queryParams = computed(() => ({
     page: filters.page,
     pageSize: filters.pageSize,
-    q: filters.q || undefined,
+    q: sanitizedSearch.value || undefined,
     type: filters.type || undefined,
   }))
 
@@ -166,9 +170,16 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   }
 
   function setSearch(query: string) {
-    filters.q = sanitizeSearchQuery(query)
-    filters.page = 1
-    itemsStore.value = []
+    const nextRaw = typeof query === 'string' ? query : ''
+    const prevSanitized = sanitizedSearch.value || undefined
+    const nextSanitized = sanitizeClientSearchInput(nextRaw, {
+      maxLength: MAX_SEARCH_LENGTH,
+    })
+    filters.q = nextRaw
+    if (nextSanitized !== prevSanitized) {
+      filters.page = 1
+      itemsStore.value = []
+    }
   }
 
   function setMediaType(type: string | null | undefined) {

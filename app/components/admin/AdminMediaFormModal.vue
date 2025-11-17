@@ -2,6 +2,15 @@
 import { computed, reactive, ref, watch } from 'vue'
 import type { AdminMediaItem } from '~/composables/useAdminMediaData'
 import type { AdminMediaFormMode, AdminMediaFormPayload } from '~/types/admin-media'
+import {
+  normalizeClientText,
+  sanitizeClientEnumValue,
+  sanitizeClientOptionalDate,
+  sanitizeClientOptionalPositiveInteger,
+  sanitizeClientOptionalText,
+  sanitizeClientOptionalUrl,
+  sanitizeClientRequiredText,
+} from '~/utils/sanitizeClient'
 
 const MEDIA_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
   { label: 'Book', value: 'book' },
@@ -107,107 +116,32 @@ const formFields = [
 
 const validationErrors = ref<string[]>([])
 
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
 function normalizeText(value: string, maxLength = MAX_SHORT_TEXT_LENGTH) {
-  return stripControlCharacters(value.normalize('NFKC'))
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength)
+  return normalizeClientText(value, { maxLength })
 }
 
 function sanitizeRequiredText(value: string, label: string, errors: string[], maxLength = MAX_SHORT_TEXT_LENGTH) {
-  const normalized = normalizeText(value, maxLength)
-  if (!normalized) {
-    errors.push(`${label} is required.`)
-    return null
-  }
-
-  return normalized
+  return sanitizeClientRequiredText(value, label, errors, { maxLength })
 }
 
 function sanitizeOptionalText(value: string, maxLength = MAX_SHORT_TEXT_LENGTH) {
-  const normalized = normalizeText(value, maxLength)
-  return normalized.length ? normalized : null
+  return sanitizeClientOptionalText(value, { maxLength })
 }
 
 function sanitizeEnumValue(value: string, label: string, errors: string[], allowed: Set<string>) {
-  const normalized = value.trim().toLowerCase()
-  if (!allowed.has(normalized)) {
-    errors.push(`${label} selection is invalid.`)
-    return null
-  }
-
-  return normalized
+  return sanitizeClientEnumValue(value, label, errors, allowed)
 }
 
 function sanitizeOptionalPositiveInteger(value: string, label: string, errors: string[], maxValue: number) {
-  const trimmed = value.trim()
-  if (!trimmed.length) {
-    return null
-  }
-
-  if (!/^\d+$/.test(trimmed)) {
-    errors.push(`${label} must contain digits only.`)
-    return null
-  }
-
-  const parsed = Number.parseInt(trimmed, 10)
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    errors.push(`${label} must be a positive whole number.`)
-    return null
-  }
-
-  if (parsed > maxValue) {
-    errors.push(`${label} must be less than ${maxValue.toLocaleString()}.`)
-    return null
-  }
-
-  return parsed
+  return sanitizeClientOptionalPositiveInteger(value, label, errors, { maxValue })
 }
 
 function sanitizeOptionalUrl(value: string, label: string, errors: string[]) {
-  const normalized = sanitizeOptionalText(value, MAX_URL_LENGTH)
-  if (!normalized) {
-    return null
-  }
-
-  try {
-    const url = new URL(normalized)
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error('Only http/https supported')
-    }
-    return url.toString()
-  } catch {
-    errors.push(`${label} must be a valid URL starting with http or https.`)
-    return null
-  }
+  return sanitizeClientOptionalUrl(value, label, errors, { maxLength: MAX_URL_LENGTH })
 }
 
 function sanitizeOptionalDate(value: string, label: string, errors: string[]) {
-  const normalized = sanitizeOptionalText(value, MAX_DATE_LENGTH)
-  if (!normalized) {
-    return null
-  }
-
-  const timestamp = Date.parse(normalized)
-  if (Number.isNaN(timestamp)) {
-    errors.push(`${label} must be a valid date.`)
-    return null
-  }
-
-  return new Date(timestamp).toISOString()
+  return sanitizeClientOptionalDate(value, label, errors, { maxLength: MAX_DATE_LENGTH })
 }
 
 function formatDateForInput(value: string | null | undefined) {

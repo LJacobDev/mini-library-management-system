@@ -1,6 +1,6 @@
 # Fast Start Agent Context:  **LLM Agents**, read this section and compare it against our newer experiences, and made living edits to it so that it reflects the current state of the application so that we know what we have, and what we need to do
 
-_Last updated: 2025-11-16_
+_Last updated: 2025-11-17_
 
 ## Current State Snapshot
 
@@ -11,6 +11,7 @@ _Last updated: 2025-11-16_
 - **Admin catalog console**: `/dashboard/admin` now ships full CRUD—search/filter/sort, infinite scroll with auto-load, detail modal, create/edit forms (inline validation + unsaved-change guard), and delete confirmation tied to the Supabase endpoints. Cards update instantly after mutations.
 - **AI integration**: `/api/check/openai` streams responses from OpenAI’s `gpt-4o-mini` using the official `openai` client and SSE bridge; `useAiStream` powers the real-time status card.
 **AI concierge**: `/api/ai/recommend` now accepts POST prompts, extracts keywords, queries Supabase, and streams role-aware summaries over SSE. `AgentChatPanel` renders the experience on the landing page (members only) and `/debug`, showing live message bubbles and recommendation cards backed by the streaming endpoint. `useAgentChat` handles aborts, retries, and metadata parsing.
+- **Sanitizer & pagination helpers**: Shared modules now back both server and client flows—`utils/sanitizeText.ts` + `server/utils/validators.ts` cover UUID/email/text cleanup, `utils/pagination.ts` clamps page/pageSize everywhere, `server/utils/aiPrompts.ts` centralizes prompt redaction and keyword logic, and `app/utils/sanitizeClient.ts` keeps catalog/admin/desk inputs aligned with backend constraints while preserving raw typing.
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS, and `handle_new_user` trigger now mirrors every fresh `auth.users` row into `public.profiles` for immediate role resolution.
 - **Developer tooling**: `/pages/debug/index.vue` (dev-only) now features grouped quick buttons with inline method/param/expected-result notes, a full-width manual HTTP builder, and detailed result inspection (status/headers/body) alongside the embedded `AgentChatPanel`. Impersonation toggles still pair with `/api/debug/impersonate` for role previews, and a follow-up task remains to prune placeholder buttons that still reference future endpoints. Reservation API work is scoped but paused so staff tooling stays front of queue.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
@@ -200,3 +201,5 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-17 — Locked `/api/manual-testing-guidelines` behind librarian/admin Supabase auth and pointed it at the relocated `docs/tests/manual-testing-guidelines-2.md` file so the debug modal pulls the protected source of truth.
 - 2025-11-17 — Authored `docs/dev/hardening-deduplication-plan.md` outlining the sanitizer/validator dedup steps; next up is executing that plan to extract shared helpers and keep server/UI guardrails aligned.
 - 2025-11-17 — `/pages/debug` quick buttons were rebuilt with inline endpoint/parameter/expected-result context, a richer manual request form, and response viewer showing status/headers/body; note that while the button appearance and results display are helpful, the buttons themselves need to be reworked, as many of them aren't getting expected results and some are pointing at routes like /status as though they were endpoints like /api/status.
+- 2025-11-17 — Introduced `utils/pagination.ts` and refactored `/api/catalog`, `/api/admin/media`, `/api/loans`, plus the catalog/admin composables to consume the shared clamp helpers so pagination guards stay consistent end-to-end.
+- 2025-11-17 — Added `server/utils/aiPrompts.ts` and `app/utils/sanitizeClient.ts`, updating the AI concierge endpoint, catalog/admin search flows, desk circulation forms, and admin media modal to share the new sanitizers and preserve raw UI typing while enforcing backend-safe payloads.

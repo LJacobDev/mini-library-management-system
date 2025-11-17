@@ -1,5 +1,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { clampPage, clampPageSize } from '../../utils/pagination'
+import { sanitizeClientSearchInput } from '~/utils/sanitizeClient'
 
 export const ADMIN_MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type AdminMediaType = (typeof ADMIN_MEDIA_TYPES)[number]
@@ -55,32 +56,6 @@ const DEFAULT_FILTERS: Required<Pick<AdminMediaFilters, 'page' | 'pageSize' | 's
   direction: 'asc',
 }
 
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
-function normalizeSearchQuery(value?: string) {
-  if (!value) {
-    return undefined
-  }
-
-  const normalized = stripControlCharacters(value.normalize('NFKC'))
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, MAX_QUERY_LENGTH)
-
-  return normalized.length ? normalized : undefined
-}
-
 function normalizeMediaTypeValue(type?: string) {
   if (!type) {
     return undefined
@@ -106,13 +81,19 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
     ...initialFilters,
   })
 
+  const sanitizedSearch = computed(() =>
+    sanitizeClientSearchInput(filters.q, {
+      maxLength: MAX_QUERY_LENGTH,
+    })
+  )
+
   const queryParams = computed(() => ({
     page: clampPage(filters.page, DEFAULT_FILTERS.page),
     pageSize: clampPageSize(filters.pageSize, DEFAULT_FILTERS.pageSize, {
       min: MIN_PAGE_SIZE,
       max: MAX_PAGE_SIZE,
     }),
-    q: normalizeSearchQuery(filters.q),
+    q: sanitizedSearch.value || undefined,
     mediaType: normalizeMediaTypeValue(filters.mediaType),
     sort: normalizeSortField(filters.sort),
     direction: normalizeDirectionValue(filters.direction),
@@ -199,14 +180,16 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   }
 
   function setSearch(value: string) {
-    const normalized = normalizeSearchQuery(value)
-    if (filters.q === normalized) {
-      return
-    }
+    const nextRaw = typeof value === 'string' ? value : ''
+    const prevSanitized = sanitizedSearch.value || undefined
+    const nextSanitized = sanitizeClientSearchInput(nextRaw, { maxLength: MAX_QUERY_LENGTH }) || undefined
 
-    filters.q = normalized
-    filters.page = 1
-    itemsStore.value = []
+    filters.q = nextRaw
+
+    if (nextSanitized !== prevSanitized) {
+      filters.page = 1
+      itemsStore.value = []
+    }
   }
 
   function setMediaType(type: string | undefined) {
