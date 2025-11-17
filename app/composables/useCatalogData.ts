@@ -42,10 +42,49 @@ const DEFAULT_FILTERS: Required<Pick<CatalogFilters, 'page' | 'pageSize'>> = {
   pageSize: 24,
 }
 
+const MAX_SEARCH_LENGTH = 300
+
+function stripControlCharacters(value: string) {
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeSearchQuery(input: string | null | undefined) {
+  if (!input) {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(input.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.slice(0, MAX_SEARCH_LENGTH)
+}
+
 export async function useCatalogData(initialFilters: CatalogFilters = {}) {
+  const sanitizedInitialFilters: CatalogFilters = {
+    ...initialFilters,
+  }
+
+  if (sanitizedInitialFilters.q) {
+    sanitizedInitialFilters.q = sanitizeSearchQuery(sanitizedInitialFilters.q)
+  }
+
   const filters = reactive<CatalogFilters & typeof DEFAULT_FILTERS>({
     ...DEFAULT_FILTERS,
-    ...initialFilters,
+    ...sanitizedInitialFilters,
   })
 
   const queryParams = computed(() => ({
@@ -154,7 +193,7 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   }
 
   function setSearch(query: string) {
-    filters.q = query?.trim() || undefined
+    filters.q = sanitizeSearchQuery(query)
     filters.page = 1
     itemsStore.value = []
   }
