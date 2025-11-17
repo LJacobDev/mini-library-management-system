@@ -1,5 +1,5 @@
 <template>
-  <NuxtCard class="flex w-full min-h-[480px] max-h-[70vh] flex-col overflow-hidden md:max-h-[720px]">
+  <NuxtCard class="flex w-full min-h-[480px] max-h-[70vh] flex-col overflow-y-auto md:max-h-[720px] md:overflow-hidden">
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
@@ -14,7 +14,7 @@
       </div>
     </template>
 
-    <div class="flex flex-1 flex-col overflow-hidden">
+  <div class="flex flex-1 flex-col overflow-visible md:overflow-hidden">
       <div class="grid h-full flex-1 min-h-0 gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
         <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div

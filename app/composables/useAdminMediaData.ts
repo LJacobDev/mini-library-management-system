@@ -4,6 +4,11 @@ export const ADMIN_MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type AdminMediaType = (typeof ADMIN_MEDIA_TYPES)[number]
 export type SortField = 'title' | 'created_at' | 'updated_at'
 export type SortDirection = 'asc' | 'desc'
+const SORT_FIELDS: SortField[] = ['title', 'created_at', 'updated_at']
+const SORT_DIRECTIONS: SortDirection[] = ['asc', 'desc']
+const MIN_PAGE_SIZE = 6
+const MAX_PAGE_SIZE = 60
+const MAX_QUERY_LENGTH = 300
 
 export interface AdminMediaItem {
   id: string
@@ -27,7 +32,7 @@ export interface AdminMediaItem {
 
 interface AdminMediaFilters {
   q?: string
-  mediaType?: AdminMediaType | ''
+  mediaType?: AdminMediaType
   page?: number
   pageSize?: number
   sort?: SortField
@@ -49,6 +54,68 @@ const DEFAULT_FILTERS: Required<Pick<AdminMediaFilters, 'page' | 'pageSize' | 's
   direction: 'asc',
 }
 
+function stripControlCharacters(value: string) {
+  let result = ''
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function normalizeSearchQuery(value?: string) {
+  if (!value) {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+
+  return normalized.length ? normalized : undefined
+}
+
+function clampPage(value?: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return DEFAULT_FILTERS.page
+  }
+
+  return Math.max(1, Math.floor(value))
+}
+
+function clampPageSize(value?: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return DEFAULT_FILTERS.pageSize
+  }
+
+  const normalized = Math.floor(value)
+  return Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, normalized))
+}
+
+function normalizeMediaTypeValue(type?: string) {
+  if (!type) {
+    return undefined
+  }
+
+  const normalized = type.trim().toLowerCase()
+  return (ADMIN_MEDIA_TYPES as readonly string[]).includes(normalized)
+    ? (normalized as AdminMediaType)
+    : undefined
+}
+
+function normalizeSortField(sort?: SortField) {
+  return sort && SORT_FIELDS.includes(sort) ? sort : DEFAULT_FILTERS.sort
+}
+
+function normalizeDirectionValue(direction?: SortDirection) {
+  return direction && SORT_DIRECTIONS.includes(direction) ? direction : DEFAULT_FILTERS.direction
+}
+
 export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) {
   const filters = reactive<AdminMediaFilters & typeof DEFAULT_FILTERS>({
     ...DEFAULT_FILTERS,
@@ -56,12 +123,12 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   })
 
   const queryParams = computed(() => ({
-    page: filters.page,
-    pageSize: filters.pageSize,
-    q: filters.q || undefined,
-    mediaType: filters.mediaType || undefined,
-    sort: filters.sort,
-    direction: filters.direction,
+    page: clampPage(filters.page),
+    pageSize: clampPageSize(filters.pageSize),
+    q: normalizeSearchQuery(filters.q),
+    mediaType: normalizeMediaTypeValue(filters.mediaType),
+    sort: normalizeSortField(filters.sort),
+    direction: normalizeDirectionValue(filters.direction),
   }))
 
   const cacheKey = computed(
@@ -126,14 +193,14 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   })
 
   function setPage(next: number) {
-    const normalized = Math.max(1, Math.floor(next))
+    const normalized = clampPage(next)
     if (normalized !== filters.page) {
       filters.page = normalized
     }
   }
 
   function setPageSize(next: number) {
-    const normalized = Math.max(6, Math.floor(next))
+    const normalized = clampPageSize(next)
     if (normalized !== filters.pageSize) {
       filters.pageSize = normalized
       filters.page = 1
@@ -142,34 +209,47 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   }
 
   function setSearch(value: string) {
-    filters.q = value?.trim() || undefined
+    const normalized = normalizeSearchQuery(value)
+    if (filters.q === normalized) {
+      return
+    }
+
+    filters.q = normalized
     filters.page = 1
     itemsStore.value = []
   }
 
   function setMediaType(type: string | undefined) {
-    const normalized = type?.trim().toLowerCase() || undefined
-    filters.mediaType = (normalized && ADMIN_MEDIA_TYPES.includes(normalized as AdminMediaType))
-      ? (normalized as AdminMediaType)
-      : undefined
+    const normalized = normalizeMediaTypeValue(type)
+    if (filters.mediaType === normalized) {
+      return
+    }
+
+    filters.mediaType = normalized
     filters.page = 1
     itemsStore.value = []
   }
 
   function setSort(sort: SortField) {
-    if (filters.sort !== sort) {
-      filters.sort = sort
-      filters.page = 1
-      itemsStore.value = []
+    const normalized = normalizeSortField(sort)
+    if (filters.sort === normalized) {
+      return
     }
+
+    filters.sort = normalized
+    filters.page = 1
+    itemsStore.value = []
   }
 
   function setDirection(direction: SortDirection) {
-    if (filters.direction !== direction) {
-      filters.direction = direction
-      filters.page = 1
-      itemsStore.value = []
+    const normalized = normalizeDirectionValue(direction)
+    if (filters.direction === normalized) {
+      return
     }
+
+    filters.direction = normalized
+    filters.page = 1
+    itemsStore.value = []
   }
 
   function resetFilters() {

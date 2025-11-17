@@ -6,20 +6,66 @@ interface ReturnPayload {
   notes?: string
 }
 
+const NOTE_MAX_LENGTH = 500
+const CONDITION_MAX_LENGTH = 300
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isUuid(value: unknown) {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
+
+function stripControlCharacters(input: string) {
+  let result = ''
+  for (const char of input) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeText(value: unknown, maxLength: number) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.slice(0, maxLength)
+}
+
 export default defineEventHandler(async (event) => {
   const loanId = getRouterParam(event, 'id')
-  if (!loanId) {
+  if (!loanId || !isUuid(loanId)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing loan ID.',
+      statusMessage: 'Loan ID must be a valid UUID.',
     })
   }
 
   const { supabase, user } = await getSupabaseContext(event, { roles: ['librarian', 'admin'] })
   const body = (await readBody<ReturnPayload>(event)) ?? {}
 
-  const condition = typeof body.condition === 'string' && body.condition.trim().length ? body.condition.trim() : null
-  const notes = typeof body.notes === 'string' && body.notes.trim().length ? body.notes.trim() : null
+  const allowedKeys: Array<keyof ReturnPayload> = ['condition', 'notes']
+  const unexpectedKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key as keyof ReturnPayload))
+  if (unexpectedKeys.length) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Unsupported field(s): ${unexpectedKeys.join(', ')}`,
+    })
+  }
+
+  const condition = sanitizeText(body.condition, CONDITION_MAX_LENGTH)
+  const notes = sanitizeText(body.notes, NOTE_MAX_LENGTH)
 
   const { data: existingLoan, error: fetchError } = await supabase
     .from('media_loans')
@@ -70,7 +116,7 @@ export default defineEventHandler(async (event) => {
         event_type: 'returned',
         notes: condition,
         actor_id: user.id,
-      })
+    })
   }
 
   return {

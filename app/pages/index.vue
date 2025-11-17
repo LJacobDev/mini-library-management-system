@@ -147,7 +147,7 @@ async function requestReserve() {
             Great City Community Library
           </h1>
           <p class="mx-auto max-w-xl text-lg text-slate-300 lg:mx-0">
-            Discover books, magazines, films, and more—curated for every member. Explore the
+            Discover lifechanging books, informative magazines, exciting films, and more. Explore the
             catalog, place holds, and keep up with the latest arrivals - all online!
           </p>
           <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">

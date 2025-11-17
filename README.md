@@ -36,7 +36,6 @@ Documentation / files of interest:
 Still requires / working on:
 - Allowing chat agent to carry a session context for followup prompts
 - Adding markdown rendering in the agent chat
-- Chat stream is terminating early in some cases
 - UI, UX, polish, a11y audit, dark/light mode appearance
 - Code refactoring, removing obsolete routes and endpoints
 - Documentation / README clean up and presentation

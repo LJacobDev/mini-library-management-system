@@ -3,8 +3,10 @@ import {
   assertMediaFormat,
   assertMediaType,
   mapMediaRow,
+  sanitizeIsoDate,
+  sanitizeMetadata,
   sanitizeString,
-  toMetadata,
+  sanitizeUrl,
   toPositiveInteger,
 } from '../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../utils/supabaseApi'
@@ -31,10 +33,35 @@ export default defineEventHandler(async (event) => {
 
   const body = (await readBody<CreateMediaPayload>(event)) ?? {}
 
-  const title = sanitizeString(body.title)
-  const creator = sanitizeString(body.creator)
-  const rawMediaType = sanitizeString(body.mediaType)
-  const rawMediaFormat = sanitizeString(body.mediaFormat)
+  const allowedFields = new Set([
+    'title',
+    'creator',
+    'mediaType',
+    'mediaFormat',
+    'isbn',
+    'genre',
+    'subject',
+    'description',
+    'coverUrl',
+    'language',
+    'pages',
+    'durationSeconds',
+    'publishedAt',
+    'metadata',
+  ])
+
+  const unexpectedKeys = Object.keys(body).filter((key) => !allowedFields.has(key))
+  if (unexpectedKeys.length) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Unsupported field(s): ${unexpectedKeys.join(', ')}`,
+    })
+  }
+
+  const title = sanitizeString(body.title, 200)
+  const creator = sanitizeString(body.creator, 160)
+  const rawMediaType = sanitizeString(body.mediaType, 32)
+  const rawMediaFormat = sanitizeString(body.mediaFormat, 32)
 
   if (!title || !creator) {
     throw createError({
@@ -57,7 +84,7 @@ export default defineEventHandler(async (event) => {
   try {
     mediaType = assertMediaType(rawMediaType)
     mediaFormat = assertMediaFormat(rawMediaFormat)
-    metadata = toMetadata('metadata' in body ? body.metadata ?? {} : {})
+    metadata = sanitizeMetadata('metadata' in body ? body.metadata ?? {} : {})
   } catch (error) {
     const message = error instanceof TypeError ? error.message : 'Invalid media payload.'
     throw createError({
@@ -78,15 +105,15 @@ export default defineEventHandler(async (event) => {
     creator,
     media_type: mediaType,
     media_format: mediaFormat,
-    isbn: sanitizeString(body.isbn),
-    genre: sanitizeString(body.genre),
-    subject: sanitizeString(body.subject),
-    description: sanitizeString(body.description),
-    cover_url: sanitizeString(body.coverUrl),
-    language: sanitizeString(body.language),
+    isbn: sanitizeString(body.isbn, 32),
+    genre: sanitizeString(body.genre, 120),
+    subject: sanitizeString(body.subject, 120),
+    description: sanitizeString(body.description, 2000),
+    cover_url: sanitizeUrl(body.coverUrl),
+    language: sanitizeString(body.language, 60),
     pages: toPositiveInteger(body.pages),
     duration_seconds: toPositiveInteger(body.durationSeconds),
-    published_at: sanitizeString(body.publishedAt),
+    published_at: sanitizeIsoDate(body.publishedAt),
     metadata,
   }
 

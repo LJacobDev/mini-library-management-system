@@ -3,8 +3,10 @@ import {
   assertMediaFormat,
   assertMediaType,
   mapMediaRow,
+  sanitizeIsoDate,
+  sanitizeMetadata,
   sanitizeString,
-  toMetadata,
+  sanitizeUrl,
   toPositiveInteger,
 } from '../../../utils/adminMedia'
 import { getSupabaseContext, normalizeSupabaseError } from '../../../utils/supabaseApi'
@@ -28,22 +30,48 @@ interface UpdateMediaPayload {
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
-  if (!id) {
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!id || !UUID_PATTERN.test(id)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing media ID.',
+      statusMessage: 'Media ID must be a valid UUID.',
     })
   }
 
   const { supabase } = await getSupabaseContext(event, { roles: ['admin'] })
   const body = (await readBody<UpdateMediaPayload>(event)) ?? {}
 
+  const allowedFields = new Set([
+    'title',
+    'creator',
+    'mediaType',
+    'mediaFormat',
+    'isbn',
+    'genre',
+    'subject',
+    'description',
+    'coverUrl',
+    'language',
+    'pages',
+    'durationSeconds',
+    'publishedAt',
+    'metadata',
+  ])
+
+  const unexpectedKeys = Object.keys(body).filter((key) => !allowedFields.has(key))
+  if (unexpectedKeys.length) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Unsupported field(s): ${unexpectedKeys.join(', ')}`,
+    })
+  }
+
   const updates: Record<string, unknown> = {}
 
-  if ('title' in body) updates.title = sanitizeString(body.title)
-  if ('creator' in body) updates.creator = sanitizeString(body.creator)
+  if ('title' in body) updates.title = sanitizeString(body.title, 200)
+  if ('creator' in body) updates.creator = sanitizeString(body.creator, 160)
   if ('mediaType' in body) {
-    const mediaType = sanitizeString(body.mediaType)
+    const mediaType = sanitizeString(body.mediaType, 32)
     if (!mediaType) {
       throw createError({
         statusCode: 400,
@@ -62,7 +90,7 @@ export default defineEventHandler(async (event) => {
     }
   }
   if ('mediaFormat' in body) {
-    const mediaFormat = sanitizeString(body.mediaFormat)
+    const mediaFormat = sanitizeString(body.mediaFormat, 32)
     if (!mediaFormat) {
       throw createError({
         statusCode: 400,
@@ -80,22 +108,22 @@ export default defineEventHandler(async (event) => {
       })
     }
   }
-  if ('isbn' in body) updates.isbn = sanitizeString(body.isbn)
-  if ('genre' in body) updates.genre = sanitizeString(body.genre)
-  if ('subject' in body) updates.subject = sanitizeString(body.subject)
-  if ('description' in body) updates.description = sanitizeString(body.description)
-  if ('coverUrl' in body) updates.cover_url = sanitizeString(body.coverUrl)
-  if ('language' in body) updates.language = sanitizeString(body.language)
+  if ('isbn' in body) updates.isbn = sanitizeString(body.isbn, 32)
+  if ('genre' in body) updates.genre = sanitizeString(body.genre, 120)
+  if ('subject' in body) updates.subject = sanitizeString(body.subject, 120)
+  if ('description' in body) updates.description = sanitizeString(body.description, 2000)
+  if ('coverUrl' in body) updates.cover_url = sanitizeUrl(body.coverUrl)
+  if ('language' in body) updates.language = sanitizeString(body.language, 60)
   if ('pages' in body) {
     updates.pages = toPositiveInteger(body.pages)
   }
   if ('durationSeconds' in body) {
     updates.duration_seconds = toPositiveInteger(body.durationSeconds)
   }
-  if ('publishedAt' in body) updates.published_at = sanitizeString(body.publishedAt)
+  if ('publishedAt' in body) updates.published_at = sanitizeIsoDate(body.publishedAt)
   if ('metadata' in body) {
     try {
-      updates.metadata = toMetadata(body.metadata ?? {}, {})
+      updates.metadata = sanitizeMetadata(body.metadata ?? {}, {})
     } catch (error) {
       const message = error instanceof TypeError ? error.message : 'Invalid metadata payload.'
       throw createError({

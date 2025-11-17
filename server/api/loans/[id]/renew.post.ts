@@ -7,31 +7,119 @@ interface RenewPayload {
 }
 
 const RESERVATION_BLOCK_STATUSES = ['pending', 'waiting', 'ready_for_pickup'] as const
+const NOTE_MAX_LENGTH = 500
+const MAX_DUE_DATE_DAYS_AHEAD = 365
+const MAX_PAST_DUE_DATE_MINUTES = 60
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function isIsoDate(value: unknown) {
-  return typeof value === 'string' && !Number.isNaN(Date.parse(value))
+function isUuid(value: unknown) {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
+
+function stripControlCharacters(input: string) {
+  let result = ''
+  for (const char of input) {
+    const code = char.charCodeAt(0)
+    if ((code >= 0 && code <= 31) || code === 127) {
+      result += ' '
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+function sanitizeNote(value: unknown) {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = stripControlCharacters(value.normalize('NFKC'))
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return undefined
+  }
+
+  return normalized.slice(0, NOTE_MAX_LENGTH)
+}
+
+function normalizeRenewDueDate(value: unknown) {
+  if (typeof value !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate must be an ISO date string.',
+    })
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate is required for renewal.',
+    })
+  }
+
+  const timestamp = Date.parse(trimmed)
+  if (Number.isNaN(timestamp)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate must be a valid date.',
+    })
+  }
+
+  const now = Date.now()
+  const minAllowed = now - MAX_PAST_DUE_DATE_MINUTES * 60 * 1000
+  const maxAllowed = now + MAX_DUE_DATE_DAYS_AHEAD * 24 * 60 * 60 * 1000
+
+  if (timestamp < minAllowed) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'dueDate cannot be earlier than the current time.',
+    })
+  }
+
+  if (timestamp > maxAllowed) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `dueDate cannot be more than ${MAX_DUE_DATE_DAYS_AHEAD} days in the future.`,
+    })
+  }
+
+  return new Date(timestamp).toISOString()
 }
 
 export default defineEventHandler(async (event) => {
   const loanId = getRouterParam(event, 'id')
-  if (!loanId) {
+  if (!loanId || !isUuid(loanId)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Missing loan ID.',
+      statusMessage: 'Loan ID must be a valid UUID.',
     })
   }
 
   const { supabase, user, role } = await getSupabaseContext(event, { roles: ['member', 'librarian', 'admin'] })
   const body = (await readBody<RenewPayload>(event)) ?? {}
 
-  if (!isIsoDate(body.dueDate)) {
+  const allowedKeys: Array<keyof RenewPayload> = ['dueDate', 'note']
+  const unexpectedKeys = Object.keys(body).filter((key) => !allowedKeys.includes(key as keyof RenewPayload))
+  if (unexpectedKeys.length) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'A valid dueDate ISO string is required for renewal.',
+      statusMessage: `Unsupported field(s): ${unexpectedKeys.join(', ')}`,
     })
   }
 
-  const note = typeof body.note === 'string' && body.note.trim().length ? body.note.trim() : null
+  if (body.dueDate === undefined) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'A dueDate value is required for renewal.',
+    })
+  }
+
+  const normalizedDueDate = normalizeRenewDueDate(body.dueDate)
+  const sanitizedNote = sanitizeNote(body.note)
 
   const { data: loan, error: loanError } = await supabase
     .from('media_loans')
@@ -85,8 +173,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const updatePayload: Record<string, unknown> = {
-    due_date: new Date(body.dueDate!).toISOString(),
-    note: note ?? loan.note,
+    due_date: normalizedDueDate,
+    note: sanitizedNote ?? loan.note,
   }
 
   if (isStaff) {
@@ -110,7 +198,7 @@ export default defineEventHandler(async (event) => {
       loan_id: loanId,
       event_type: 'renewed',
       actor_id: user.id,
-      notes: note ?? undefined,
+      notes: sanitizedNote ?? undefined,
       payload: {
         previousDueDate: loan.due_date,
         newDueDate: updatedLoan.due_date,
