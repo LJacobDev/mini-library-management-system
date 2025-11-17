@@ -50,11 +50,6 @@ Additional features planned / considered:
 - SSO logins
 
 
-
-
-
-
-
 ## Running It Locally
 
 ```
@@ -63,7 +58,7 @@ npm install
 npm run dev
 ```
 
-**Note: In its current form it's difficult to run with full features locally**
+**Note: In its current form it takes some setup to run with full features locally**
 
 The env keys needed for database and AI integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions).  
 
