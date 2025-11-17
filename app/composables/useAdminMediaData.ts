@@ -1,4 +1,5 @@
 import { computed, reactive, ref, watch } from 'vue'
+import { clampPage, clampPageSize } from '../../utils/pagination'
 
 export const ADMIN_MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type AdminMediaType = (typeof ADMIN_MEDIA_TYPES)[number]
@@ -80,23 +81,6 @@ function normalizeSearchQuery(value?: string) {
   return normalized.length ? normalized : undefined
 }
 
-function clampPage(value?: number) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return DEFAULT_FILTERS.page
-  }
-
-  return Math.max(1, Math.floor(value))
-}
-
-function clampPageSize(value?: number) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return DEFAULT_FILTERS.pageSize
-  }
-
-  const normalized = Math.floor(value)
-  return Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, normalized))
-}
-
 function normalizeMediaTypeValue(type?: string) {
   if (!type) {
     return undefined
@@ -123,8 +107,11 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   })
 
   const queryParams = computed(() => ({
-    page: clampPage(filters.page),
-    pageSize: clampPageSize(filters.pageSize),
+    page: clampPage(filters.page, DEFAULT_FILTERS.page),
+    pageSize: clampPageSize(filters.pageSize, DEFAULT_FILTERS.pageSize, {
+      min: MIN_PAGE_SIZE,
+      max: MAX_PAGE_SIZE,
+    }),
     q: normalizeSearchQuery(filters.q),
     mediaType: normalizeMediaTypeValue(filters.mediaType),
     sort: normalizeSortField(filters.sort),
@@ -135,7 +122,7 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
     () =>
       `admin-media:${queryParams.value.page}:${queryParams.value.pageSize}:` +
       `${queryParams.value.q ?? ''}:${queryParams.value.mediaType ?? ''}:` +
-      `${queryParams.value.sort}:${queryParams.value.direction}`,
+  `${queryParams.value.sort}:${queryParams.value.direction}`,
   )
 
   const { data, pending, error, refresh } = await useAsyncData<AdminMediaResponse>(
@@ -167,7 +154,7 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
         itemsStore.value = [...itemsStore.value, ...merged]
       }
     },
-    { immediate: true },
+  { immediate: true },
   )
 
   const items = computed(() => itemsStore.value)
@@ -193,14 +180,17 @@ export async function useAdminMediaData(initialFilters: AdminMediaFilters = {}) 
   })
 
   function setPage(next: number) {
-    const normalized = clampPage(next)
+    const normalized = clampPage(next, DEFAULT_FILTERS.page)
     if (normalized !== filters.page) {
       filters.page = normalized
     }
   }
 
   function setPageSize(next: number) {
-    const normalized = clampPageSize(next)
+    const normalized = clampPageSize(next, DEFAULT_FILTERS.pageSize, {
+      min: MIN_PAGE_SIZE,
+      max: MAX_PAGE_SIZE,
+    })
     if (normalized !== filters.pageSize) {
       filters.pageSize = normalized
       filters.page = 1

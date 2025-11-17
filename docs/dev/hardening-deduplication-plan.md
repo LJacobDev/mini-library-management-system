@@ -62,10 +62,10 @@
 ## Tracking & sign-off checklist
 
 - [x] Shared sanitizeText util created and consumed by at least one API + one composable.
-- [ ] Validators module live (UUID/email/identifier) and adopted by loans/admin routes.
-- [ ] Search helpers powering catalog/admin/loans + AI filters.
-- [ ] Pagination helper mirrored server/client.
-- [ ] AI prompt helper extracted.
+- [x] Validators module live (UUID/email/identifier) and adopted by loans/admin routes.
+- [x] Search helpers powering catalog/admin/loans + AI filters.
+- [x] Pagination helper mirrored server/client (catalog/admin/loans APIs + composables now share `utils/pagination`).
+- [x] AI prompt helper extracted (`server/utils/aiPrompts.ts` powering recommendation endpoint).
 - [ ] Desk/admin UI sanitizers shared.
 - [ ] Docs/context updated with new guidance.
 - [ ] Lint/typecheck/manual smoke pass recorded.

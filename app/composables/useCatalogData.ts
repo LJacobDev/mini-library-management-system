@@ -1,5 +1,6 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { sanitizeFreeform } from '../../utils/sanitizeText'
+import { clampPage, clampPageSize } from '../../utils/pagination'
 
 const MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
@@ -58,6 +59,20 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
     sanitizedInitialFilters.q = sanitizeSearchQuery(sanitizedInitialFilters.q)
   }
 
+  if (sanitizedInitialFilters.page) {
+    sanitizedInitialFilters.page = clampPage(sanitizedInitialFilters.page, DEFAULT_FILTERS.page)
+  }
+
+  if (sanitizedInitialFilters.pageSize) {
+    sanitizedInitialFilters.pageSize = clampPageSize(
+      sanitizedInitialFilters.pageSize,
+      DEFAULT_FILTERS.pageSize,
+      {
+        min: 1,
+      }
+    )
+  }
+
   const filters = reactive<CatalogFilters & typeof DEFAULT_FILTERS>({
     ...DEFAULT_FILTERS,
     ...sanitizedInitialFilters,
@@ -88,24 +103,6 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   )
 
   const itemsStore = ref<CatalogItem[]>(data.value?.items ? [...data.value.items] : [])
-
-  watch(
-    () => data.value,
-    (payload) => {
-      if (!payload) {
-        return
-      }
-
-      if (payload.page <= 1) {
-        itemsStore.value = [...payload.items]
-      } else {
-        const existing = new Set(itemsStore.value.map((item) => item.id))
-        const merged = payload.items.filter((item) => !existing.has(item.id))
-        itemsStore.value = [...itemsStore.value, ...merged]
-      }
-    },
-    { immediate: true }
-  )
 
   watch(
     () => data.value,
@@ -156,11 +153,11 @@ export async function useCatalogData(initialFilters: CatalogFilters = {}) {
   )
 
   function setPage(page: number) {
-    filters.page = Math.max(1, Math.floor(page))
+    filters.page = clampPage(page, DEFAULT_FILTERS.page)
   }
 
   function setPageSize(size: number) {
-    const next = Math.max(1, Math.floor(size))
+    const next = clampPageSize(size, DEFAULT_FILTERS.pageSize, { min: 1 })
     if (next !== filters.pageSize) {
       filters.pageSize = next
       filters.page = 1
