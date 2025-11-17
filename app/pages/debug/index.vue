@@ -49,6 +49,15 @@ type RequestMeta = {
   timestamp: string;
 };
 
+type DebugAuthResponse = {
+  authenticated: boolean;
+  user?: {
+    email?: string | null;
+    appMetadata?: Record<string, unknown> | null;
+    userMetadata?: Record<string, unknown> | null;
+  } | null;
+};
+
 const endpoints: DebugEndpoint[] = [
   {
     label: "Ping OpenAI check",
@@ -334,6 +343,26 @@ const result = ref<string>("Press a button to run a check.");
 const loadingKey = ref<string | null>(null);
 const sessionState = ref<SessionState>({ status: "loading" });
 const lastRequestMeta = ref<RequestMeta | null>(null);
+const showGuidelines = ref(false);
+const manualTestingGuidelines = ref(`
+Manual testing guidelines placeholder — replace with the official checklist when available.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer porta mi in velit varius, sit amet ultrices mi sodales. Pellentesque ut dui luctus, egestas lacus sed, pellentesque massa. Donec mattis, felis at tempor vulputate, velit erat pulvinar metus, sed hendrerit lorem erat eu risus. Etiam mattis tincidunt mi, nec venenatis nisl pharetra a. Vestibulum eget ligula dui. Vivamus nec neque dignissim, tincidunt lorem id, venenatis nunc. Nullam cursus, ligula vitae tristique facilisis, mauris lectus porttitor libero, vel varius neque ipsum vitae enim. Sed porttitor hendrerit orci id malesuada. Cras vitae diam vitae nisi fringilla maximus. Nulla non libero sed orci suscipit tristique. Duis luctus, ligula at sagittis posuere, neque sapien dignissim ante, at condimentum mi mauris vel nunc.
+
+Curabitur sollicitudin libero eget posuere ultrices. Praesent finibus purus at ligula porta, eget tristique leo vehicula. Sed venenatis urna et metus congue varius. Pellentesque imperdiet sollicitudin tortor vitae tincidunt. Nulla pretium bibendum felis eget blandit. Sed nec risus eros. Phasellus interdum nisl sit amet molestie pretium. Vivamus ut luctus massa, at rhoncus elit. Cras nec arcu eget quam vulputate maximus. Nulla facilisi. Aliquam erat volutpat. Sed hendrerit, massa non condimentum accumsan, sem libero aliquet justo, non faucibus urna justo id nunc. Fusce facilisis id leo a semper. Donec feugiat fringilla iaculis. Ut aliquet tortor leo, in commodo eros porttitor vitae.
+
+Suspendisse interdum sem sit amet erat volutpat posuere. Suspendisse potenti. Maecenas rhoncus risus nec augue vehicula, sit amet accumsan nibh tempus. Quisque non orci a lectus fermentum placerat. Sed eros lectus, lacinia eget lectus quis, pharetra consequat magna. Proin sed volutpat arcu. Nam finibus lorem libero, eget interdum nibh vehicula sit amet. Nullam ut pretium magna. Vivamus vestibulum ex id risus interdum pulvinar. Nulla et eros semper, molestie lorem ac, finibus quam.
+
+In rhoncus, nunc ut fermentum ornare, mi massa condimentum dui, quis dignissim enim nunc nec ipsum. Phasellus vitae urna id leo consectetur fermentum. Sed condimentum arcu mi, in tristique ligula viverra sit amet. Sed ultrices porta sem, congue mollis mauris lobortis et. Mauris pulvinar accumsan nisl. Sed congue hendrerit ipsum in accumsan. Fusce velit urna, dapibus id dolor id, pharetra posuere metus. Pellentesque eget risus ac dolor pretium fringilla. Integer elementum, dui in sollicitudin cursus, ex velit aliquet sem, sed vestibulum nunc elit sed nisi. Maecenas scelerisque erat vel magna scelerisque rhoncus. Duis sed mi at sapien pretium iaculis. Nulla dignissim pretium cursus. Pellentesque consequat, tortor id tristique hendrerit, nisl eros venenatis purus, non condimentum magna ligula eu erat. Etiam congue lacus vitae turpis fermentum sagittis.
+
+Morbi faucibus urna ac ante dapibus, eget faucibus orci ultrices. Etiam cursus, sem ac condimentum porttitor, massa turpis pretium mauris, a convallis nibh lacus a erat. Duis auctor nisi eget eleifend fringilla. Donec et sollicitudin neque. Vestibulum rhoncus, nulla non venenatis facilisis, tellus justo eleifend nunc, sed vestibulum nisi nunc in orci. In aliquet, ligula sed condimentum consequat, arcu magna finibus purus, ac pharetra mi risus vel metus. Sed nec ligula et ipsum volutpat venenatis ac at mi.
+
+Integer vel auctor dui. Maecenas malesuada sapien non turpis molestie, at aliquam nulla placerat. Etiam efficitur ultricies nibh et ultricies. Aliquam erat volutpat. Vivamus auctor tellus sit amet rutrum iaculis. Suspendisse odio tortor, aliquam vel quam at, efficitur fermentum erat. Proin at imperdiet lorem. Pellentesque sit amet nibh non nunc pretium pharetra. Curabitur maximus arcu at lorem dignissim, id tincidunt risus fringilla. Pellentesque et ultrices dui. Sed suscipit, diam quis tincidunt laoreet, massa sem lacinia nisi, non sagittis enim velit id ligula. Suspendisse tristique urna nisl, quis fringilla nibh imperdiet aliquam. Mauris gravida sodales mi, sit amet imperdiet velit.
+
+Aliquam feugiat nibh ut erat auctor ultricies. Duis eget orci erat. Vivamus et egestas erat, consectetur tincidunt orci. Vestibulum tempor dapibus pretium. Integer pharetra ornare sollicitudin. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras vestibulum erat sed tincidunt sodales. Donec tristique turpis ac mauris maximus consequat. Donec sed convallis dolor, at venenatis massa. Cras ipsum erat, gravida non nisl non, pellentesque dictum sapien. Aliquam erat volutpat. Cras nec enim ut odio maximus pellentesque sed at erat. Pellentesque non bibendum turpis.
+
+Mauris hendrerit vulputate metus, sit amet ornare felis. Praesent porta lectus id justo malesuada, sed congue sem ornare. Aliquam volutpat feugiat justo, sit amet vulputate ligula consectetur ut. Fusce porttitor felis ac nibh consequat, ac dapibus risus venenatis. Donec id maximus nisl. Integer nec dapibus neque. Sed condimentum justo at mauris finibus, sed feugiat elit facilisis. Vestibulum egestas turpis vitae eros facilisis, in accumsan leo placerat. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam tempor elit a malesuada cursus. Nam at turpis malesuada, faucibus sapien ac, feugiat orci. Sed ullamcorper dolor eu justo pulvinar, ut porta nisl tempus. Donec facilisis lorem vitae velit fringilla, eget pretium libero iaculis.
+`);
 
 const httpMethods: HttpVerb[] = [
   "GET",
@@ -539,16 +568,20 @@ async function runCustomRequest() {
 
 async function fetchSessionState() {
   try {
-    const data = await $fetch<{ role?: string | null; email?: string | null } | null>("/api/debug/auth-check");
-    if (!data) {
+    const data = await $fetch<DebugAuthResponse>("/api/debug/auth-check");
+    const user = data?.user;
+
+    if (!data || !user) {
       sessionState.value = { status: "guest" };
       return;
     }
 
+    const role = (user.appMetadata?.role ?? user.userMetadata?.role ?? null) as string | null;
+
     sessionState.value = {
       status: "authenticated",
-      role: data.role ?? null,
-      email: data.email ?? null,
+      role,
+      email: (user.email ?? null) as string | null,
     };
   } catch (error) {
     const statusCode = typeof error === "object" && error !== null ? (error as { statusCode?: number }).statusCode : undefined;
@@ -624,9 +657,14 @@ function parseSSEPayload(payload: string) {
     <section class="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-16">
       <header class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div class="space-y-3">
             <p class="text-sm uppercase tracking-widest text-primary-300">Developer Console</p>
-            <h1 class="text-3xl font-bold text-white">Debug controls</h1>
+            <div class="flex flex-wrap items-center gap-4">
+              <h1 class="text-3xl font-bold text-white">Debug controls</h1>
+              <NuxtButton size="lg" color="primary" @click="showGuidelines = true">
+                Manual testing guidelines
+              </NuxtButton>
+            </div>
           </div>
           <NuxtCard class="border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-medium text-slate-200">
             <div class="flex items-center gap-2">
@@ -645,13 +683,15 @@ function parseSSEPayload(payload: string) {
         <p class="text-sm text-slate-400">
           Quick buttons for hitting Nuxt server endpoints while we wire Supabase-backed catalog + circulation routes.
         </p>
-        <button
-          class="text-xs font-medium uppercase tracking-wide text-primary-300 underline-offset-4 hover:underline"
-          type="button"
-          @click="fetchSessionState"
-        >
-          Refresh session
-        </button>
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            class="text-xs font-medium uppercase tracking-wide text-primary-300 underline-offset-4 hover:underline"
+            type="button"
+            @click="fetchSessionState"
+          >
+            Refresh session
+          </button>
+        </div>
       </header>
 
       <ClientOnly>
@@ -814,5 +854,20 @@ function parseSSEPayload(payload: string) {
         </div>
       </div>
     </section>
+
+    <NuxtModal
+      v-model:open="showGuidelines"
+      title="Debug panel guidelines"
+      description="Reference notes for manual endpoint testing in this console."
+      class="max-w-3xl"
+    >
+      <template #body>
+        <div class="max-h-[70vh] overflow-y-auto rounded-xl bg-slate-950/60 p-4 text-sm text-slate-200">
+          <pre class="whitespace-pre-wrap font-sans leading-relaxed">
+{{ manualTestingGuidelines }}
+          </pre>
+        </div>
+      </template>
+    </NuxtModal>
   </main>
 </template>
