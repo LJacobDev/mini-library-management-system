@@ -7,9 +7,7 @@ Built with Nuxt 4, TailwindCSS 4, with Auth and Postgres Database provided by Su
 
 ### See it deployed at [mini-library-management-system.vercel.app](https://mini-library-management-system.vercel.app/)
 
-**Note:** There's an issue where in some browsers/systems it appears as the dark theme that it was developed in, but in some browsers it is showing in a light theme that has yet to be finished, making it hard to view.  If this is happening to you, you can try viewing it in dark mode for now - but there is also a proper view of this app [in this demo video](https://youtu.be/1Q_yvrdJDmo).
-
-**Note:** On mobile devices, certain key aspects are not showing up in the smaller view, so it is recommended to view this site on something with a wider display like a desktop browser.
+**Note:** This app currently doesn't display certain details on mobile devices.  To help with this, a walkthrough of the views and user flows is available [in this demo video](https://youtu.be/1Q_yvrdJDmo).
 
 ### This project has been revised with a new [fast start approach](docs/dev/spec/spec-fast-start-5.md)
 
@@ -52,11 +50,6 @@ Additional features planned / considered:
 - SSO logins
 
 
-
-
-
-
-
 ## Running It Locally
 
 ```
@@ -65,7 +58,7 @@ npm install
 npm run dev
 ```
 
-**Note: In its current form it's difficult to run with full features locally**
+**Note: In its current form it takes some setup to run with full features locally**
 
 The env keys needed for database and AI integrations include OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_PUBLISHABLE_KEY (used 'publishable' instead of 'anon' to keep with new non-legacy key descriptions).  
 
