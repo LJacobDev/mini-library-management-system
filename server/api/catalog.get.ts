@@ -1,5 +1,7 @@
 import { createError, getQuery } from 'h3'
 import { getSupabaseServiceClient } from '../utils/supabaseServiceClient'
+import { escapeLikeTerm, quoteFilterValue, sanitizeSearchTerm } from '../../utils/searchFilters'
+import { clampPage, clampPageSize } from '../../utils/pagination'
 
 type MediaRow = {
   id: string
@@ -24,75 +26,11 @@ const MAX_PAGE_SIZE = 60
 const ALLOWED_MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
 const MAX_SEARCH_LENGTH = 300
 
-const SAFE_SEARCH_PATTERN = /[^\p{L}\p{N}\p{M}\s'",.!?\-_/]/gu
-
-function parsePositiveInteger(value: unknown, fallback: number) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.max(1, Math.floor(value))
-  }
-
-  if (typeof value === 'string') {
-    const parsed = parseInt(value, 10)
-    if (!Number.isNaN(parsed)) {
-      return Math.max(1, parsed)
-    }
-  }
-
-  return fallback
-}
-
-function stripUnsafeSearchCharacters(value: string) {
-  return value.replace(SAFE_SEARCH_PATTERN, ' ')
-}
-
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
-function sanitizeSearchTerm(value: string | null | undefined) {
-  if (!value) {
-    return ''
-  }
-
-  const normalized = stripControlCharacters(stripUnsafeSearchCharacters(value.normalize('NFKC')))
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!normalized) {
-    return ''
-  }
-
-  return normalized.slice(0, MAX_SEARCH_LENGTH)
-}
-
-function escapeLikeTerm(term: string) {
-  if (!term) {
-    return term
-  }
-
-  return term.replace(/([%_\\])/g, '\\$1')
-}
-
-function quoteFilterValue(value: string) {
-  const escapedQuotes = value.replace(/"/g, '\\"')
-  return `"${escapedQuotes}"`
-}
-
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const page = parsePositiveInteger(query.page, 1)
-  const requestedPageSize = parsePositiveInteger(query.pageSize, DEFAULT_PAGE_SIZE)
-  const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE)
-  const search = sanitizeSearchTerm(typeof query.q === 'string' ? query.q : '')
+  const page = clampPage(query.page, 1)
+  const pageSize = clampPageSize(query.pageSize, DEFAULT_PAGE_SIZE, { max: MAX_PAGE_SIZE })
+  const search = sanitizeSearchTerm(typeof query.q === 'string' ? query.q : '', { maxLength: MAX_SEARCH_LENGTH })
   const rawType = typeof query.type === 'string' ? query.type.trim().toLowerCase() : ''
   const type = ALLOWED_MEDIA_TYPES.has(rawType) ? rawType : ''
 

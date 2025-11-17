@@ -4,6 +4,14 @@ import { getSupabaseContext, type AppRole } from '../../utils/supabaseApi'
 import { MEDIA_FORMATS, MEDIA_TYPES } from '../../utils/adminMedia'
 import { chatCompletion, streamChatCompletion } from '../../utils/openaiClient'
 import { rateLimit } from '../../utils/rateLimit'
+import { quoteFilterValue } from '../../../utils/searchFilters'
+import {
+  buildSearchPatterns,
+  fallbackKeywords,
+  sanitizeKeywordList,
+  sanitizePromptInput,
+  wrapPromptForModel,
+} from '../../utils/aiPrompts'
 
 const MAX_PROMPT_LENGTH = 800
 const DEFAULT_LIMIT = 12
@@ -17,169 +25,6 @@ const ALLOWED_MEDIA_FORMATS = new Set(MEDIA_FORMATS as readonly string[])
 const ALLOWED_AGE_GROUPS = new Set(['adult', 'teen', 'child', 'kids', 'all'])
 const ALLOWED_BODY_KEYS = new Set(['prompt', 'filters'])
 const ALLOWED_FILTER_KEYS = new Set(['mediaType', 'mediaFormat', 'ageGroup', 'limit'])
-
-const STOP_WORDS = new Set(
-  [
-    'the',
-    'and',
-    'a',
-    'an',
-    'of',
-    'for',
-    'with',
-    'about',
-    'into',
-    'into',
-    'on',
-    'in',
-    'to',
-    'from',
-    'by',
-    'at',
-    'as',
-    'is',
-    'are',
-    'be',
-    'this',
-    'that',
-    'these',
-    'those',
-    'it',
-    'its',
-    'their',
-    'my',
-    'our',
-    'your',
-    'we',
-    'you',
-    'they',
-    'them',
-    'me',
-    'i',
-    'but',
-    'so',
-    'if',
-    'or',
-    'not',
-    'no',
-    'yes',
-    'please',
-    'would',
-    'like',
-    'looking',
-    'need',
-    'want',
-    'maybe',
-    'just',
-    'can',
-    'could',
-    'should',
-    'any',
-  ]
-)
-
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
-function normalizeWhitespace(value: string) {
-  return value.replace(/\s+/g, ' ').trim()
-}
-
-function sanitizeFreeformText(value: string) {
-  return normalizeWhitespace(stripControlCharacters(value.normalize('NFKC')))
-}
-
-function redactPersonalInfo(value: string) {
-  const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
-  const phonePattern = /(\+?\d[\d\s().-]{7,}\d)/g
-  const uuidPattern = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi
-  const cardPattern = /\b\d{8,}\b/g
-
-  return value
-    .replace(emailPattern, '[REDACTED_EMAIL]')
-    .replace(phonePattern, '[REDACTED_PHONE]')
-    .replace(uuidPattern, '[REDACTED_ID]')
-    .replace(cardPattern, '[REDACTED_NUMBER]')
-}
-
-function sanitizeKeywordValue(value: string) {
-  const normalized = sanitizeFreeformText(value)
-  if (!normalized) {
-    return ''
-  }
-
-  const cleaned = normalized
-    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
-    .replace(/-+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!cleaned) {
-    return ''
-  }
-
-  return cleaned.slice(0, KEYWORD_MAX_LENGTH)
-}
-
-function sanitizeKeywordList(values: string[]): string[] {
-  const sanitized: string[] = []
-  for (const value of values) {
-    if (sanitized.length >= KEYWORD_MAX) {
-      break
-    }
-    const cleaned = sanitizeKeywordValue(value)
-    if (cleaned && !sanitized.includes(cleaned)) {
-      sanitized.push(cleaned)
-    }
-  }
-  return sanitized
-}
-
-function escapeAngleBrackets(value: string) {
-  return value.replace(/[<>]/g, (char) => (char === '<' ? '&lt;' : '&gt;'))
-}
-
-function wrapPromptForModel(prompt: string) {
-  return `<user_prompt>\n${escapeAngleBrackets(prompt)}\n</user_prompt>`
-}
-
-function escapeLikeTerm(term: string) {
-  if (!term) {
-    return term
-  }
-
-  return term.replace(/([%_\\])/g, '\\$1')
-}
-
-function quoteFilterValue(value: string) {
-  const escapedQuotes = value.replace(/"/g, '\\"')
-  return `"${escapedQuotes}"`
-}
-
-function buildWildcardPattern(keyword: string) {
-  if (!keyword) {
-    return ''
-  }
-
-  const safe = escapeLikeTerm(keyword)
-  return `%${safe.replace(/\s+/g, '%')}%`
-}
-
-function buildSearchPatterns(keywords: string[]) {
-  return keywords
-    .map((keyword) => buildWildcardPattern(keyword))
-    .filter((pattern) => pattern.length > 2)
-}
 
 const ROLE_PROMPT_PREFIX: Record<AppRole, string> = {
   member:
@@ -282,25 +127,6 @@ function parseRecommendRequest(raw: unknown): RecommendRequest {
   }
 }
 
-function sanitizePrompt(raw: unknown): string {
-  if (typeof raw !== 'string') {
-    throw createError({ statusCode: 400, statusMessage: 'Prompt is required.' })
-  }
-
-  let sanitized = sanitizeFreeformText(raw)
-  if (!sanitized.length) {
-    throw createError({ statusCode: 400, statusMessage: 'Prompt is required.' })
-  }
-
-  sanitized = redactPersonalInfo(sanitized)
-  const trimmed = sanitized.slice(0, MAX_PROMPT_LENGTH).trim()
-  if (!trimmed.length) {
-    throw createError({ statusCode: 400, statusMessage: 'Prompt is required.' })
-  }
-
-  return trimmed
-}
-
 function sanitizeOptionalEnum(value: unknown, label: string, allowed: Set<string>) {
   if (value === undefined || value === null) {
     return undefined
@@ -338,30 +164,6 @@ function sanitizeFilters(raw: RecommendRequest['filters']): SanitizedFilters {
     ageGroup: sanitizeOptionalEnum(raw?.ageGroup, 'ageGroup', ALLOWED_AGE_GROUPS),
     limit,
   }
-}
-
-function fallbackKeywords(prompt: string): string[] {
-  const cleaned = prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/gi, ' ')
-    .split(/\s+/)
-    .filter((token) => token.length > 2 && !STOP_WORDS.has(token))
-
-  const unique: string[] = []
-  for (const token of cleaned) {
-    if (!unique.includes(token)) {
-      unique.push(token)
-    }
-    if (unique.length >= KEYWORD_MAX) {
-      break
-    }
-  }
-
-  if (!unique.length) {
-    unique.push(prompt.toLowerCase().slice(0, 20))
-  }
-
-  return unique
 }
 
 async function extractKeywords(event: H3Event, prompt: string): Promise<KeywordResult> {
@@ -538,15 +340,16 @@ export default defineEventHandler(async (event) => {
 
   const rawBody = await readBody<unknown>(event)
   const body = parseRecommendRequest(rawBody)
-  const prompt = sanitizePrompt(body.prompt)
+  const prompt = sanitizePromptInput(body.prompt, { maxLength: MAX_PROMPT_LENGTH })
   const filters = sanitizeFilters(body.filters)
   const keywordResult = await extractKeywords(event, prompt)
 
-  let keywords = sanitizeKeywordList(keywordResult.keywords ?? [])
+  const keywordOptions = { maxItems: KEYWORD_MAX, maxLength: KEYWORD_MAX_LENGTH }
+  let keywords = sanitizeKeywordList(keywordResult.keywords ?? [], keywordOptions)
   if (!keywords.length) {
-    keywords = sanitizeKeywordList(fallbackKeywords(prompt))
+    keywords = sanitizeKeywordList(fallbackKeywords(prompt, { maxItems: KEYWORD_MAX }), keywordOptions)
   }
-  const excludeKeywords = sanitizeKeywordList(keywordResult.exclude ?? [])
+  const excludeKeywords = sanitizeKeywordList(keywordResult.exclude ?? [], keywordOptions)
 
   const items = await fetchCandidateMedia(supabase, keywords, excludeKeywords, filters)
 

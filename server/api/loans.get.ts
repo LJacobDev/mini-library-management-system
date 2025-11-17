@@ -1,5 +1,8 @@
 import { createError, getQuery } from 'h3'
 import { getSupabaseContext, normalizeSupabaseError } from '../utils/supabaseApi'
+import { assertUuid } from '../utils/validators'
+import { escapeLikeTerm, quoteFilterValue, sanitizeSearchTerm } from '../../utils/searchFilters'
+import { clampPage, clampPageSize } from '../../utils/pagination'
 
 type LoanStatus = 'active' | 'returned' | 'overdue'
 
@@ -7,28 +10,7 @@ const DEFAULT_PAGE_SIZE = 20
 const MAX_PAGE_SIZE = 100
 const MAX_SEARCH_LENGTH = 300
 const VALID_STATUS = new Set<LoanStatus>(['active', 'returned', 'overdue'])
-const SAFE_SEARCH_PATTERN = /[^\p{L}\p{N}\p{M}\s'",.!?\-_/]/gu
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const LOAN_SEARCH_COLUMNS = ['note', 'user_id', 'media_id', 'id']
-
-function parsePositiveInteger(value: unknown, fallback: number) {
-  if (Array.isArray(value) && value.length) {
-    return parsePositiveInteger(value[0], fallback)
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.max(1, Math.floor(value))
-  }
-
-  if (typeof value === 'string' && value.trim().length > 0) {
-    const parsed = Number.parseInt(value, 10)
-    if (!Number.isNaN(parsed)) {
-      return Math.max(1, parsed)
-    }
-  }
-
-  return fallback
-}
 
 function getQueryString(value: unknown) {
   if (Array.isArray(value) && value.length) {
@@ -50,60 +32,7 @@ function sanitizeUuidParam(value: unknown, fieldName: string) {
     return null
   }
 
-  if (!UUID_PATTERN.test(normalized)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `${fieldName} must be a valid UUID.`,
-    })
-  }
-
-  return normalized
-}
-
-function stripUnsafeSearchCharacters(value: string) {
-  return value.replace(SAFE_SEARCH_PATTERN, ' ')
-}
-
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
-function sanitizeSearchTerm(value: string | null | undefined) {
-  if (!value) {
-    return ''
-  }
-
-  const normalized = stripControlCharacters(stripUnsafeSearchCharacters(value.normalize('NFKC')))
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!normalized) {
-    return ''
-  }
-
-  return normalized.slice(0, MAX_SEARCH_LENGTH)
-}
-
-function escapeLikeTerm(term: string) {
-  if (!term) {
-    return term
-  }
-
-  return term.replace(/([%_\\])/g, '\\$1')
-}
-
-function quoteFilterValue(value: string) {
-  const escapedQuotes = value.replace(/"/g, '\\"')
-  return `"${escapedQuotes}"`
+  return assertUuid(normalized, fieldName)
 }
 
 export default defineEventHandler(async (event) => {
@@ -123,11 +52,10 @@ export default defineEventHandler(async (event) => {
     statusFilter = statusInput as LoanStatus
   }
   const rawSearch = getQueryString(query.q) ?? getQueryString(query.search)
-  const searchFilter = sanitizeSearchTerm(rawSearch)
+  const searchFilter = sanitizeSearchTerm(rawSearch, { maxLength: MAX_SEARCH_LENGTH })
 
-  const page = parsePositiveInteger(query.page, 1)
-  const requestedPageSize = parsePositiveInteger(query.pageSize ?? query.limit, DEFAULT_PAGE_SIZE)
-  const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE)
+  const page = clampPage(query.page, 1)
+  const pageSize = clampPageSize(query.pageSize ?? query.limit, DEFAULT_PAGE_SIZE, { max: MAX_PAGE_SIZE })
 
   let builder = supabase
     .from('media_loans')

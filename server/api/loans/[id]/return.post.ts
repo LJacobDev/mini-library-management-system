@@ -1,5 +1,6 @@
 import { createError, getRouterParam, readBody } from 'h3'
 import { getSupabaseContext, normalizeSupabaseError } from '../../../utils/supabaseApi'
+import { assertUuid } from '../../../utils/validators'
 
 interface ReturnPayload {
   condition?: string
@@ -8,12 +9,6 @@ interface ReturnPayload {
 
 const NOTE_MAX_LENGTH = 500
 const CONDITION_MAX_LENGTH = 300
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isUuid(value: unknown) {
-  return typeof value === 'string' && UUID_PATTERN.test(value)
-}
-
 function stripControlCharacters(input: string) {
   let result = ''
   for (const char of input) {
@@ -44,13 +39,7 @@ function sanitizeText(value: unknown, maxLength: number) {
 }
 
 export default defineEventHandler(async (event) => {
-  const loanId = getRouterParam(event, 'id')
-  if (!loanId || !isUuid(loanId)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Loan ID must be a valid UUID.',
-    })
-  }
+  const loanId = assertUuid(getRouterParam(event, 'id'), 'Loan ID')
 
   const { supabase, user } = await getSupabaseContext(event, { roles: ['librarian', 'admin'] })
   const body = (await readBody<ReturnPayload>(event)) ?? {}

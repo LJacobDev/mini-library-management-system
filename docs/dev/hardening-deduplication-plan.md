@@ -61,13 +61,21 @@
 
 ## Tracking & sign-off checklist
 
-- [ ] Shared sanitizeText util created and consumed by at least one API + one composable.
-- [ ] Validators module live (UUID/email/identifier) and adopted by loans/admin routes.
-- [ ] Search helpers powering catalog/admin/loans + AI filters.
-- [ ] Pagination helper mirrored server/client.
-- [ ] AI prompt helper extracted.
-- [ ] Desk/admin UI sanitizers shared.
+- [x] Shared sanitizeText util created and consumed by at least one API + one composable.
+- [x] Validators module live (UUID/email/identifier) and adopted by loans/admin routes.
+- [x] Search helpers powering catalog/admin/loans + AI filters.
+- [x] Pagination helper mirrored server/client (catalog/admin/loans APIs + composables now share `utils/pagination`).
+- [x] AI prompt helper extracted (`server/utils/aiPrompts.ts` powering recommendation endpoint).
+- [x] Desk/admin UI sanitizers shared (`app/utils/sanitizeClient.ts` now feeds catalog/admin composables, desk circulation forms, and admin media modal).
 - [ ] Docs/context updated with new guidance.
 - [ ] Lint/typecheck/manual smoke pass recorded.
+
+---
+
+**Latest changes summary** (2025-11-17):
+
+- Added `utils/pagination.ts` and refactored catalog/admin/loans APIs plus the catalog/admin composables to clamp input server- and client-side.
+- Extracted AI prompt helpers into `server/utils/aiPrompts.ts`, covering prompt sanitizing/redaction, keyword normalization, wildcard building, and fallback generation used by `/api/ai/recommend`.
+- Created `app/utils/sanitizeClient.ts` and updated catalog/admin composables, the circulation desk, and admin media form to reuse shared client-side sanitizers, preserving raw input while aligning with backend limits.
 
 Refer back to this document whenever expanding sanitization/hardening work so future agents stay aligned and duplication stays low.
