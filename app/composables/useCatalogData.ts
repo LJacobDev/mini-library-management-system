@@ -1,4 +1,5 @@
 import { computed, reactive, ref, watch } from 'vue'
+import { sanitizeFreeform } from '../../utils/sanitizeText'
 
 const MEDIA_TYPES = ['book', 'video', 'audio', 'other'] as const
 export type MediaType = (typeof MEDIA_TYPES)[number]
@@ -44,33 +45,8 @@ const DEFAULT_FILTERS: Required<Pick<CatalogFilters, 'page' | 'pageSize'>> = {
 
 const MAX_SEARCH_LENGTH = 300
 
-function stripControlCharacters(value: string) {
-  let result = ''
-  for (const char of value) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
 function sanitizeSearchQuery(input: string | null | undefined) {
-  if (!input) {
-    return undefined
-  }
-
-  const normalized = stripControlCharacters(input.normalize('NFKC'))
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!normalized) {
-    return undefined
-  }
-
-  return normalized.slice(0, MAX_SEARCH_LENGTH)
+  return sanitizeFreeform(input, { maxLength: MAX_SEARCH_LENGTH }) || undefined
 }
 
 export async function useCatalogData(initialFilters: CatalogFilters = {}) {

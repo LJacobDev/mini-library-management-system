@@ -1,6 +1,7 @@
 import { createError, readBody } from 'h3'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { getSupabaseContext, normalizeSupabaseError, type AppRole } from '../utils/supabaseApi'
+import { sanitizeFreeform } from '../../utils/sanitizeText'
 
 interface CheckoutPayload {
   memberId?: string
@@ -56,35 +57,6 @@ function normalizeEmail(value: unknown) {
   }
 
   return normalized
-}
-
-function stripControlCharacters(input: string) {
-  let result = ''
-  for (const char of input) {
-    const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
-    } else {
-      result += char
-    }
-  }
-  return result
-}
-
-function sanitizeNote(value: unknown) {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-
-  const normalized = stripControlCharacters(value.normalize('NFKC'))
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!normalized) {
-    return undefined
-  }
-
-  return normalized.slice(0, NOTE_MAX_LENGTH)
 }
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9@._-]{3,120}$/
@@ -218,7 +190,7 @@ function sanitizeCheckoutPayload(raw: CheckoutPayload | null | undefined): Sanit
     payload.dueDate = normalizedDueDate
   }
 
-  const sanitizedNote = sanitizeNote(raw.note)
+  const sanitizedNote = sanitizeFreeform(raw.note, { maxLength: NOTE_MAX_LENGTH })
   if (sanitizedNote) {
     payload.note = sanitizedNote
   }

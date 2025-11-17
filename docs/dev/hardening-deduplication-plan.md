@@ -61,7 +61,7 @@
 
 ## Tracking & sign-off checklist
 
-- [ ] Shared sanitizeText util created and consumed by at least one API + one composable.
+- [x] Shared sanitizeText util created and consumed by at least one API + one composable.
 - [ ] Validators module live (UUID/email/identifier) and adopted by loans/admin routes.
 - [ ] Search helpers powering catalog/admin/loans + AI filters.
 - [ ] Pagination helper mirrored server/client.
