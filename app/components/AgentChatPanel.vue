@@ -29,7 +29,7 @@
                 :class="[
                   'max-w-prose rounded-xl px-4 py-3 text-sm shadow-sm',
                   message.role === 'user'
-                    ? 'ml-auto bg-primary-500 text-white'
+                    ? 'ml-auto border border-emerald-400/40 bg-emerald-500/15 text-emerald-900 dark:text-emerald-50 dark:bg-emerald-500/10'
                     : 'mr-auto bg-slate-100 text-gray-900 dark:bg-slate-800 dark:text-gray-100',
                 ]"
               >
@@ -54,6 +54,7 @@
               class="min-h-24 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-200 disabled:opacity-70 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-100 dark:focus:border-primary-500"
               placeholder="Ask for book club picks, STEM resources, or anything else…"
               :disabled="chat.isStreaming.value"
+              @keydown="handlePromptKeydown"
             />
             <div class="flex flex-wrap items-center gap-2">
               <NuxtButton
@@ -103,8 +104,8 @@
             </NuxtTooltip>
           </header>
 
-          <div class="flex h-full flex-col gap-3 overflow-y-auto pr-1">
-            <template v-if="chat.isStreaming && !hasItems">
+          <div class="flex h-full flex-col gap-3 overflow-y-auto pr-1" style="max-height: clamp(240px, 55vh, 520px)">
+            <template v-if="showSkeletons">
               <NuxtSkeleton v-for="index in 3" :key="`skeleton-${index}`" class="h-24 w-full" />
             </template>
 
@@ -157,7 +158,7 @@
 
             <template v-else>
               <p class="rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                Ask for anything from "picture books about kindness" to "films on local history" and recommendations will appear here.
+                Your recommendations will appear here.
               </p>
             </template>
           </div>
@@ -175,6 +176,7 @@ const chat = useAgentChat()
 
 const promptText = ref('')
 const messageScrollEl = ref<HTMLElement | null>(null)
+const greetingText = ref('Hi')
 
 function scrollToBottom() {
   const el = messageScrollEl.value
@@ -184,8 +186,20 @@ function scrollToBottom() {
   el.scrollTop = el.scrollHeight
 }
 
+function updateGreeting() {
+  const hour = new Date().getHours()
+  if (hour >= 0 && hour < 12) {
+    greetingText.value = 'Good morning'
+  } else if (hour >= 12 && hour < 18) {
+    greetingText.value = 'Good afternoon'
+  } else {
+    greetingText.value = 'Good evening'
+  }
+}
+
 onMounted(() => {
   nextTick(scrollToBottom)
+  updateGreeting()
 })
 
 const previewRecommendations = [
@@ -222,6 +236,19 @@ const handleSubmit = async () => {
   promptText.value = ''
 
   await chat.sendPrompt(currentPrompt)
+}
+
+function handlePromptKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    void handleSubmit()
+    return
+  }
+
+  if (event.key === 'Enter' && event.shiftKey) {
+    event.stopPropagation()
+    return
+  }
 }
 
 const messages = computed(() => {
@@ -268,9 +295,9 @@ const messages = computed(() => {
     data.push({
       id: 'placeholder',
       role: 'assistant',
-      heading: 'Library Concierge',
+      heading: 'Library AI Concierge',
       description: 'Tip',
-      content: 'Try “Suggest audiobooks for my commute about leadership and innovation.”',
+      content: `${greetingText.value}!  Please ask me anything you'd like to know about our books and media!`,
     })
   }
 
@@ -294,6 +321,10 @@ const recommendations = computed(() => {
 })
 
 const hasItems = computed(() => Boolean(chat.metadata.value?.items?.length))
+
+const showSkeletons = computed(() => {
+  return Boolean(chat.isStreaming.value && chat.lastPrompt.value && !hasItems.value)
+})
 
 const hasError = computed(() => Boolean(chat.error.value))
 const errorMessage = computed(() => chat.error.value ?? '')
