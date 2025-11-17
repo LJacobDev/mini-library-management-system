@@ -5,6 +5,25 @@
 	--brand-primary: 14 165 164;
 } */
 
+@layer base {
+	:root,
+	html,
+	body {
+		color-scheme: dark;
+	}
+
+	html[data-theme="dark"],
+	body.force-dark,
+	body[data-theme="dark"] {
+		background-color: #020617;
+		color: #e2e8f0;
+	}
+
+	body.force-dark {
+		min-height: 100vh;
+	}
+}
+
 .catalog-grid {
 	display: grid;
 	gap: 1.5rem;

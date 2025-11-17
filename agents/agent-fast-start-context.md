@@ -1,6 +1,6 @@
 # Fast Start Agent Context:  **LLM Agents**, read this section and compare it against our newer experiences, and made living edits to it so that it reflects the current state of the application so that we know what we have, and what we need to do
 
-_Last updated: 2025-11-13_
+_Last updated: 2025-11-16_
 
 ## Current State Snapshot
 
@@ -14,6 +14,7 @@ _Last updated: 2025-11-13_
 - **Supabase connectivity**: `/api/check/supabase` and the new catalog route call the live `mlms-demo` project through the cached service client. Schema/seed/RLS scripts are applied so media, loans, reservations, desk logs, and telemetry tables hold demo data behind RLS, and `handle_new_user` trigger now mirrors every fresh `auth.users` row into `public.profiles` for immediate role resolution.
 - **Developer tooling**: `/pages/debug/index.vue` (dev-only) aggregates health checks, catalog fetches, and the full `AgentChatPanel` so we can exercise streaming concierge + admin endpoints in one place; impersonation toggles pair with `/api/debug/impersonate` to preview staff-only flows without juggling accounts. Reservation API work is scoped but paused so staff tooling stays front of queue.
 - **Docs & design notes**: Fast-start plan lives in `docs/dev/spec-fast-start*.md`; styling approach detailed in `docs/dev/tailwindcss-and-style-block-hybrid-approach.md` plus palette discussions in the style archive.
+- **Theme handling**: `app/app.vue` now pins `html`/`body` to `class="dark" data-theme="dark"`, and base CSS sets `color-scheme: dark` so every visitor sees the vetted dark palette while the upcoming civic light palette is designed.
 
 ### Live deployment
 
@@ -175,3 +176,4 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-13 — `AuthPanel` now supports both email/password sign-in and magic-link requests, clearing stored passwords on logout while reusing the refreshed `useSupabaseAuth` helpers.
 - 2025-11-13 — `AuthPanel` adds a sign-up mode with password confirmation, toggles between login and registration in-place, and uses the new Supabase `signUpWithPassword` helper for account creation. Signup copy now explicitly reminds users to check their inbox for the confirmation email and the post-submit feedback echoes the same reminder.
 - 2025-11-13 — Trimmed the admin dashboard section padding (`NuxtPageSection py-5!`) so the grid sits closer to the header instead of leaving 128px of vertical whitespace.
+- 2025-11-16 — Forced a global dark theme via `app/app.vue` head attrs + base CSS `color-scheme: dark` so every environment renders the verified palette while the upcoming light theme is designed.
