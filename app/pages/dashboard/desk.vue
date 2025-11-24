@@ -294,7 +294,7 @@ const borrowerDisplay = computed(() => {
     return 'Unknown borrower'
   }
 
-  const pieces = [borrower.name, borrower.email, borrower.id].filter((piece): piece is string => Boolean(piece))
+  const pieces = [borrower.name, borrower.email].filter((piece): piece is string => Boolean(piece))
   return pieces.join(' • ') || 'Unknown borrower'
 })
 
@@ -403,58 +403,6 @@ async function refreshActiveItem(itemId: string) {
   }
 }
 
-function patchCatalogItem(itemId: string, updater: (item: CatalogItem) => CatalogItem) {
-  if (!data.value) {
-    return
-  }
-
-  const nextItems = data.value.items.map((item) => (item.id === itemId ? updater(item) : item))
-
-  data.value = {
-    ...data.value,
-    items: nextItems,
-  }
-
-  if (activeItem.value?.id === itemId) {
-    const updated = nextItems.find((item) => item.id === itemId)
-    if (updated) {
-      activeItem.value = { ...updated }
-    }
-  }
-}
-
-function updateItemMetadata(item: CatalogItem, options: { set?: Record<string, unknown>; remove?: string[] }) {
-  const result = new Map<string, unknown>()
-
-  for (const [key, value] of Object.entries(item.metadata ?? {})) {
-    if (value !== undefined && value !== null) {
-      result.set(key, value)
-    }
-  }
-
-  if (options.remove) {
-    for (const key of options.remove) {
-      result.delete(key)
-    }
-  }
-
-  if (options.set) {
-    for (const [key, value] of Object.entries(options.set)) {
-      if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) {
-        result.delete(key)
-      } else {
-        result.set(key, value)
-      }
-    }
-  }
-
-  const normalized = result.size ? Object.fromEntries(result) : undefined
-  return {
-    ...item,
-    metadata: normalized,
-  }
-}
-
 async function submitCheckout() {
   if (!activeItem.value) {
     return
@@ -487,28 +435,6 @@ async function submitCheckout() {
     const dueDate = response.loan.dueDate ?? checkoutDueDateIso.value
 
     await refreshActiveItem(activeItem.value.id)
-
-    if (loanMetadata.value?.loanStatus !== 'checked_out') {
-      patchCatalogItem(activeItem.value.id, (item) => {
-        const borrowerMeta: Record<string, unknown> = {
-          ...(loanMetadata.value?.borrower ?? {}),
-          id: memberIdentifier,
-        }
-
-        if (memberIdentifier.includes('@')) {
-          borrowerMeta.email = memberIdentifier
-        }
-
-        return updateItemMetadata(item, {
-          set: {
-            loanStatus: 'checked_out',
-            loanId,
-            borrower: borrowerMeta,
-            dueDate,
-          },
-        })
-      })
-    }
 
     checkoutForm.patronIdentifier = ''
     checkoutForm.notes = ''
@@ -551,14 +477,6 @@ async function submitCheckin() {
     })
 
     await refreshActiveItem(activeItem.value.id)
-
-    if (loanMetadata.value?.loanStatus === 'checked_out') {
-      patchCatalogItem(activeItem.value.id, (item) =>
-        updateItemMetadata(item, {
-          remove: ['loanStatus', 'borrower', 'loanId', 'dueDate'],
-        }),
-      )
-    }
 
     checkinForm.notes = ''
     formStatus.value = 'success'
