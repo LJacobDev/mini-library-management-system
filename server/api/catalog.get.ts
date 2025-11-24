@@ -21,6 +21,15 @@ type MediaRow = {
   metadata: Record<string, unknown> | null
 }
 
+type ActiveLoanRow = {
+  id: string
+  media_id: string
+  user_id: string
+  due_date: string | null
+  returned_at: string | null
+  user_snapshot: Record<string, unknown> | null
+}
+
 const DEFAULT_PAGE_SIZE = 24
 const MAX_PAGE_SIZE = 60
 const ALLOWED_MEDIA_TYPES = new Set(['book', 'video', 'audio', 'other'])
@@ -84,7 +93,34 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const items = ((data ?? []) as unknown as MediaRow[]).map((item) => {
+  const mediaRows = ((data ?? []) as unknown as MediaRow[])
+
+  const mediaIds = mediaRows.map((item) => item.id).filter((id): id is string => typeof id === 'string' && !!id)
+  const activeLoansByMedia = new Map<string, ActiveLoanRow>()
+
+  if (mediaIds.length) {
+    const { data: loanRows, error: loanError } = await supabase
+      .from('media_loans')
+      .select('id, media_id, user_id, due_date, returned_at, user_snapshot')
+      .in('media_id', mediaIds)
+      .is('returned_at', null)
+
+    if (loanError) {
+      console.error('Failed to fetch active loan data for catalog items', loanError)
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Unable to load catalog loan data at this time.',
+      })
+    }
+
+    for (const loan of loanRows ?? []) {
+      if (loan?.media_id) {
+        activeLoansByMedia.set(loan.media_id, loan as ActiveLoanRow)
+      }
+    }
+  }
+
+  const items = mediaRows.map((item) => {
     const metadata: Record<string, unknown> = {}
 
     if (item.metadata && typeof item.metadata === 'object') {
@@ -110,6 +146,39 @@ export default defineEventHandler(async (event) => {
     if (typeof item.duration_seconds === 'number' && Number.isFinite(item.duration_seconds)) {
       const minutes = Math.max(1, Math.round(item.duration_seconds / 60))
       assignMetadata('duration_minutes', minutes)
+    }
+
+    const activeLoan = activeLoansByMedia.get(item.id)
+    if (activeLoan) {
+      assignMetadata('loanStatus', 'checked_out')
+      assignMetadata('loanId', activeLoan.id)
+
+      if (typeof activeLoan.due_date === 'string' && activeLoan.due_date.trim()) {
+        assignMetadata('dueDate', activeLoan.due_date)
+      }
+
+      const borrowerSnapshot = (activeLoan.user_snapshot ?? {}) as Record<string, unknown>
+      const borrower: {
+        id?: string
+        email?: string
+        name?: string
+      } = {}
+
+      if (typeof activeLoan.user_id === 'string' && activeLoan.user_id) {
+        borrower.id = activeLoan.user_id
+      }
+
+      if (typeof borrowerSnapshot.email === 'string' && borrowerSnapshot.email.trim()) {
+        borrower.email = borrowerSnapshot.email.trim()
+      }
+
+      if (typeof borrowerSnapshot.name === 'string' && borrowerSnapshot.name.trim()) {
+        borrower.name = borrowerSnapshot.name.trim()
+      }
+
+      if (borrower.id || borrower.email || borrower.name) {
+        assignMetadata('borrower', borrower)
+      }
     }
 
     return {
