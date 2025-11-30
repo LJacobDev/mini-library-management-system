@@ -1,0 +1,43 @@
+# Run `npm build`, `npm test`, and if successful, `vercel --prod` on pushes to main and PR merges
+# Currently, PRs go to prod and not to preview, but this is being kept in mind as a future workflow improvement
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # Latest version
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v6  # Latest version
+        with:
+          node-version: '24'  # Updated to Node.js 24 for compatibility with GitHub Actions runners
+
+      - name: Install dependencies
+        run: npm ci  # Using `npm ci` over `npm install` for consistent dependency versions
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Install Vercel
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        if: ${{ success() }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}  # Token from GitHub secrets
+        run: |
+          vercel --prod --confirm
