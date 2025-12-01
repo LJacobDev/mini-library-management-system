@@ -29,3 +29,6 @@ logs
 !.env.example
 
 .vercel
+
+# Vitest coverage files
+/coverage/
