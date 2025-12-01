@@ -31,7 +31,7 @@ jobs:
       - name: Install Vercel
         run: npm install -g vercel
 
-      - name: Deploy to Vercel
+      - name: Vercel Preview
         if: ${{ success() }}
         run: |
           vercel --yes --token ${{ secrets.ACTIONS_DEPLOY_VERCEL }}
