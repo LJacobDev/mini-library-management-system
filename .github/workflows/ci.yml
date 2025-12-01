@@ -1,0 +1,37 @@
+# PRs to main get `npm build`, `npm test`, and go to preview environment
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # Latest version
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v6  # Latest version
+        with:
+          node-version: '24'  # Updated to Node.js 24 for compatibility with GitHub Actions runners
+
+      - name: Install dependencies
+        run: npm ci  # Using `npm ci` over `npm install` for consistent dependency versions
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Install Vercel
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        if: ${{ success() }}
+        run: |
+          vercel --yes --token ${{ secrets.ACTIONS_DEPLOY_VERCEL }}

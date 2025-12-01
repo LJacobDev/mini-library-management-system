@@ -203,3 +203,10 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-17 — `/pages/debug` quick buttons were rebuilt with inline endpoint/parameter/expected-result context, a richer manual request form, and response viewer showing status/headers/body; note that while the button appearance and results display are helpful, the buttons themselves need to be reworked, as many of them aren't getting expected results and some are pointing at routes like /status as though they were endpoints like /api/status.
 - 2025-11-17 — Introduced `utils/pagination.ts` and refactored `/api/catalog`, `/api/admin/media`, `/api/loans`, plus the catalog/admin composables to consume the shared clamp helpers so pagination guards stay consistent end-to-end.
 - 2025-11-17 — Added `server/utils/aiPrompts.ts` and `app/utils/sanitizeClient.ts`, updating the AI concierge endpoint, catalog/admin search flows, desk circulation forms, and admin media modal to share the new sanitizers and preserve raw UI typing while enforcing backend-safe payloads.
+- 2025-12-01 — Started WCAG 2.1 AA compliance work based on `docs/wcag/wcag-audit-11-30-2025.md`. Completed first batch of 5 quick wins:
+  - **Issue #6** — Added `lang="en"` to HTML via `nuxt.config.ts` `htmlAttrs` (WCAG 3.1.1)
+  - **Issue #2** — Added meaningful alt text to catalog/modal cover images (WCAG 1.1.1)
+  - **Issue #9** — Added skip-to-main-content links to both layouts (WCAG 2.4.1)
+  - **Issue #5** — Improved text contrast by changing `text-slate-400` → `text-slate-300` in catalog/modal components (WCAG 1.4.3)
+  - **Issue #18** — Added global `*:focus-visible` outline in `main.css` (WCAG 2.4.7)
+  - Marked completed issues with `[x]` in the audit file for tracking. Next: continue with remaining critical/high priority issues.
