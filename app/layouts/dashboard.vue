@@ -18,6 +18,12 @@ function isActive(path: string) {
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-500 focus:px-4 focus:py-2 focus:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+    >
+      Skip to main content
+    </a>
     <AppHeader />
 
     <div class="flex">
@@ -39,7 +45,7 @@ function isActive(path: string) {
         </nav>
       </aside>
 
-  <main class="flex-1 overflow-x-hidden md:ml-64">
+  <main id="main-content" class="flex-1 overflow-x-hidden md:ml-64">
         <div class="mx-auto w-full max-w-6xl px-6 py-8 lg:px-10">
           <slot />
         </div>

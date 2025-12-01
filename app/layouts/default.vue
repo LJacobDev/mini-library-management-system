@@ -22,13 +22,19 @@ function closeAuthPanel() {
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-100">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-500 focus:px-4 focus:py-2 focus:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+    >
+      Skip to main content
+    </a>
     <AppHeader @open-auth="openAuthPanel">
       <template #nav>
         <slot name="nav" />
       </template>
     </AppHeader>
 
-    <main>
+    <main id="main-content">
       <slot />
     </main>
 

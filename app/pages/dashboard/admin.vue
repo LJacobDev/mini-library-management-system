@@ -569,7 +569,7 @@ async function confirmDelete() {
             <div class="relative h-40 w-full overflow-hidden border-b border-white/5">
               <NuxtImg
                 :src="item.coverUrl || fallbackCover"
-                alt=""
+                :alt="`Cover of ${item.title}`"
                 class="h-full w-full object-cover"
                 sizes="(min-width: 768px) 240px, 80vw"
                 loading="lazy"
