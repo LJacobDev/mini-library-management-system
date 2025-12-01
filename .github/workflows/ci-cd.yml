@@ -38,6 +38,6 @@ jobs:
       - name: Deploy to Vercel
         if: ${{ success() }}
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_GITHUB_ACTIONS_DEPLOY }}  # Token from GitHub secrets
+          VERCEL_TOKEN: ${{ secrets.ACTIONS_DEPLOY_VERCEL }}  # Token from GitHub secrets
         run: |
-          vercel --prod --confirm
+          vercel --prod --yes
