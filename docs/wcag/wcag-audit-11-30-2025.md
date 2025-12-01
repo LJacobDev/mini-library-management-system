@@ -77,7 +77,7 @@ watch(() => props.open, (isOpen) => {
 
 ---
 
-### 2. Images Missing Alternative Text
+### [x] 2. Images Missing Alternative Text
 **Files**: `CatalogGrid.vue`, `MediaDetailModal.vue`, `index.vue`  
 **WCAG Criterion**: 1.1.1 Non-text Content
 
@@ -123,6 +123,9 @@ watch(() => props.open, (isOpen) => {
   ...
 />
 ```
+
+**FIX NOTE**: index.vue already had alt text, however admin.vue was noticed as needing alt text added.  All images now have alt text.
+
 
 **Test**: Use NVDA or VoiceOver to navigate catalog — images should announce descriptive text.
 
@@ -216,7 +219,7 @@ watch(() => props.open, (isOpen) => {
 
 ---
 
-### 5. Color Contrast Issues
+### [x] 5. Color Contrast Issues
 **Files**: Multiple components  
 **WCAG Criterion**: 1.4.3 Contrast (Minimum) — AA requires 4.5:1 for normal text, 3:1 for large text
 
@@ -252,7 +255,7 @@ watch(() => props.open, (isOpen) => {
 
 ---
 
-### 6. Missing Page Language Declaration
+### [x] 6. Missing Page Language Declaration
 **Files**: `app.vue`, `nuxt.config.ts`  
 **WCAG Criterion**: 3.1.1 Language of Page
 
@@ -358,7 +361,7 @@ useHead({
 
 ## 🟡 HIGH PRIORITY ISSUES
 
-### 9. Skip to Main Content Link Missing
+### [x] 9. Skip to Main Content Link Missing
 **Files**: `default.vue`, `dashboard.vue` layouts  
 **WCAG Criterion**: 2.4.1 Bypass Blocks
 
@@ -698,7 +701,7 @@ onClickOutside(menuButton, closeMenu)
 
 ---
 
-### 18. Insufficient Focus Indicators
+### [x] 18. Insufficient Focus Indicators
 **Files**: Global styles, multiple components  
 **WCAG Criterion**: 2.4.7 Focus Visible
 

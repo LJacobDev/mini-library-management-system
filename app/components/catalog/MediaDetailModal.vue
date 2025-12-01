@@ -208,7 +208,7 @@ const availabilityRows = computed(() => {
   >
     <template #body>
       <div class="flex min-h-[200px] flex-col gap-4">
-        <p v-if="loading" class="text-sm text-slate-400">
+        <p v-if="loading" class="text-sm text-slate-300">
           Loading details…
         </p>
 
@@ -224,7 +224,7 @@ const availabilityRows = computed(() => {
                   <NuxtImg
                     v-if="media.coverUrl"
                     :src="media.coverUrl"
-                    alt=""
+                    :alt="`Cover of ${media.title}`"
                     class="h-full w-full object-cover"
                     sizes="(min-width: 768px) 220px, 80vw"
                     loading="lazy"
@@ -252,7 +252,7 @@ const availabilityRows = computed(() => {
                   <h3 class="text-2xl font-semibold leading-tight text-white">
                     {{ media.title }}
                   </h3>
-                  <p v-if="media.author" class="text-sm text-slate-400">
+                  <p v-if="media.author" class="text-sm text-slate-300">
                     By {{ media.author }}
                   </p>
                   <p v-if="summaryText" class="text-sm leading-relaxed text-slate-300">

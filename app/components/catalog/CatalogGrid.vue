@@ -189,16 +189,16 @@ onBeforeUnmount(() => {
         @keyup.space.prevent="handleSelect(item)"
       >
         <div class="relative">
-          <NuxtImg :src="item.coverUrl || fallbackCover" alt="" class="h-44 w-full object-cover" loading="lazy" />
+          <NuxtImg :src="item.coverUrl || fallbackCover" :alt="`Cover of ${item.title}`" class="h-44 w-full object-cover" loading="lazy" />
         </div>
 
         <div class="flex flex-1 flex-col gap-3 p-5">
           <div>
-            <p class="text-xs uppercase tracking-wide text-slate-400">
+            <p class="text-xs uppercase tracking-wide text-slate-300">
               {{ mediaTypeLabel(item.mediaType) }}
             </p>
             <h4 class="mt-2 text-lg font-semibold text-white">{{ item.title }}</h4>
-            <p class="text-sm text-slate-400">{{ item.author }}</p>
+            <p class="text-sm text-slate-300">{{ item.author }}</p>
           </div>
 
           <div v-if="item.subjects?.length" class="flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
 
     <div
       v-else
-      class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-400"
+      class="min-h-[200px] rounded-3xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center text-sm text-slate-300"
     >
       <slot name="empty">
         No matching items yet. Try a different search or filter.
@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
       <div
         v-if="hasMore && showLoadMoreButton"
         ref="loadMoreTrigger"
-        class="mt-4 flex flex-col items-center gap-4 text-sm text-slate-400"
+        class="mt-4 flex flex-col items-center gap-4 text-sm text-slate-300"
       >
         <NuxtButton
           variant="soft"
