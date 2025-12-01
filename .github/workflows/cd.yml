@@ -1,17 +1,13 @@
-# Run `npm build`, `npm test`, and if successful, `vercel --prod` on pushes to main and PR merges
-# Currently, PRs go to prod and not to preview, but this is being kept in mind as a future workflow improvement
-name: CI/CD Pipeline
+# Push / merge to main gets `npm build`, `npm test`, and if successful, `vercel --prod`
+name: CD
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build:
+  build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +33,5 @@ jobs:
 
       - name: Deploy to Vercel
         if: ${{ success() }}
-        # env:
-        #   VERCEL_TOKEN: ${{ secrets.ACTIONS_DEPLOY_VERCEL }}  # Token from GitHub secrets
         run: |
           vercel --prod --yes --token ${{ secrets.ACTIONS_DEPLOY_VERCEL }}

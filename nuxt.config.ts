@@ -7,6 +7,9 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: {
+        lang: "en",
+      },
       title: "Mini Library Management System",
     },
   },

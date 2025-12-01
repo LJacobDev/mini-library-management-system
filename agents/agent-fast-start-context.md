@@ -219,3 +219,10 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
     - `--confirm` flag deprecated; replaced with `--yes`.
   - Token validity tested locally via `npx vercel whoami --token "TOKEN"`.
   - PR preview deployments deferred; currently all deploys go to production.
+- 2025-12-01 — Started WCAG 2.1 AA compliance work based on `docs/wcag/wcag-audit-11-30-2025.md`. Completed first batch of 5 quick wins:
+  - **Issue #6** — Added `lang="en"` to HTML via `nuxt.config.ts` `htmlAttrs` (WCAG 3.1.1)
+  - **Issue #2** — Added meaningful alt text to catalog/modal cover images (WCAG 1.1.1)
+  - **Issue #9** — Added skip-to-main-content links to both layouts (WCAG 2.4.1)
+  - **Issue #5** — Improved text contrast by changing `text-slate-400` → `text-slate-300` in catalog/modal components (WCAG 1.4.3)
+  - **Issue #18** — Added global `*:focus-visible` outline in `main.css` (WCAG 2.4.7)
+  - Marked completed issues with `[x]` in the audit file for tracking. Next: continue with remaining critical/high priority issues.
