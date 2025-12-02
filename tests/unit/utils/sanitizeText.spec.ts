@@ -3,12 +3,19 @@ import { stripControlChars } from 'utils/sanitizeText';
 
 // starting test function to check test runner
 describe ('stripControlChars', () => {
-    it('test', () => {
-        expect(1).toBe(1);
-    });
-    it('should remove control characters from a string', () => {
-        const input = 'Hello\x00 World\x1F!';
-        const expectedOutput = 'Hello World!';
-        expect(stripControlChars(input)).toBe(expectedOutput);
-    });
+  it('should remove control characters from a string', () => {
+    expect(stripControlChars('Hello\x00 World\x1F!')).toBe('Hello World!');
+  });
+
+  it('should return empty string for empty input', () => {
+    expect(stripControlChars('')).toBe('');
+  });
+
+  it('should return same string if no control chars', () => {
+    expect(stripControlChars('Clean text')).toBe('Clean text');
+  });
+
+  it('should handle string with only control chars', () => {
+    expect(stripControlChars('\x00\x1F')).toBe('');
+  });
 });
