@@ -210,3 +210,12 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
   - **Issue #5** — Improved text contrast by changing `text-slate-400` → `text-slate-300` in catalog/modal components (WCAG 1.4.3)
   - **Issue #18** — Added global `*:focus-visible` outline in `main.css` (WCAG 2.4.7)
   - Marked completed issues with `[x]` in the audit file for tracking. Next: continue with remaining critical/high priority issues.
+- 2025-12-01 — Explored Lighthouse for Core Web Vitals auditing. Key findings:
+  - **Lighthouse** runs on Chromium only (Chrome DevTools, CLI, or Edge); not available in Firefox.
+  - **Web Vitals Extension** provides real-time LCP/CLS/INP overlay during browsing (single page, your session).
+  - **Unlighthouse** wraps Lighthouse to crawl and audit an entire site at once, producing a unified dashboard.
+  - Created `docs/lighthouse/overview.md` documenting all of the above plus a 3-phase audit plan:
+    1. Manual single-page Lighthouse runs on priority routes (`/`, `/catalog`, `/login`, `/dashboard/*`).
+    2. Unlighthouse site-wide scans before releases.
+    3. Future CI integration via Lighthouse CI (lhci) for automated PR gating.
+  - Next: begin Phase 1 audits, save reports to `docs/lighthouse/reports/`, and track scores in the overview table.
