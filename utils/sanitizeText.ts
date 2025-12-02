@@ -8,7 +8,7 @@ export function stripControlChars(value: string): string {
     const char = value.charAt(index)
     const code = char.charCodeAt(0)
     if ((code >= 0 && code <= 31) || code === 127) {
-      result += ' '
+      result += ''
     } else {
       result += char
     }

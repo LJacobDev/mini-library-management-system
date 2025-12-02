@@ -22,6 +22,15 @@ _Last updated: 2025-11-17_
 - The app is deployed to Vercel and confirmed working in production.
 - Vercel project has server-only environment variables configured (OpenAI key, Supabase URL & secret) so server routes run in prod using real services.
 
+### CI/CD Pipeline
+
+- GitHub Actions workflow (`.github/workflows/ci-cd.yml`) handles build, test, and deploy on push to `main` and on pull requests.
+- Uses `actions/checkout@v4`, `actions/setup-node@v6`, and Node.js 24.
+- Runs `npm ci` for reproducible installs, `npm run build`, `npm run test`, then deploys via Vercel CLI.
+- **Token configuration**: The Vercel token must be passed directly via `--token ${{ secrets.ACTIONS_DEPLOY_VERCEL }}` flag (env var mapping to `VERCEL_TOKEN` did not work reliably in CI).
+- **Deprecation note**: `--confirm` flag is deprecated; use `--yes` instead.
+- PRs currently deploy to production (preview deployments planned for future improvement).
+
 ## Work Completed So Far (Timeline)
 
 1. Captured fast-start strategy docs (`spec-fast-start.md`, updates through `spec-fast-start-3.md`).
@@ -203,6 +212,13 @@ Keep using this file as the quick context hand-off for agents joining the fast-s
 - 2025-11-17 — `/pages/debug` quick buttons were rebuilt with inline endpoint/parameter/expected-result context, a richer manual request form, and response viewer showing status/headers/body; note that while the button appearance and results display are helpful, the buttons themselves need to be reworked, as many of them aren't getting expected results and some are pointing at routes like /status as though they were endpoints like /api/status.
 - 2025-11-17 — Introduced `utils/pagination.ts` and refactored `/api/catalog`, `/api/admin/media`, `/api/loans`, plus the catalog/admin composables to consume the shared clamp helpers so pagination guards stay consistent end-to-end.
 - 2025-11-17 — Added `server/utils/aiPrompts.ts` and `app/utils/sanitizeClient.ts`, updating the AI concierge endpoint, catalog/admin search flows, desk circulation forms, and admin media modal to share the new sanitizers and preserve raw UI typing while enforcing backend-safe payloads.
+- 2025-11-30 — **CI/CD Pipeline setup**: Created `.github/workflows/ci-cd.yml` with GitHub Actions workflow that builds, tests, and deploys to Vercel on push/PR to main. Key findings during setup:
+  - Uses `actions/checkout@v4`, `actions/setup-node@v6`, Node.js 24 (per GitHub's deprecation of Node 20).
+  - `npm ci` preferred over `npm install` for reproducible CI builds.
+  - Vercel token must be passed via `--token` flag directly (env var `VERCEL_TOKEN` mapping failed to authenticate).
+    - `--confirm` flag deprecated; replaced with `--yes`.
+  - Token validity tested locally via `npx vercel whoami --token "TOKEN"`.
+  - PR preview deployments deferred; currently all deploys go to production.
 - 2025-12-01 — Started WCAG 2.1 AA compliance work based on `docs/wcag/wcag-audit-11-30-2025.md`. Completed first batch of 5 quick wins:
   - **Issue #6** — Added `lang="en"` to HTML via `nuxt.config.ts` `htmlAttrs` (WCAG 3.1.1)
   - **Issue #2** — Added meaningful alt text to catalog/modal cover images (WCAG 1.1.1)
